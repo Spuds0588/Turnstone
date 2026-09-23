@@ -2,12 +2,13 @@
    Version bump this constant to invalidate all caches on the next load. */
 'use strict';
 
-const VERSION = 'turnstone-v0.6.0';
+const VERSION = 'turnstone-v0.7.0';
 
 /* Same-origin paths are relative to this file (served from the app root). */
 const PRECACHE = [
   './',
-  'index.html',
+  'app.html',
+  'index.html',   /* sales page — precached so offline visits land somewhere useful */
   'sample-links.csv',
   'sample-links.xlsx',
   'icon-192.png',

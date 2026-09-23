@@ -1,5 +1,33 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-23 — v0.7: Sales page + ports scaffolding
+
+**Request:** scaffold the bookmarklet / extension / Tauri ports; make `index.html` an SEO/AEO sales page following the SupportLayer/Hushwing pattern (biggest selling point: a modern streamlined workspace with **no expensive backend** — spreadsheet users get an instantly upgraded experience); move the actual app to a linked `app.html`; README notes future-state plans. **No animated background.**
+
+### Restructure
+- `index.html` → `app.html` (git mv). SW precache now lists `app.html` + the new sales page, `VERSION` bumped to `v0.7.0`; manifest `start_url` annotated (still `location.pathname`, so the installed PWA keeps launching the app and deep links keep working).
+- New `index.html` = the sales page. Follows the SupportLayer pattern (eyebrow → hero h1/subtitle → CTA pair → product visual → feature boxes → workflow → FAQ → footer with cross-project links), in Turnstone's own palette. **Static** radial-gradient background, explicitly no animation.
+
+### Sales page (SEO + AEO)
+- Meta description/canonical/OG/Twitter; `SoftwareApplication` JSON-LD (free offer, featureList) and `FAQPage` JSON-LD whose answers mirror the visible FAQ details — answer-engine-ready.
+- Keyword-targeted copy: link queue manager, CSV task tracker, spreadsheet workflow, zero backend, client-side. The pitch: keep the spreadsheet you already have, get a modern split-pane workspace — no backend to buy, no seat licenses, nothing to sign up for.
+- Pure-CSS product mock of the real app (tab bar + framed page on the left, task cards with ✓ Complete / DONE chips on the right) instead of a screenshot.
+- FAQ includes the honest iframe-headers answer (browser rule, not a bug; switch open mode; native version removes it) and links the roadmap.
+- Deep-link compatibility: visitors hitting the root with `?file=`/`?url=` (old bookmarks/shared links) are forwarded to `app.html` preserving all params.
+
+### Ports scaffolding (`ports/`)
+- `ports/README.md` — map + status of all ports; shared `core.js` prerequisite.
+- `bookmarklet/` — README with the locked scope (session-only memory, CSV-only fallback with built-in RFC-4180 parser when SheetJS can't load, <~8KB budget) + planned `build.js`/`src/`/`dist/` layout.
+- `extension/` — MV3 `manifest.json` (sidePanel/tabs/storage/downloads/contextMenus), `background.js` service-worker scaffold (context menu + open-tab/focus-tab message surface), `sidepanel.html/js` stubs.
+- `tauri/` — Tauri 2 `tauri.conf.json` scaffold (`frontendDist` → repo root so the canonical app is the frontend, tray + bundle icons) + README (CORS wall disappears; silent write-back; tray; auto-update).
+
+### README
+- Rewritten: app links point at `app.html`, root is described as the sales page, repo-layout tree added, and a **Roadmap** section summarizes the ports + future state (comms hand-off layers, native CORS bypass, cloud sync).
+
+Not yet done: live Pages verification of the new root/`app.html` split (right after this push), and the ports' actual builds (items logged in `todo.md` v0.7).
+
+---
+
 ## 2026-09-23 — Bookmarklet scope: CSV-only fallback when SheetJS can't load
 
 **Request:** the bookmarklet must work in even the most secure environments — if SheetJS fails to load, fall back to CSV-only for that session and make the UI say so.

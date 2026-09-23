@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turnstone</title>
+<style>
+  /* Side-panel palette mirrors the web app's dark theme; light theme lands with the port build. */
+  :root {
+    --bg: #0f1115; --panel: #171a21; --border: #262b36;
+    --text: #e6e9ef; --muted: #8b93a5; --accent: #7aa2ff; --green: #3fb970;
+  }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 -apple-system, "Segoe UI", sans-serif; }
+</style>
+</head>
+<body>
+  <h1 style="font-size:15px">◆ Turnstone</h1>
+  <p><strong>Scaffold — not built yet.</strong></p>
+  <p>This side panel will render the task-card queue (SheetJS parsing, columns &amp; presets,
+     ✓ Complete / ↺ Incomplete, Show completed, sort), with links always opening as real
+     browser tabs and card selection switching the active tab.</p>
+  <p style="color:var(--muted)">Locked scope: <code>ports/extension/README.md</code> and the root
+     <code>todo.md</code> (Future state → Chrome extension version).</p>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

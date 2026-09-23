@@ -2,6 +2,16 @@
 
 Status legend: `[ ]` todo · `[x]` done · `[~]` partially done / deferred
 
+## v0.7 Sales page + ports scaffolding
+- [x] `index.html` became `app.html`; SW precache + version (v0.7.0) and manifest start_url updated.
+- [x] New SEO/AEO sales page at `index.html` (root): hero, CSS product mock, features, 3-step workflow, FAQ mirroring FAQPage schema, SoftwareApplication JSON-LD, static background (no animation). Links to `app.html`; legacy `?file=`/`?url=` deep links auto-forward to the app.
+- [x] Ports scaffolded under `ports/`: bookmarklet (README + build.js plan), extension (MV3 manifest + background.js + sidepanel stubs), tauri (tauri.conf.json + README); `ports/README.md` maps them all.
+- [x] README rewritten: `app.html` links, repo layout, ports + roadmap section.
+- [ ] Verify sales page + app + ports live on Pages after push.
+- [ ] Bookmarklet: build `ports/bookmarklet/build.js` + payload source per locked scope.
+- [ ] Extension: real side-panel queue UI on the background message surface.
+- [ ] Tauri: `cargo tauri init` shell + Rust `fs_write`/`fetch_any` commands.
+
 ## v0.6 Queue UX
 - [x] No Open button — clicking a card opens its link (per open mode) and expands it.
 - [x] Single ✓ Complete button replaces the status dropdown; completed cards get a subtle ↺ Incomplete undo.
