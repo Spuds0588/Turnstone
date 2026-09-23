@@ -1,5 +1,18 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-23 — Port plans revised: extension is sidebar-only + tab switching; Tauri keeps iframes
+
+**Request:** update the Chrome-extension and Tauri plans per feedback.
+
+### Changes recorded in `todo.md`
+- **Chrome extension** — now explicitly **sidebar-only UX**: render just the task-card sidebar via Chrome's Side Panel API and **skip the entire iframe workflow**. Links open as real browser tabs (`chrome.tabs.create`), and selecting a card **switches the active tab** to that page (`chrome.tabs.update`). Everything else mirrors the web version (parsing, columns/presets, complete/undo, show-completed, sort, auto-open/auto-advance where "open" means tab-switch, downloads export, chrome.storage persistence). Open-mode menu collapses to tab mode.
+- **Tauri app** — matches the web version's full experience **including the tabbed-iframe workspace**; the feedback confirms the iframe CORS/X-Frame-Options issue disappears in the Tauri shell, so sites that refuse iframing on the web work natively there. Filesystem write-back without permission prompts, tray, auto-update unchanged.
+- Web app stays the canonical core (DOM-free `core.js` prerequisite unchanged).
+
+No code changes in this step — planning only.
+
+---
+
 ## 2026-09-23 — Bookmarklet scope: composes the app live, session-only memory
 
 **Request:** define the bookmarklet's scope — it composes the Turnstone app live in a new tab; keep what's possible given that session/localStorage won't stick, but the core items remain: CSV/XLSX parsing via SheetJS, card rendering, ideally file write-back, export, and iframe/new-tab/window link modes.
