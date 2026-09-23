@@ -1,0 +1,1362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turnstone — URL List Processor</title>
+<script>
+  /* Theme boot — runs before first paint to avoid a flash of the wrong theme. */
+  (function () {
+    var saved = null;
+    try { saved = localStorage.getItem('turnstone-theme'); } catch (e) {}
+    var theme = saved === 'light' || saved === 'dark' ? saved
+      : (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    document.documentElement.dataset.theme = theme;
+  })();
+</script>
+<style>
+  /* Theme tokens — dark is the default; <html data-theme="light"> flips the palette. */
+  :root {
+    color-scheme: dark;
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1d212b;
+    --border: #262b36;
+    --text: #e6e9ef;
+    --muted: #8b93a5;
+    --accent: #7aa2ff;
+    --accent-dark: #5a82e0;
+    --green: #3fb970;
+    --amber: #f5c542;
+    --danger: #e5534b;
+    --sidebar-w: 340px;
+    --mark-bg: #f5c542;
+    --mark-fg: #16181d;
+    --pane-bg: #ffffff;
+    --done-border: #2c4a38;
+    --done-strike: #3a5c47;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #f4f6fa;
+    --panel: #ffffff;
+    --panel-2: #eef1f7;
+    --border: #d5dbe6;
+    --text: #1c2330;
+    --muted: #64708a;
+    --accent: #3b66d0;
+    --accent-dark: #2f57bb;
+    --green: #1e8e4e;
+    --amber: #a87b0a;
+    --danger: #c93c34;
+    --mark-bg: #ffd54d;
+    --mark-fg: #1c2330;
+    --pane-bg: #ffffff;
+    --done-border: #b5dfc4;
+    --done-strike: #7fae91;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ---------- Topbar ---------- */
+  #topbar {
+    height: 48px;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+  }
+  #logo { font-weight: 700; font-size: 14px; letter-spacing: .3px; display: flex; align-items: center; gap: 7px; cursor: pointer; }
+  #logo:hover { opacity: .85; }
+  #logo .gem { color: var(--accent); font-size: 15px; }
+  #file-chip {
+    font-size: 11px; max-width: 240px; flex: 0 1 auto; min-width: 0; overflow: hidden; white-space: nowrap;
+    color: var(--text); background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 3px 9px; display: none; align-items: center; gap: 6px;
+  }
+  #file-chip.on { display: inline-flex; }
+  #file-chip-name { overflow: hidden; text-overflow: ellipsis; }
+  #file-chip .x { cursor: pointer; color: var(--muted); border: none; background: none; font-size: 12px; padding: 0 1px; flex: 0 0 auto; }
+  #file-chip .x:hover { color: var(--text); }
+  #mode-badge {
+    font-size: 10.5px; padding: 2px 8px; border-radius: 10px;
+    border: 1px solid var(--border); color: var(--muted); white-space: nowrap;
+  }
+  #mode-badge.fs { color: var(--green); border-color: var(--done-border); }
+  #save-indicator { margin-left: auto; color: var(--muted); font-size: 11.5px; white-space: nowrap; }
+  #save-indicator.dirty { color: var(--amber); }
+  #save-indicator.saved { color: var(--green); }
+  .btn {
+    background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 5px 11px; font-size: 12px; cursor: pointer; white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--accent-dark); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .btn.primary { background: var(--accent-dark); border-color: var(--accent-dark); color: #fff; }
+  .btn.primary:hover { background: var(--accent); }
+  #topbar .spacer { flex: 0 0 6px; }
+
+  /* ---------- Split pane: workspace LEFT, sidebar RIGHT (approved deviation) ---------- */
+  #app {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: 1fr var(--sidebar-w);
+    min-height: 0;
+  }
+
+  /* ---------- Workspace (left) ---------- */
+  #workspace { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  #tabbar {
+    flex: 0 0 auto;
+    display: flex; align-items: stretch; gap: 2px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 4px 6px 0;
+    overflow-x: auto;
+    min-height: 36px;
+  }
+  #tabbar:empty::after {
+    content: "No tabs open — click “Open” on a task card";
+    color: var(--muted); font-size: 11.5px; align-self: center; padding: 0 8px 6px;
+  }
+  .tab {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 8px 6px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border); border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    max-width: 220px; cursor: pointer; user-select: none;
+    color: var(--muted);
+  }
+  .tab.active { background: var(--panel-2); color: var(--text); border-color: var(--accent-dark); }
+  .tab .tab-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+  .tab .tab-ext, .tab .tab-close {
+    flex: 0 0 auto; border: none; background: none; color: var(--muted);
+    cursor: pointer; font-size: 12px; padding: 1px 3px; border-radius: 4px; text-decoration: none;
+  }
+  .tab .tab-ext:hover, .tab .tab-close:hover { color: var(--text); background: var(--border); }
+  #panes { flex: 1 1 auto; position: relative; min-height: 0; background: var(--bg); }
+  .pane { position: absolute; inset: 0; display: none; }
+  .pane.active { display: block; }
+  .pane iframe { width: 100%; height: 100%; border: 0; background: var(--pane-bg); }
+  #pane-hint {
+    flex: 0 0 auto; padding: 4px 12px; font-size: 11px; color: var(--muted);
+    border-top: 1px solid var(--border); background: var(--panel);
+  }
+  #welcome {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  #welcome .box { max-width: 460px; width: 100%; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 26px; }
+  #welcome h1 { margin: 0 0 6px; font-size: 18px; }
+  #welcome p { margin: 0 0 16px; color: var(--muted); }
+  #welcome .row { display: flex; gap: 8px; margin-bottom: 10px; }
+  #welcome input[type=text] {
+    flex: 1; background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 12.5px;
+  }
+  #recents { margin-top: 16px; }
+  #recents h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin: 0 0 6px; }
+  .recent-item {
+    display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+    background: none; border: none; color: var(--text); padding: 6px 4px; border-radius: 6px; cursor: pointer; font-size: 12.5px;
+  }
+  .recent-item:hover { background: var(--panel-2); }
+  .recent-item .ts { margin-left: auto; color: var(--muted); font-size: 11px; }
+
+  /* ---------- Sidebar (right) ---------- */
+  #sidebar {
+    display: flex; flex-direction: column; min-height: 0;
+    background: var(--panel); border-left: 1px solid var(--border);
+  }
+  #filters { flex: 0 0 auto; padding: 10px 10px 8px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+  #search {
+    width: 100%; background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 12.5px;
+  }
+  #search:focus, #welcome input:focus { outline: none; border-color: var(--accent-dark); }
+  #filter-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+  #filter-row label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+  #cards { flex: 1 1 auto; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+  #cards .empty { color: var(--muted); text-align: center; padding: 30px 10px; font-size: 12px; }
+  #sidebar-footer {
+    flex: 0 0 auto; padding: 7px 12px; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 11.5px; display: flex; gap: 10px;
+  }
+  #sidebar-footer .done { color: var(--green); }
+
+  .card {
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 9px 10px; display: flex; flex-direction: column; gap: 7px;
+  }
+  .card.done { border-color: var(--done-border); }
+  .card.done .card-title { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--done-strike); }
+  .card-top { display: flex; align-items: flex-start; gap: 6px; }
+  .card-title {
+    flex: 1; background: none; border: none; color: var(--text); text-align: left;
+    font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 0; word-break: break-word;
+  }
+  .card-title:hover { color: var(--accent); }
+  .icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 20px; height: 20px; padding: 0 4px;
+    border: none; border-radius: 4px; background: none; color: var(--muted);
+    cursor: pointer; font-size: 12px; text-decoration: none;
+  }
+  .icon:hover { color: var(--text); background: var(--border); }
+  .icon.ok { color: var(--green); }
+  .card-url { display: flex; align-items: center; gap: 4px; font-size: 11.5px; }
+  .card-url a { color: var(--accent); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .card-url a:hover { text-decoration: underline; }
+  .card-mid { display: flex; gap: 6px; align-items: center; }
+  .btn-open {
+    flex: 1; background: var(--accent-dark); color: #fff; border: none; border-radius: 6px;
+    padding: 5px 8px; font-size: 12px; cursor: pointer;
+  }
+  .btn-open:hover { background: var(--accent); }
+  select.status {
+    background: var(--bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 6px; font-size: 12px; cursor: pointer;
+  }
+  .card-notes { display: flex; flex-direction: column; gap: 3px; }
+  .card-notes .label { display: flex; align-items: center; gap: 4px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+  .card-notes textarea {
+    background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px;
+    padding: 5px 7px; font-size: 12px; font-family: inherit; resize: vertical; min-height: 34px;
+  }
+  .card-notes textarea:focus { outline: none; border-color: var(--accent-dark); }
+  mark { background: var(--mark-bg); color: var(--mark-fg); border-radius: 2px; padding: 0 1px; }
+
+  /* ---------- Toast ---------- */
+  #toast {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%) translateY(8px);
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 14px; font-size: 12.5px; opacity: 0; pointer-events: none;
+    transition: opacity .2s, transform .2s; max-width: 70vw; z-index: 50;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.error { border-color: var(--danger); color: var(--danger); }
+  #toast.success { border-color: var(--green); }
+
+  @media (max-width: 760px) {
+    #app { grid-template-columns: 1fr; grid-template-rows: 1fr 45vh; }
+    #sidebar { border-left: none; border-top: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<header id="topbar">
+  <div id="logo" title="Close the current file and return to the welcome screen"><span class="gem">◆</span> Turnstone</div>
+  <span id="file-chip"><span id="file-chip-name"></span><button class="x" id="file-chip-x" title="Close current file">✕</button></span>
+  <span id="mode-badge">no file</span>
+  <span id="save-indicator"></span>
+  <span class="spacer"></span>
+  <button class="btn" id="btn-copy-link" title="Copy a ?file= link that reopens this exact file with its URL — handy for sharing" disabled>🔗 Link</button>
+  <button class="btn" id="btn-theme" title="Toggle light/dark theme">☀️</button>
+  <button class="btn" id="btn-export-csv" title="Download the current data as CSV" disabled>Export CSV</button>
+  <button class="btn" id="btn-export-xlsx" title="Download the current data as XLSX" disabled>Export XLSX</button>
+  <button class="btn" id="btn-restore" title="Re-open the last file used (permission may be requested)" hidden>Restore Workspace</button>
+  <button class="btn primary" id="btn-open">Open File…</button>
+  <input type="file" id="file-input" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+</header>
+
+<main id="app">
+  <!-- LEFT: tabbed iframe workspace -->
+  <section id="workspace">
+    <div id="tabbar"></div>
+    <div id="panes">
+      <div id="welcome">
+        <div class="box">
+          <h1>Turn your list into a workspace</h1>
+          <p>Load a local CSV/XLSX of URLs. Process each link in tabbed frames, track status &amp; notes, and auto-save back to the file (Chromium) or browser storage.</p>
+          <div class="row">
+            <button class="btn primary" id="btn-open-2">Choose CSV / XLSX…</button>
+            <button class="btn" id="btn-demo">Load demo list</button>
+          </div>
+          <div class="row">
+            <input type="text" id="url-input" placeholder="https://example.com/tasks.csv" spellcheck="false">
+            <button class="btn" id="btn-load-url">Load</button>
+          </div>
+          <p style="font-size:11px; color:var(--muted); margin:0 0 10px">Any public CSV/XLSX URL works (host must allow CORS). Deep-link support: <code>?file=&lt;url&gt;</code> or <code>?url=&lt;url&gt;</code>; add <code>&amp;open=1</code> to auto-open the first task.</p>
+          <div class="row">
+            <button class="btn" id="btn-test-csv" title="Load the bundled sample dataset">Load test CSV</button>
+            <button class="btn" id="btn-test-xlsx" title="Load the bundled sample dataset (as a mock XLSX parse)">Load test XLSX</button>
+          </div>
+          <p style="font-size:11px; color:var(--muted); margin:2px 0 0">Test buttons load a bundled sample dataset. Real files: use Open File…, a pasted URL, or the <code>?file=</code> param.</p>
+          <div id="recents" hidden>
+            <h2>Recent files</h2>
+            <div id="recents-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="pane-hint">If a site refuses to render (X-Frame-Options), it can’t be framed in a browser — use the ↗ button on its card to open it in a real browser tab.</div>
+  </section>
+
+  <!-- RIGHT: task sidebar (approved deviation from PRD's left-hand sidebar) -->
+  <aside id="sidebar">
+    <div id="filters">
+      <input type="search" id="search" placeholder="Search tasks…" autocomplete="off">
+      <div id="filter-row">
+        <label><input type="checkbox" id="hide-completed"> Hide completed</label>
+        <span id="filter-info" style="margin-left:auto"></span>
+      </div>
+    </div>
+    <div id="cards"><div class="empty">No file loaded yet.<br>Open a CSV/XLSX to populate task cards.</div></div>
+    <div id="sidebar-footer"><span id="count-total">0 tasks</span><span id="count-done" class="done">0 done</span><span id="count-left">0 left</span></div>
+  </aside>
+</main>
+
+<div id="toast"></div>
+
+<script>
+  /* Bundled test dataset (mirrors sample-links.csv / sample-links.xlsx in the repo root).
+     Inlined because the preview sandbox serves only index.html; production users
+     load real files via the native picker or ?file= (see testing-notes.md). */
+  window.TURNSTONE_TEST_DATA = {
+    name: 'sample-links.csv',
+    ext: 'csv',
+    sheetName: 'Sheet1',
+    data: [
+      ['Name', 'URL', 'Status', 'Notes'],
+      ['Apple Newsroom', 'https://www.apple.com/newsroom/', 'incomplete', 'Q3 earnings page'],
+      ['BBC Homepage', 'https://www.bbc.com/', 'complete', ''],
+      ['Changelog Nightly', 'https://changelog.com/nightly', 'incomplete', 'Skip the archive pages'],
+      ['Comma, Inc. Blog', 'https://example.com/comma-blog', 'complete', 'Note with, commas, and "quotes"'],
+      ['Demo Domain', 'https://example.com/', 'incomplete', ''],
+      ['GitHub Trending', 'https://github.com/trending', 'incomplete', 'Check weekly'],
+      ['Hacker News', 'https://news.ycombinator.com/', 'complete', 'Blocked in iframes'],
+      ['Sheets Example', 'https://example.com/sheet-demo', 'incomplete', ''],
+      ['Turnstone Repo', 'https://github.com/', 'incomplete', ''],
+      ['Wikipedia Portal', 'https://www.wikipedia.org/', 'incomplete', ''],
+    ],
+  };
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script>
+'use strict';
+/* =========================================================================
+   Project Turnstone — zero-server URL-list processor.
+   Vanilla JS. Workspace on the LEFT, task sidebar on the RIGHT (deviation).
+   ========================================================================= */
+
+const LOG = '[Turnstone]';
+const log  = (...a) => console.log(LOG, ...a);
+const warn = (...a) => console.warn(LOG, ...a);
+const err  = (...a) => console.error(LOG, ...a);
+
+/* ---------------------------- IndexedDB layer ---------------------------- */
+const DB_NAME = 'turnstone', DB_VER = 1;
+let idbPromise = null;
+
+function idbOpen() {
+  if (idbPromise) return idbPromise;
+  idbPromise = new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains('handles')) db.createObjectStore('handles', { keyPath: 'key' });
+      if (!db.objectStoreNames.contains('session')) db.createObjectStore('session', { keyPath: 'key' });
+      log('IndexedDB stores created');
+    };
+    req.onsuccess = () => { log('IndexedDB opened'); resolve(req.result); };
+    req.onerror = () => { err('IndexedDB open failed', req.error); reject(req.error); };
+  });
+  return idbPromise;
+}
+async function idbPut(store, value) {
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readwrite');
+    tx.objectStore(store).put(value);
+    tx.oncomplete = () => { log(`IDB put → ${store}/${value.key}`); res(); };
+    tx.onerror = () => { err(`IDB put failed → ${store}/${value.key}`, tx.error); rej(tx.error); };
+  });
+}
+async function idbGet(store, key) {
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const req = db.transaction(store).objectStore(store).get(key);
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => { err(`IDB get failed → ${store}/${key}`, req.error); rej(req.error); };
+  });
+}
+async function idbGetAll(store) {
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const req = db.transaction(store).objectStore(store).getAll();
+    req.onsuccess = () => res(req.result || []);
+    req.onerror = () => { err(`IDB getAll failed → ${store}`, req.error); rej(req.error); };
+  });
+}
+
+/* --------------------------------- State --------------------------------- */
+const state = {
+  name: null,          // file name or URL label
+  ext: 'csv',          // 'csv' | 'xlsx'
+  mode: null,          // 'fs' (File System Access) | 'fallback' | 'remote' | 'demo'
+  fileHandle: null,    // FileSystemFileHandle (Chromium only)
+  sheetName: 'Sheet1',
+  data: [],            // 2D array, exactly as parsed
+  hasHeader: false,
+  urlCol: 0, nameCol: -1, statusCol: -1, notesCol: -1,
+  status: [],          // virtual per-card status ('incomplete'|'complete'), cardIndex-based
+  notes: [],           // virtual per-card notes
+  isDirty: false,
+  search: '', hideCompleted: false,
+  sourceUrl: null,      // remote URL the file was fetched from (?file=/ pasted), enables 🔗 Link
+};
+
+const $ = (sel) => document.querySelector(sel);
+const els = {
+  modeBadge: $('#mode-badge'), saveIndicator: $('#save-indicator'),
+  btnOpen: $('#btn-open'), btnOpen2: $('#btn-open-2'), fileInput: $('#file-input'),
+  btnRestore: $('#btn-restore'), btnDemo: $('#btn-demo'),
+  fileChip: $('#file-chip'), fileChipName: $('#file-chip-name'), fileChipX: $('#file-chip-x'),
+  btnCopyLink: $('#btn-copy-link'),
+  urlInput: $('#url-input'), btnLoadUrl: $('#btn-load-url'),
+  btnExportCsv: $('#btn-export-csv'), btnExportXlsx: $('#btn-export-xlsx'),
+  btnTheme: $('#btn-theme'), btnTestCsv: $('#btn-test-csv'), btnTestXlsx: $('#btn-test-xlsx'),
+  welcome: $('#welcome'), recents: $('#recents'), recentsList: $('#recents-list'),
+  tabbar: $('#tabbar'), panes: $('#panes'),
+  search: $('#search'), hideCompleted: $('#hide-completed'), filterInfo: $('#filter-info'),
+  cards: $('#cards'),
+  countTotal: $('#count-total'), countDone: $('#count-done'), countLeft: $('#count-left'),
+  toast: $('#toast'),
+};
+
+/* ------------------------------- Utilities ------------------------------- */
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function highlight(text, q) {
+  const raw = String(text ?? '');
+  if (!q) return esc(raw);
+  const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+  return raw.split(rx).map(esc).join('<mark>' + esc(q) + '</mark>'); // split keeps separators; escape every part
+}
+function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+let toastTimer = null;
+function toast(msg, type = '') {
+  log('Toast:', msg);
+  els.toast.textContent = msg;
+  els.toast.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { els.toast.className = ''; }, 3500);
+}
+
+async function copyText(text, label = 'text') {
+  try {
+    await navigator.clipboard.writeText(text);
+    log(`Copied ${label} to clipboard (${text.length} chars)`);
+    return true;
+  } catch (e) {
+    warn('Clipboard API failed, falling back to execCommand', e);
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    log(`execCommand copy ${ok ? 'succeeded' : 'failed'} for ${label}`);
+    return ok;
+  }
+}
+
+/* ------------------------------ Parsing core ------------------------------ */
+const HEADER_URL_RE = /^(url|link|href|website|web site|site|address)\b/i;
+const HEADER_NAME_RE = /^(name|title|task|label|page|description)\b/i;
+const URL_VALUE_RE = /^https?:\/\//i;
+
+function parseCsvText(text) {
+  log(`Parsing CSV text (${text.length} chars) with PapaParse`);
+  const result = Papa.parse(text.trim(), { skipEmptyLines: 'greedy' });
+  if (result.errors.length) warn('PapaParse reported errors:', result.errors.slice(0, 3));
+  return result.data.map(row => row.map(c => String(c ?? '')));
+}
+
+function parseXlsxBuf(buf, sheetPick) {
+  log(`Parsing XLSX binary (${buf.byteLength} bytes) with SheetJS${sheetPick ? `, sheet "${sheetPick}"` : ''}`);
+  const wb = XLSX.read(buf, { type: 'array' });
+  const name = sheetPick && wb.SheetNames.includes(sheetPick) ? sheetPick : wb.SheetNames[0];
+  const ws = wb.Sheets[name];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' })
+    .map(row => row.map(c => String(c ?? '')));
+  log(`XLSX parsed: sheet "${name}", ${rows.length} rows`);
+  return { rows, sheetName: name };
+}
+
+/** Detect header row + column roles from a 2D matrix. */
+function analyzeMatrix(data) {
+  // Trim fully-empty trailing rows
+  while (data.length && data[data.length - 1].every(c => !String(c).trim())) data.pop();
+
+  const width = data.reduce((m, r) => Math.max(m, r.length), 1);
+  const first = (data[0] || []).map(c => String(c).trim());
+
+  // Header heuristic: known header words, or a first row with no URL values while later rows have URLs.
+  const firstRowHasUrl = first.some(c => URL_VALUE_RE.test(c));
+  const hasHeader = first.some(c => HEADER_URL_RE.test(c) || HEADER_NAME_RE.test(c) || /^(status|notes?|comment)\b/i.test(c))
+    || (!firstRowHasUrl && data.slice(1, 51).some(r => r.some(c => URL_VALUE_RE.test(String(c)))));
+
+  const header = hasHeader ? first : [];
+  let urlCol = -1, nameCol = -1, statusCol = -1, notesCol = -1;
+
+  if (hasHeader) {
+    header.forEach((h, i) => {
+      if (urlCol < 0 && HEADER_URL_RE.test(h)) urlCol = i;
+      if (statusCol < 0 && /^status\b/i.test(h)) statusCol = i;
+      if (notesCol < 0 && /^(notes?|comments?)\b/i.test(h)) notesCol = i;
+      if (nameCol < 0 && HEADER_NAME_RE.test(h)) nameCol = i;
+    });
+  }
+  // Fallback URL column: the column with the most http-prefixed values in the first 50 rows.
+  if (urlCol < 0) {
+    let best = -1, bestCount = 0;
+    for (let c = 0; c < width; c++) {
+      let n = 0;
+      for (let r = hasHeader ? 1 : 0; r < Math.min(data.length, 50); r++) if (URL_VALUE_RE.test(String(data[r][c] || '').trim())) n++;
+      if (n > bestCount) { bestCount = n; best = c; }
+    }
+    urlCol = bestCount > 0 ? best : 0;
+  }
+  // Fallback name column: first non-URL column with any text.
+  if (nameCol < 0) {
+    for (let c = 0; c < width; c++) {
+      if (c === urlCol) continue;
+      if (data.some(r => String(r[c] || '').trim())) { nameCol = c; break; }
+    }
+  }
+  log(`Matrix analyzed: header=${hasHeader}, urlCol=${urlCol}, nameCol=${nameCol}, statusCol=${statusCol}, notesCol=${notesCol}, width=${width}`);
+  return { hasHeader, urlCol, nameCol, statusCol, notesCol, width };
+}
+
+/** Load a normalized 2D matrix into app state. */
+function loadMatrix(data, meta) {
+  log(`loadMatrix: ${data.length} rows from "${meta.name}" (mode=${meta.mode}, ext=${meta.ext})`);
+  const a = analyzeMatrix(data);
+  const bodyRows = data.length - (a.hasHeader ? 1 : 0);
+
+  state.name = meta.name;
+  state.ext = meta.ext;
+  state.mode = meta.mode;
+  state.fileHandle = meta.handle || null;
+  state.sourceUrl = meta.sourceUrl || null;
+  state.sheetName = meta.sheetName || 'Sheet1';
+  state.data = data;
+  Object.assign(state, a);
+
+  // Seed per-card status/notes. Priority: explicit session restore > the file's
+  // own Status/Notes columns (round-trip) > blank state.
+  const n = bodyRows;
+  const fileHasCols = a.hasHeader && (a.statusCol >= 0 || a.notesCol >= 0);
+  const COMPLETE_RE = /^(complete|completed|done|yes|true|1|x)$/i;
+  const seeded = Array.from({ length: n }, (_, i) => {
+    const row = data[i + (a.hasHeader ? 1 : 0)] || [];
+    const raw = a.statusCol >= 0 ? String(row[a.statusCol] || '').trim() : '';
+    return COMPLETE_RE.test(raw) ? 'complete' : 'incomplete';
+  });
+  const seededNotes = a.hasHeader && a.notesCol >= 0
+    ? Array.from({ length: n }, (_, i) => String((data[i + (a.hasHeader ? 1 : 0)] || [])[a.notesCol] ?? ''))
+    : null;
+  const restoring = Array.isArray(meta.status) && meta.status.length === n;
+  state.status = restoring ? meta.status.slice() : seeded;
+  state.notes  = restoring ? (Array.isArray(meta.notes) && meta.notes.length === n ? meta.notes.slice() : Array(n).fill(''))
+               : (seededNotes || Array(n).fill(''));
+  if (fileHasCols && !restoring) log(`Seeded ${seeded.filter(s => s === 'complete').length} 'complete' status(es) from the file's Status column (round-trip)`);
+
+  state.isDirty = false;
+  closeAllTabs();
+  els.search.value = ''; state.search = '';
+  els.hideCompleted.checked = false; state.hideCompleted = false;
+
+  updateChrome();
+  renderCards();
+  els.welcome.hidden = true;
+  els.welcome.style.display = 'none';
+  toast(`Loaded ${n} task${n === 1 ? '' : 's'} from ${state.name}`, 'success');
+}
+
+/** Read a File/Blob (picked locally) and load it. */
+async function loadFromFileObject(file, handle) {
+  state.sourceUrl = null; // local picks are not shareable via ?file=
+  const ext = /\.xlsx$/i.test(file.name) ? 'xlsx' : 'csv';
+  log(`Reading picked file "${file.name}" (${file.size} bytes, ext=${ext}, fsHandle=${!!handle})`);
+  try {
+    let matrix, sheetName;
+    if (ext === 'xlsx') {
+      const buf = await file.arrayBuffer();
+      ({ rows: matrix, sheetName } = parseXlsxBuf(buf));
+    } else {
+      matrix = parseCsvText(await file.text());
+    }
+    if (!matrix.length) { toast('File appears to be empty', 'error'); warn('Empty file:', file.name); return; }
+    state.sourceUrl = null; // local picks aren't shareable via ?file=
+    loadMatrix(matrix, { name: file.name, ext, mode: handle ? 'fs' : 'fallback', handle, sheetName, status: meta?.status, notes: meta?.notes });
+    await rememberFile(handle ? { key: 'active', kind: 'fs', name: file.name, ts: Date.now(), handle }
+                              : { key: 'active', kind: 'fallback', name: file.name, ts: Date.now(), handle: null });
+    scheduleSave(0); // persist a session snapshot right away (fallback modes)
+  } catch (e) {
+    err('Failed to load file', file.name, e);
+    toast(`Could not parse "${file.name}": ${e.message}`, 'error');
+  }
+}
+
+/** If this exact file was previously worked on in fallback mode, reuse its statuses/notes. */
+async function readSessionMetaFor(name) {
+  try {
+    const sess = await idbGet('session', 'session');
+    if (sess && sess.name === name) { log('Found prior fallback session for', name); return sess; }
+  } catch (e) { warn('No session meta', e); }
+  return null;
+}
+
+/* --------------------------- File acquisition ---------------------------- */
+const FS_PICK_OPTS = {
+  types: [{
+    description: 'CSV or XLSX file',
+    accept: { 'text/csv': ['.csv'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] },
+  }],
+  excludeAcceptAllOption: false,
+  multiple: false,
+};
+
+async function openLocalFile() {
+  log(`Open file requested. showOpenFilePicker available: ${!!window.showOpenFilePicker}`);
+  if (window.showOpenFilePicker) {
+    try {
+      const [handle] = await window.showOpenFilePicker(FS_PICK_OPTS);
+      log('File handle acquired:', handle.name);
+      const file = await handle.getFile();
+      await loadFromFileObject(file, handle);
+    } catch (e) {
+      if (e.name === 'AbortError') { log('File picker aborted by user'); return; }
+      err('showOpenFilePicker failed, using fallback input', e);
+      els.fileInput.click();
+    }
+  } else {
+    log('File System Access API unavailable → <input type=file> fallback');
+    els.fileInput.click();
+  }
+}
+
+/** Load a remote file from ?file=/?url= param or the welcome-panel input. */
+const XLSX_MAGIC = [0x50, 0x4b, 0x03, 0x04]; // ZIP 'PK\x03\x04' — every modern .xlsx
+function looksLikeXlsxBuf(buf) {
+  return buf.byteLength >= 4 && XLSX_MAGIC.every((b, i) => new DataView(buf).getUint8(i) === b);
+}
+
+async function loadFromUrl(fileUrl) {
+  fileUrl = String(fileUrl || '').trim();
+  let parsed;
+  try {
+    parsed = new URL(fileUrl, location.href);
+  } catch (e) {
+    toast('That does not look like a valid URL', 'error');
+    warn('URL parse failed for', fileUrl, e);
+    return;
+  }
+  if (!/^https?:$/.test(parsed.protocol)) { toast('Only http(s) URLs can be fetched', 'error'); return; }
+  // Bare words resolve as relative URLs — require a scheme or at least a dot before wasting a fetch.
+  if (!/^[a-z][a-z0-9+.\-]*:/i.test(fileUrl) && !fileUrl.includes('.')) {
+    toast('That does not look like a valid URL', 'error');
+    warn('Rejected non-URL input:', fileUrl);
+    return;
+  }
+  if (parsed.href === location.href) { toast('That URL is this app itself — paste a data file URL', 'error'); return; }
+
+  log(`Loading remote file: ${fileUrl}`);
+  toast(`Fetching ${parsed.pathname.split('/').pop() || parsed.host}…`);
+  els.btnLoadUrl.disabled = true;
+  try {
+    const res = await fetch(fileUrl, { redirect: 'follow' });
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+    const buf = await res.arrayBuffer();
+    log(`Fetched ${buf.byteLength} bytes (content-type: ${res.headers.get('content-type') || 'unknown'})`);
+
+    // Format detection: content first (magic bytes), URL extension, then Content-Type. Never trust extension alone.
+    const ct = (res.headers.get('content-type') || '').toLowerCase();
+    const extHint = /\.xlsx$/i.test(parsed.pathname) ? 'xlsx' : /\.(csv|txt)$/i.test(parsed.pathname) ? 'csv' : null;
+    const isXlsx = looksLikeXlsxBuf(buf) || (!extHint && /spreadsheetml|excel|msexcel/i.test(ct));
+    const ext = isXlsx ? 'xlsx' : 'csv';
+    log(`Format detection: magic=${looksLikeXlsxBuf(buf)}, extHint=${extHint}, content-type="${ct}" → ${ext}`);
+
+    // Guard: some hosts serve an HTML error page with HTTP 200 — fail loudly instead of parsing garbage.
+    if (!isXlsx) {
+      const headText = new TextDecoder('utf-8').decode(buf.slice(0, 512)).trimStart().toLowerCase();
+      if (headText.startsWith('<!doctype html') || headText.startsWith('<html')) {
+        throw new Error('URL returned a web page, not a CSV/XLSX file');
+      }
+    }
+
+    let matrix, sheetName;
+    if (ext === 'xlsx') {
+      ({ rows: matrix, sheetName } = parseXlsxBuf(buf));
+      if (wbHasMultipleSheets(buf)) {
+        const pick = await pickSheetName(buf, sheetName);
+        if (pick === null) { log('User cancelled sheet picker — load aborted'); return; }
+        ({ rows: matrix, sheetName } = parseXlsxBuf(buf, pick));
+      }
+    } else {
+      matrix = parseCsvText(new TextDecoder('utf-8').decode(buf));
+    }
+    if (!matrix.length) { toast('Remote file appears to be empty', 'error'); return; }
+
+    // If this URL was worked on before in fallback mode, restore its statuses/notes (round-trip for remote files).
+    const meta = await readSessionMetaFor(fileUrl);
+    loadMatrix(matrix, { name: parsed.pathname.split('/').pop() || parsed.host, ext, mode: 'remote', sheetName, sourceUrl: fileUrl, status: meta?.status, notes: meta?.notes });
+    await rememberFile({ key: 'active', kind: 'url', name: state.name, ts: Date.now(), handle: null, url: fileUrl });
+    scheduleSave(0);
+  } catch (e) {
+    err('Remote file load failed', e);
+    const hint = /Failed to fetch|NetworkError|load failed/i.test(String(e.message))
+      ? 'The host may block cross-origin reads (CORS) — or the URL is unreachable.'
+      : '';
+    toast(`Fetch failed: ${e.message}. ${hint}`, 'error');
+  } finally {
+    els.btnLoadUrl.disabled = false;
+  }
+}
+
+/** Sheet-name list for the workbook behind `buf` (SheetJS returns an array OR {SheetNames}). */
+function sheetNamesOf(buf) {
+  const info = XLSX.read(buf, { type: 'array', bookSheets: true });
+  return Array.isArray(info) ? info : (info && info.SheetNames) || [];
+}
+
+/** True when the workbook behind `buf` has more than one sheet. */
+function wbHasMultipleSheets(buf) {
+  try { return sheetNamesOf(buf).length > 1; }
+  catch (e) { warn('Could not inspect sheet list', e); return false; }
+}
+
+/** Ask the user which worksheet to load (only for multi-sheet workbooks). Returns null when cancelled. */
+function pickSheetName(buf, current) {
+  return new Promise((resolve) => {
+    const names = sheetNamesOf(buf);
+    log(`Multi-sheet workbook detected: [${names.join(', ')}]`);
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:999';
+    overlay.innerHTML = `
+      <div style="background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:22px;min-width:280px">
+        <h3 style="margin:0 0 4px;font-size:15px">Multiple sheets found</h3>
+        <p style="margin:0 0 12px;font-size:12px;color:var(--muted)">Which worksheet holds your task list?</p>
+        ${names.map(n => `<button data-sheet="${esc(n)}" style="display:block;width:100%;text-align:left;margin:4px 0;padding:7px 12px;font-size:13px;cursor:pointer;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text)${n === current ? ';border-color:var(--accent-dark);font-weight:600' : ''}">${esc(n)}</button>`).join('')}
+        <button id="sheet-cancel" style="margin-top:8px;padding:6px 12px;font-size:12px;cursor:pointer;border-radius:8px;border:1px solid var(--border);background:none;color:var(--muted)">Cancel</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#sheet-cancel').onclick = () => { overlay.remove(); resolve(null); };
+    overlay.querySelectorAll('button[data-sheet]').forEach(b => { b.onclick = () => { const s = b.dataset.sheet; overlay.remove(); log('User picked sheet:', s); resolve(s); }; });
+  });
+}
+
+/* --------------------- Restore / recent files (IDB) ---------------------- */
+async function rememberFile(activeRecord) {
+  try {
+    await idbPut('handles', activeRecord);
+    await idbPut('handles', { key: activeRecord.name, kind: activeRecord.kind, name: activeRecord.name, ts: activeRecord.ts, handle: activeRecord.handle });
+    els.btnRestore.hidden = false;
+    log('File handle remembered in IndexedDB (active + recents)');
+  } catch (e) { warn('Could not persist file handle', e); }
+}
+
+async function restoreLastFile() {
+  log('Restore Workspace clicked');
+  try {
+    const rec = await idbGet('handles', 'active');
+    if (!rec) { toast('No previous workspace found', 'error'); return; }
+    if (rec.kind === 'fs' && rec.handle) {
+      let perm = await rec.handle.queryPermission({ mode: 'readwrite' });
+      log(`Saved handle permission: ${perm}`);
+      if (perm !== 'granted') {
+        perm = await rec.handle.requestPermission({ mode: 'readwrite' });
+        log(`Requested handle permission: ${perm}`);
+      }
+      if (perm !== 'granted') { toast('Permission denied — pick the file again', 'error'); return; }
+      const file = await rec.handle.getFile();
+      await loadFromFileObject(file, rec.handle);
+    } else {
+      const sess = await idbGet('session', 'session');
+      if (!sess || !sess.data) { toast('No saved browser session found', 'error'); return; }
+      log('Restoring fallback session from IndexedDB:', sess.name);
+      loadMatrix(sess.data, { name: sess.name, ext: sess.ext || 'csv', mode: 'fallback', sheetName: sess.sheetName, status: sess.status, notes: sess.notes, sourceUrl: sess.sourceUrl || null });
+      state.isDirty = true; // still needs exporting
+      updateSaveIndicator();
+      scheduleSave(0);
+    }
+  } catch (e) {
+    err('Restore failed', e);
+    toast(`Restore failed: ${e.message}`, 'error');
+  }
+}
+
+async function renderRecents() {
+  try {
+    const all = (await idbGetAll('handles')).filter(r => r.name && r.ts).sort((a, b) => b.ts - a.ts).slice(0, 5);
+    if (!all.length) return;
+    els.recents.hidden = false;
+    els.recentsList.innerHTML = '';
+    for (const r of all) {
+      const btn = document.createElement('button');
+      btn.className = 'recent-item';
+      btn.innerHTML = `<span>📄 ${esc(r.name)}</span><span class="ts">${new Date(r.ts).toLocaleString()}</span>`;
+      btn.addEventListener('click', () => {
+        log('Recent file clicked:', r.name);
+        if (r.kind === 'fs' && r.handle) { restoreHandle(r.handle); }
+        else if (r.kind === 'url' && r.url) { loadFromUrl(r.url); }
+        else { restoreLastFile(); }
+      });
+      els.recentsList.appendChild(btn);
+    }
+    log(`Rendered ${all.length} recent file(s)`);
+  } catch (e) { warn('Recents render failed', e); }
+}
+
+async function restoreHandle(handle) {
+  try {
+    let perm = await handle.queryPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') perm = await handle.requestPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') { toast('Permission denied — pick the file again', 'error'); return; }
+    await loadFromFileObject(await handle.getFile(), handle);
+  } catch (e) {
+    err('Recent-file restore failed', e);
+    toast(`Could not reopen file: ${e.message}`, 'error');
+  }
+}
+
+/* ------------------------------- Rendering ------------------------------- */
+function cardCount() { return state.data.length - (state.hasHeader ? 1 : 0); }
+
+function updateChrome() {
+  const modeLabels = { fs: 'file write-back ON', fallback: 'fallback: browser storage', remote: 'remote file (read-only source)', demo: 'demo data' };
+  els.modeBadge.textContent = `${state.mode ? modeLabels[state.mode] : 'no file'} · ${state.ext.toUpperCase()}`;
+  els.modeBadge.className = state.mode === 'fs' ? 'fs' : '';
+  els.modeBadge.id = 'mode-badge';
+  const has = cardCount() > 0;
+  els.btnExportCsv.disabled = !has;
+  els.btnExportXlsx.disabled = !has;
+  // File chip + shareable-link button (only when the source is a fetchable URL)
+  els.fileChip.classList.toggle('on', !!state.name && state.mode !== null);
+  els.fileChipName.textContent = state.name || '';
+  els.fileChipName.title = state.sourceUrl ? `${state.name} — from ${state.sourceUrl}` : (state.name || '');
+  els.btnCopyLink.disabled = !state.sourceUrl;
+  updateSaveIndicator();
+}
+
+function updateSaveIndicator() {
+  const el = els.saveIndicator;
+  el.className = '';
+  if (!state.mode) { el.textContent = ''; return; }
+  if (state.isDirty) { el.className = 'dirty'; el.textContent = '● unsaved changes'; }
+  else if (state.lastSavedAt) {
+    el.className = 'saved';
+    el.textContent = `✓ saved ${state.lastSavedWhere || ''} · ${new Date(state.lastSavedAt).toLocaleTimeString()}`;
+  } else el.textContent = '';
+}
+
+function renderCards() {
+  const q = state.search.trim().toLowerCase();
+  const total = cardCount();
+  let visible = 0;
+  log(`renderCards: total=${total}, search="${q}", hideCompleted=${state.hideCompleted}`);
+  const frag = document.createDocumentFragment();
+
+  for (let i = 0; i < total; i++) {
+    const row = state.data[i + (state.hasHeader ? 1 : 0)] || [];
+    const url = String(row[state.urlCol] || '').trim();
+    const name = String(state.nameCol >= 0 ? row[state.nameCol] : '') || url;
+    const status = state.status[i] || 'incomplete';
+    const notes = state.notes[i] || '';
+
+    if (state.hideCompleted && status === 'complete') continue;
+    if (q && !(`${name} ${url} ${notes}`.toLowerCase().includes(q))) continue;
+    visible++;
+
+    const card = document.createElement('article');
+    card.className = 'card' + (status === 'complete' ? ' done' : '');
+    card.dataset.rowIndex = i; // PRD: DOM↔array mapping via data-row-index
+    card.innerHTML = `
+      <div class="card-top">
+        <button class="card-title" title="Open in workspace">${highlight(name, state.search.trim())}</button>
+        <button class="icon copy" data-copy="name" data-i="${i}" title="Copy name">⧉</button>
+        <a class="icon" href="${esc(url)}" target="_blank" rel="noopener" title="Open in new browser tab">↗</a>
+      </div>
+      <div class="card-url">
+        <a href="${esc(url)}" target="_blank" rel="noopener" title="${esc(url)}">${highlight(url, state.search.trim())}</a>
+        <button class="icon copy" data-copy="url" data-i="${i}" title="Copy URL">⧉</button>
+      </div>
+      <div class="card-mid">
+        <button class="btn-open" data-open="${i}" title="Open in a workspace tab">Open ▶</button>
+        <select class="status" data-status="${i}" title="Task status">
+          <option value="incomplete" ${status !== 'complete' ? 'selected' : ''}>Incomplete</option>
+          <option value="complete" ${status === 'complete' ? 'selected' : ''}>Complete</option>
+        </select>
+      </div>
+      <div class="card-notes">
+        <span class="label">Notes <button class="icon copy" data-copy="notes" data-i="${i}" title="Copy notes">⧉</button></span>
+        <textarea rows="2" placeholder="Add a note…" data-notes="${i}">${esc(notes)}</textarea>
+      </div>`;
+    frag.appendChild(card);
+  }
+
+  els.cards.innerHTML = '';
+  if (!visible) els.cards.innerHTML = `<div class="empty">${total ? 'No tasks match your filters.' : 'No file loaded yet.<br>Open a CSV/XLSX to populate task cards.'}</div>`;
+  else els.cards.appendChild(frag);
+
+  const done = state.status.filter(s => s === 'complete').length;
+  els.countTotal.textContent = `${total} task${total === 1 ? '' : 's'}`;
+  els.countDone.textContent = `${done} done`;
+  els.countLeft.textContent = `${total - done} left`;
+  els.filterInfo.textContent = q || state.hideCompleted ? `${visible} shown` : '';
+  log(`renderCards done: ${visible} visible, ${done} complete`);
+}
+
+/* ------------------------- Tabbed iframe workspace ------------------------ */
+let tabs = [];        // { id, url, title, rowId }
+let activeTabId = null;
+let tabSeq = 0;
+
+/** PRD Task 3.2: open (or focus) a URL in a tabbed iframe. */
+function openInIframe(url, rowId) {
+  if (!url) { warn('openInIframe called with empty URL'); return; }
+  const existing = tabs.find(t => t.rowId === rowId && t.url === url);
+  if (existing) { log(`Tab for row ${rowId} already open → focusing tab ${existing.id}`); activateTab(existing.id); return; }
+
+  const id = 'tab-' + (++tabSeq);
+  const title = tabTitle(url, rowId);
+  log(`Opening iframe tab ${id}: "${title}" → ${url}`);
+  tabs.push({ id, url, title, rowId });
+
+  const pane = document.createElement('div');
+  pane.className = 'pane'; pane.id = id; pane.dataset.tabId = id;
+  pane.innerHTML = `<iframe src="${esc(url)}" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen"></iframe>`;
+  els.panes.appendChild(pane);
+
+  renderTabbar();
+  activateTab(id);
+}
+
+function tabTitle(url, rowId) {
+  const row = state.data[rowId + (state.hasHeader ? 1 : 0)] || [];
+  const name = String(state.nameCol >= 0 ? row[state.nameCol] : '').trim();
+  let t = name || url.replace(/^https?:\/\//, '');
+  if (t.length > 26) t = t.slice(0, 25) + '…';
+  return t;
+}
+
+function renderTabbar() {
+  els.tabbar.innerHTML = '';
+  for (const t of tabs) {
+    const tab = document.createElement('div');
+    tab.className = 'tab' + (t.id === activeTabId ? ' active' : '');
+    tab.dataset.tabId = t.id;
+    tab.title = t.url;
+    tab.innerHTML = `
+      <span class="tab-title">${esc(t.title)}</span>
+      <a class="tab-ext" href="${esc(t.url)}" target="_blank" rel="noopener" title="Open in new browser tab">↗</a>
+      <button class="tab-close" title="Close tab">✕</button>`;
+    els.tabbar.appendChild(tab);
+  }
+}
+
+/** PRD Task 3.3: switch tabs by hiding/showing panes (iframes never reload). */
+function activateTab(id) {
+  activeTabId = id;
+  const target = tabs.find(t => t.id === id);
+  log(`Activating tab ${id}${target ? ` (${target.title})` : ''}`);
+  for (const pane of els.panes.querySelectorAll('.pane')) pane.classList.toggle('active', pane.id === id);
+  renderTabbar();
+}
+
+function closeTab(id) {
+  const idx = tabs.findIndex(t => t.id === id);
+  if (idx < 0) return;
+  log(`Closing tab ${id} (${tabs[idx].title})`);
+  els.panes.querySelector(`#${CSS.escape(id)}`)?.remove(); // destroys the iframe
+  tabs.splice(idx, 1);
+  if (activeTabId === id) {
+    const next = tabs[Math.min(idx, tabs.length - 1)];
+    activeTabId = next ? next.id : null;
+  }
+  renderTabbar();
+  if (activeTabId) activateTab(activeTabId);
+}
+
+function closeAllTabs() {
+  if (tabs.length) log(`Closing all ${tabs.length} tab(s) for new file`);
+  tabs = []; activeTabId = null;
+  els.tabbar.innerHTML = '';
+  els.panes.querySelectorAll('.pane').forEach(p => p.remove());
+}
+
+/* ------------------------ Write-back & persistence ----------------------- */
+let saveTimer = null;
+
+/** PRD Task 4.1: debounced auto-save (1.2s in FS mode, 0.7s fallback). */
+function markDirty() {
+  state.isDirty = true;
+  updateSaveIndicator();
+  scheduleSave();
+}
+function scheduleSave(delay) {
+  clearTimeout(saveTimer);
+  const d = delay ?? (state.mode === 'fs' ? 1200 : 700);
+  saveTimer = setTimeout(saveNow, d);
+}
+
+async function saveNow() {
+  if (!state.mode || !cardCount()) return;
+  clearTimeout(saveTimer);
+  const t0 = performance.now();
+  log(`saveNow: mode=${state.mode}, dirty=${state.isDirty}`);
+  try {
+    if (state.mode === 'fs' && state.fileHandle) {
+      const perm = await state.fileHandle.queryPermission({ mode: 'readwrite' });
+      if (perm !== 'granted') {
+        warn('Write permission lost — cannot silently save. Data kept in memory.');
+        toast('File permission expired — use Restore Workspace to re-authorize, then edit again.', 'error');
+        await persistSessionSnapshot(); // safety net
+        return;
+      }
+      await writeBackToFile();
+      state.isDirty = false;
+      state.lastSavedAt = Date.now(); state.lastSavedWhere = 'to file';
+      log(`Wrote file "${state.name}" in ${(performance.now() - t0).toFixed(0)}ms`);
+    } else {
+      await persistSessionSnapshot();
+      state.isDirty = state.mode !== 'fs'; // fallback stays dirty until exported
+      state.lastSavedAt = Date.now(); state.lastSavedWhere = 'to browser storage';
+      log(`Saved session snapshot in ${(performance.now() - t0).toFixed(0)}ms`);
+    }
+  } catch (e) {
+    err('Save failed', e);
+    toast(`Save failed: ${e.message}`, 'error');
+  }
+  updateSaveIndicator();
+}
+
+/** Merge virtual Status/Notes columns into an export matrix. */
+function buildExportMatrix() {
+  let next = state.data.reduce((m, r) => Math.max(m, r.length), 1);
+  const stCol = state.statusCol >= 0 ? state.statusCol : next++;
+  const ntCol = state.notesCol >= 0 ? state.notesCol : next++;
+
+  const out = [];
+  if (state.hasHeader) {
+    const header = state.data[0].slice();
+    while (header.length < next) header.push('');
+    header[stCol] = 'Status';
+    header[ntCol] = 'Notes';
+    out.push(header);
+  } else {
+    out.push(Array.from({ length: next }, (_, c) => c === state.urlCol ? 'URL' : c === stCol ? 'Status' : c === ntCol ? 'Notes' : `Column ${c + 1}`));
+    log('No header row in source — a header row will be added on write-back to persist Status/Notes');
+  }
+  for (let i = 0; i < cardCount(); i++) {
+    const row = (state.data[i + (state.hasHeader ? 1 : 0)] || []).slice();
+    while (row.length < next) row.push('');
+    row[stCol] = state.status[i] || 'incomplete';
+    row[ntCol] = state.notes[i] || '';
+    out.push(row);
+  }
+  log(`buildExportMatrix: ${out.length} rows × ${next} cols (status@${stCol}, notes@${ntCol})`);
+  return out;
+}
+
+/** PRD Task 4.1: silent write-back via File System Access API. */
+async function writeBackToFile() {
+  const matrix = buildExportMatrix();
+  const writable = await state.fileHandle.createWritable();
+  try {
+    if (state.ext === 'xlsx') {
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(matrix), sanitizeSheetName(state.sheetName));
+      await writable.write(XLSX.write(wb, { type: 'array', bookType: 'xlsx' }));
+    } else {
+      await writable.write(Papa.unparse(matrix));
+    }
+  } finally {
+    await writable.close();
+  }
+  log(`Write-back complete (${state.ext})`);
+}
+
+function sanitizeSheetName(n) {
+  const clean = String(n || 'Sheet1').replace(/[\\/?*[\]:]/g, '_');
+  return clean.slice(0, 31) || 'Sheet1';
+}
+
+/** PRD Task 4.3: fallback persistence — full snapshot to IndexedDB. */
+async function persistSessionSnapshot() {
+  try {
+    await idbPut('session', {
+      key: 'session', name: state.name, ext: state.ext, sheetName: state.sheetName,
+      data: state.data, status: state.status, notes: state.notes, sourceUrl: state.sourceUrl, ts: Date.now(),
+    });
+    log(`Session snapshot persisted (${cardCount()} cards)`);
+  } catch (e) {
+    err('Session snapshot failed (file too large for IndexedDB?)', e);
+  }
+}
+
+/* PRD Task 4.3: export via Blob download (always available). */
+function exportFile(kind) {
+  const matrix = buildExportMatrix();
+  const base = (state.name || 'turnstone').replace(/\.(csv|xlsx)$/i, '');
+  const a = document.createElement('a');
+  if (kind === 'xlsx') {
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(matrix), sanitizeSheetName(state.sheetName));
+    const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+    a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    a.download = base + '.xlsx';
+  } else {
+    a.href = URL.createObjectURL(new Blob([Papa.unparse(matrix)], { type: 'text/csv;charset=utf-8' }));
+    a.download = base + '-turnstone.csv';
+  }
+  document.body.appendChild(a); a.click(); a.remove();
+  log(`Exported ${a.download} (${kind})`);
+  toast(`Exported ${a.download}`, 'success');
+}
+
+/* PRD Task 4.4: strict beforeunload guard in fallback/remote modes. */
+window.addEventListener('beforeunload', (e) => {
+  if (state.mode && state.mode !== 'fs' && state.isDirty) {
+    warn('beforeunload blocked: unexported changes in fallback mode');
+    e.preventDefault();
+    e.returnValue = ''; // required for Chrome
+    return 'You have unexported changes. Export CSV/XLSX before leaving.';
+  }
+});
+// Safety net: flush pending debounced saves when the tab is hidden.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && state.isDirty) { log('Visibility hidden → flushing pending save'); saveNow(); }
+});
+
+/* ----------------------------- Demo dataset ------------------------------ */
+const DEMO_CSV = `Name,URL,Notes
+Example Domain,https://example.com/,
+HTTPBin HTML,https://httpbin.org/html/,
+MDN Web Docs,https://developer.mozilla.org/,
+OpenStreetMap Embed,https://www.openstreetmap.org/export/embed.html?bbox=-0.2%2C51.4%2C0.0%2C51.6&layer=mapnik,
+Wikipedia,https://en.wikipedia.org/wiki/Main_Page,`;
+
+function loadDemo() {
+  log('Loading demo dataset');
+  const matrix = parseCsvText(DEMO_CSV);
+  loadMatrix(matrix, { name: 'demo-links.csv', ext: 'csv', mode: 'demo', sourceUrl: null });
+  scheduleSave(0);
+}
+
+/* ------------------------------ Event wiring ----------------------------- */
+els.btnOpen.addEventListener('click', openLocalFile);
+els.btnOpen2.addEventListener('click', openLocalFile);
+els.fileInput.addEventListener('change', async () => {
+  const f = els.fileInput.files[0];
+  els.fileInput.value = '';
+  if (f) await loadFromFileObject(f, null);
+});
+els.btnRestore.addEventListener('click', restoreLastFile);
+els.btnDemo.addEventListener('click', loadDemo);  els.btnCopyLink.addEventListener('click', async () => {
+    if (!state.sourceUrl) return;
+    const link = `${location.origin}${location.pathname}?file=${encodeURIComponent(state.sourceUrl)}`;
+    await copyText(link, 'shareable ?file= link');
+    toast('Link copied — anyone opening it gets this same file', 'success');
+  });
+
+  els.fileChipX.addEventListener('click', () => closeCurrentFile());
+  $('#logo').addEventListener('click', () => closeCurrentFile());
+
+  els.urlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const v = els.urlInput.value.trim();
+      if (v) loadFromUrl(v);
+    }
+  });
+
+  els.btnLoadUrl.addEventListener('click', () => { const v = els.urlInput.value.trim(); if (v) loadFromUrl(v); });
+els.urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') els.btnLoadUrl.click(); });
+els.btnExportCsv.addEventListener('click', () => exportFile('csv'));
+els.btnExportXlsx.addEventListener('click', () => exportFile('xlsx'));
+els.btnTestCsv.addEventListener('click', () => loadTestFile('csv'));
+els.btnTestXlsx.addEventListener('click', () => loadTestFile('xlsx'));
+
+/** Preview-sandbox test loader: consumes window.TURNSTONE_TEST_DATA (sample-links.js).
+    Production paths (native picker, ?file=) are unaffected — see testing-notes.md. */
+function loadTestFile(ext) {
+  const td = window.TURNSTONE_TEST_DATA;
+  if (!td) { toast('Test dataset not found — is sample-links.js loaded?', 'error'); return; }
+  log(`Loading test dataset (requested as ${ext}, bundled as ${td.ext})`);
+  if (ext === 'xlsx') {
+    // Exercise the real XLSX pipeline: build a workbook from the sample data and parse it back.
+    try {
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(td.data), 'Links');
+      const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+      const parsed = parseXlsxBuf(buf instanceof ArrayBuffer ? buf : buf.buffer);
+      loadMatrix(parsed.rows, { name: 'sample-links.xlsx', ext: 'xlsx', mode: 'remote', sheetName: parsed.sheetName, sourceUrl: null });
+      return;
+
+    } catch (e) {
+      err('Test XLSX build/parse failed', e);
+      toast(`Test XLSX failed: ${e.message}`, 'error');
+      return;
+    }
+  }
+  loadMatrix(td.data, { name: td.name, ext: td.ext, mode: 'remote', sheetName: td.sheetName, sourceUrl: null });
+}
+
+/* ------------------------------ Theme (light/dark) ----------------------- */
+function applyTheme(theme, announce = true) {
+  document.documentElement.dataset.theme = theme;
+  els.btnTheme.textContent = theme === 'dark' ? '☀️' : '🌙';
+  els.btnTheme.title = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
+  if (announce) log(`Theme → ${theme}`);
+}
+els.btnTheme.addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  try { localStorage.setItem('turnstone-theme', next); log(`Theme saved to localStorage: ${next}`); }
+  catch (e) { warn('Could not persist theme preference', e); }
+});
+
+els.search.addEventListener('input', () => {
+  state.search = els.search.value;
+  clearTimeout(els.search._t);
+  els.search._t = setTimeout(renderCards, 150);
+});
+els.hideCompleted.addEventListener('change', () => { state.hideCompleted = els.hideCompleted.checked; log(`Hide-completed → ${state.hideCompleted}`); renderCards(); });
+
+// Sidebar event delegation (cards are rebuilt often)
+els.cards.addEventListener('click', (e) => {
+  const openBtn = e.target.closest('[data-open]');
+  const titleBtn = e.target.closest('.card-title');
+  const copyBtn = e.target.closest('.copy');
+  if (openBtn) {
+    const i = +openBtn.dataset.open;
+    const url = String((state.data[i + (state.hasHeader ? 1 : 0)] || [])[state.urlCol] || '').trim();
+    log(`Card Open clicked (rowIndex=${i}) → ${url}`);
+    openInIframe(url, i);
+  } else if (titleBtn) {
+    const card = titleBtn.closest('.card');
+    const i = +card.dataset.rowIndex;
+    const url = String((state.data[i + (state.hasHeader ? 1 : 0)] || [])[state.urlCol] || '').trim();
+    log(`Card title clicked (rowIndex=${i}) → ${url}`);
+    openInIframe(url, i);
+  } else if (copyBtn) {
+    const i = +copyBtn.dataset.i;
+    const row = state.data[i + (state.hasHeader ? 1 : 0)] || [];
+    const what = copyBtn.dataset.copy;
+    const value = what === 'url' ? String(row[state.urlCol] || '')
+      : what === 'name' ? String(state.nameCol >= 0 ? row[state.nameCol] : row[state.urlCol] || '')
+      : (state.notes[i] || '');
+    copyText(value.trim(), what).then(ok => {
+      copyBtn.classList.add('ok'); copyBtn.textContent = '✓';
+      setTimeout(() => { copyBtn.classList.remove('ok'); copyBtn.textContent = '⧉'; }, 900);
+      if (!ok) toast('Copy failed — your browser blocked clipboard access', 'error');
+    });
+  }
+});
+els.cards.addEventListener('change', (e) => {
+  const sel = e.target.closest('select[data-status]');
+  if (!sel) return;
+  const i = +sel.dataset.status;
+  state.status[i] = sel.value;
+  log(`Status changed for row ${i}: ${sel.value}`);
+  const card = sel.closest('.card');
+  card.classList.toggle('done', sel.value === 'complete');
+  renderCards(); // updates counters (and removes the card if "hide completed" is on)
+  markDirty();
+});
+els.cards.addEventListener('input', (e) => {
+  const ta = e.target.closest('textarea[data-notes]');
+  if (!ta) return;
+  const i = +ta.dataset.notes;
+  state.notes[i] = ta.value;
+  log(`Notes changed for row ${i} (${ta.value.length} chars)`);
+  markDirty(); // no re-render — keeps the textarea focused
+});
+
+// Tab bar event delegation
+els.tabbar.addEventListener('click', (e) => {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  const id = tab.dataset.tabId;
+  if (e.target.closest('.tab-close')) { closeTab(id); return; }
+  if (e.target.closest('.tab-ext')) return; // let the <a target=_blank> do its thing
+  activateTab(id);
+});
+
+/* ------------------------------ Close current file ------------------------ */
+function closeCurrentFile() {
+  if (!state.mode) { log('Close requested but no file is open'); return; }
+  log(`Closing current file "${state.name}" (mode=${state.mode})`);
+  state.name = null; state.ext = 'csv'; state.mode = null; state.fileHandle = null;
+  state.sourceUrl = null; state.data = []; state.hasHeader = false;
+  state.urlCol = 0; state.nameCol = -1; state.statusCol = -1; state.notesCol = -1;
+  state.status = []; state.notes = []; state.isDirty = false; state.lastSavedAt = null; state.lastSavedWhere = null;
+  closeAllTabs();
+  els.search.value = ''; state.search = '';
+  els.hideCompleted.checked = false; state.hideCompleted = false;
+  updateChrome(); renderCards();
+  els.welcome.hidden = false; els.welcome.style.display = '';
+  els.cards.innerHTML = '<div class="empty">No file loaded yet.<br>Open a CSV/XLSX to populate task cards.</div>';
+  toast('File closed — pick or paste another when ready');
+}
+
+/* --------------------------------- Boot ---------------------------------- */
+(async function init() {
+  log(`Turnstone initializing — FSA API: ${!!window.showOpenFilePicker}, URL: ${location.href}`);
+  applyTheme(document.documentElement.dataset.theme, false);
+
+  // Live-follow the OS light/dark preference while the user hasn't picked explicitly.
+  if (window.matchMedia) {
+    matchMedia('(prefers-color-scheme: light)').addEventListener('change', (e) => {
+      try { if (localStorage.getItem('turnstone-theme')) return; } catch (_) {}
+      applyTheme(e.matches ? 'light' : 'dark');
+      log(`OS color-scheme changed → ${e.matches ? 'light' : 'dark'} (no explicit user preference)`);
+    });
+  }
+
+  try {
+    const rec = await idbGet('handles', 'active');
+    if (rec) { log('Previous workspace found in IndexedDB → showing Restore button'); els.btnRestore.hidden = false; }
+    await renderRecents();
+  } catch (e) { warn('IndexedDB unavailable — persistence limited to this page load', e); }
+
+  const params = new URLSearchParams(location.search);
+  const fileParam = params.get('file') || params.get('url');
+  const openFirst = params.get('open') === '1';
+  if (fileParam) {
+    log(`?file=/?url= param detected → loading remote file (takes precedence over restore): ${fileParam}`);
+    await loadFromUrl(fileParam);
+    if (openFirst && state.mode) {
+      const row = state.data[state.hasHeader ? 1 : 0] || [];
+      const url = String(row[state.urlCol] || '').trim();
+      if (url) { log('?open=1 → auto-opening first task'); openInIframe(url, 0); }
+      else warn('?open=1 requested but first row has no URL');
+    }
+  } else {
+    log('No ?file=/?url= param — waiting for user to pick or restore a file');
+  }
+})();
+</script>
+</body>
+</html>
