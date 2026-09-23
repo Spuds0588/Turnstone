@@ -22,8 +22,11 @@
 - Theme: OS flip → instant `Theme → light` follow with no user preference stored.
 - Bugs caught by testing and fixed: `$('logo')` selector typo that threw during wiring (console sweep caught it); SheetJS `bookSheets:true` returns `{SheetNames:[…]}`, not an array — both `wbHasMultipleSheets` and the picker crashed on real workbooks before the fix.
 
-### E2E (post-push)
-Planned and executed after `git push origin main`: load `index.html?file=<raw GitHub sample-links.csv>` and `...xlsx` from the pushed repo and verify cards, chip, and seeded statuses against the live raw URLs.
+### E2E (post-push, executed)
+After `git push origin main` (commit `2577eef`), loaded the app from the preview server with deep links pointing at the **live raw GitHub URLs** of the pushed files:
+- `?file=<raw sample-links.csv>` → fetched 200 over the internet, sniffed as CSV, 10 cards, chip `sample-links.csv`, 3 statuses seeded, 🔗 Link button enabled and copied the shareable URL.
+- `?url=<raw sample-links.xlsx>&open=1` → raw serves `application/octet-stream` with no usable extension hint — the ZIP magic-byte sniff identified it (`Format detection: magic=true … → xlsx`); 10 cards from sheet `Links`, 3 seeded, and `open=1` auto-opened the first task (Apple Newsroom) in a workspace tab.
+- Console clean: full `[Turnstone]` audit trail, zero JS errors across both E2E runs.
 
 ---
 
