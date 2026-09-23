@@ -1,5 +1,27 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-23 — Open modes + hamburger UI (v0.5)
+
+**Request:** iframed tabs are one mode among several, not the default for everyone — users pick tabs / new browser tab / popup windows when they first load a file, changeable live in settings. Drop the branding topbar (brand the launch screen instead) and move its UI into a hamburger menu at the top of the sidebar for maximum vertical space. Also add phone/SMS/mail hand-off layers to future state.
+
+### Delivered
+- **Open modes** — `tabs` (iframes, the old behavior), `newtab` (real browser tab), `newwin` (popup window, `noopener`); stored in localStorage, applied everywhere links open (card title click, Open ▶ button, `?open=1` deep link) via a single `openUrlFor()`. Popup-blocked toast in `newwin`.
+- **First-run picker** — on the first file load, a modal asks how to work through links (3 options with hints + "Decide later (tabs by default)"); choice persisted and never shown again. Re-openable anytime via ☰ → "Which should I pick?".
+- **Live switching** — ☰ menu lists all three modes with a ✓ on the active one; switching takes effect immediately (tabbar shows/hides itself outside tabs mode; empty-state hint only renders in tabs mode).
+- **Topbar removed** — branding moved to the welcome screen (◆ Turnstone + tagline); all topbar actions relocated:
+  - Sidebar header: ☰ button + current file name with mode/ext + save dot (● unsaved / ✓ saved hh:mm).
+  - ☰ menu: Open file…, Restore last file, Close current file, Copy share link, — Opening links (3 modes + help), Columns & presets…, Export CSV/XLSX, Install app, Light/Dark toggle. Outside-click and Esc close; item availability matches state (export disabled without a file, link disabled without a source URL, restore hidden until one exists).
+- **Future state added to todo.md** — phonelayer embedded (`tel:` hand-off to the OS/PWA dialer) and maillayer embedded (`mailto:`/`sms:` hand-off + templates), each respecting the open-mode concept.
+
+### Verified in sandbox
+- Topbar gone; welcome branded; sidebar header shows file · mode · ext and save state; menu open/close (button, outside click, Esc) works.
+- Mode items check correctly; switching tabs→newtab→newwin persists across calls; card click honors the mode (tab opened in tabs mode; `window.open` to example.com in newtab mode; popup-blocked toast in newwin); `?open=1` path routed through `openUrlFor`.
+- First-run picker: shows on first load, disappears after picking (newwin chosen), never again afterwards; "Decide later" leaves tabs default.
+- Menu regressions: export/theme/columns/close all function from the menu; export disabled without file; restore item appears only when a recents record exists.
+- Demo + test CSV/XLSX regressions pass; title click expands card + opens per mode.
+
+---
+
 ## 2026-09-23 — Card layout tweaks: inline copies, column collapse/expand, layout presets (v0.4.1)
 
 **Request:** (1) copy icons always sit just right of the value they copy and show on hover; (2) cards show only the first 3 data columns by default, and clicking a card opens the URL *and* expands it to show the rest; (3) a settings gear to choose which columns show, in what order, saved as presets that auto-apply when other files load with the same headers in the same order.

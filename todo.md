@@ -2,6 +2,14 @@
 
 Status legend: `[ ]` todo · `[x]` done · `[~]` partially done / deferred
 
+## v0.5 Open modes + hamburger UI
+- [x] Open modes: tabs (iframes) / new browser tab / popup window — persisted, applied everywhere links open, popup-blocked toast.
+- [x] First-run mode picker on first file load (3 options + decide later); re-openable from ☰ → "Which should I pick?".
+- [x] Live mode switching from the ☰ menu (✓ marker, tabbar hides outside tabs mode).
+- [x] Topbar removed: branding moved to welcome screen; sidebar hamburger header (☰ + file name + save state) and dropdown menu hold all actions.
+- [x] Menu state correctness (disabled/hidden items) + sandbox verification of all flows.
+- [x] Future state recorded: phonelayer + maillayer embedded hand-off (phone/SMS/email to web handlers).
+
 ## v0.4.1 Card layout tweaks
 - [x] Inline ⧉ copy buttons right after each displayed value (name/URL/notes/extra columns), hover-revealed, always-on for touch, ✓ feedback on copy.
 - [x] Cards show only the first 3 data columns by default; per-card ▼/▲ toggle; clicking a card opens its URL AND expands it.
@@ -67,3 +75,8 @@ Status legend: `[ ]` todo · `[x]` done · `[~]` partially done / deferred
 - [ ] Bypass Iframe CORS / `X-Frame-Options` headers natively (Chrome Extension / Electron only — impossible in web SPA).
 - [ ] Persistent local file access without re-authorization prompts.
 - [ ] Google Drive / OneDrive sync.
+
+## Future state: embedded comms hand-off (phone / SMS / mail)
+- [ ] **Phonelayer embedded** — detect `tel:` links on cards and hand off to the appropriate web handler (installed PWA dialer / OS handler via `tel:` + Web Share API where available), with a card action button and per-mode setting in the ☰ menu.
+- [ ] **Maillayer embedded** — same for `mailto:` (and `sms:`): card action buttons + menu settings to route email/SMS through the user's preferred web handler (default mail client, `mailto:`, `sms:` deep links); queue templates using other columns (e.g. personalized subject/body from Name/Notes).
+- [ ] Both layers should respect the open-mode concept: hand off in a new tab, popup, or embedded iframe where the handler allows it, and log hand-offs like link opens.

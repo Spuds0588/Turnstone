@@ -68,41 +68,8 @@
     color: var(--text);
     font: 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     display: flex;
-    flex-direction: column;
     overflow: hidden;
   }
-
-  /* ---------- Topbar ---------- */
-  #topbar {
-    height: 48px;
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 12px;
-    background: var(--panel);
-    border-bottom: 1px solid var(--border);
-  }
-  #logo { font-weight: 700; font-size: 14px; letter-spacing: .3px; display: flex; align-items: center; gap: 7px; cursor: pointer; }
-  #logo:hover { opacity: .85; }
-  #logo .gem { color: var(--accent); font-size: 15px; }
-  #file-chip {
-    font-size: 11px; max-width: 240px; flex: 0 1 auto; min-width: 0; overflow: hidden; white-space: nowrap;
-    color: var(--text); background: var(--panel-2); border: 1px solid var(--border);
-    border-radius: 6px; padding: 3px 9px; display: none; align-items: center; gap: 6px;
-  }
-  #file-chip.on { display: inline-flex; }
-  #file-chip-name { overflow: hidden; text-overflow: ellipsis; }
-  #file-chip .x { cursor: pointer; color: var(--muted); border: none; background: none; font-size: 12px; padding: 0 1px; flex: 0 0 auto; }
-  #file-chip .x:hover { color: var(--text); }
-  #mode-badge {
-    font-size: 10.5px; padding: 2px 8px; border-radius: 10px;
-    border: 1px solid var(--border); color: var(--muted); white-space: nowrap;
-  }
-  #mode-badge.fs { color: var(--green); border-color: var(--done-border); }
-  #save-indicator { margin-left: auto; color: var(--muted); font-size: 11.5px; white-space: nowrap; }
-  #save-indicator.dirty { color: var(--amber); }
-  #save-indicator.saved { color: var(--green); }
   .btn {
     background: var(--panel-2); color: var(--text);
     border: 1px solid var(--border); border-radius: 6px;
@@ -112,7 +79,48 @@
   .btn:disabled { opacity: .45; cursor: default; }
   .btn.primary { background: var(--accent-dark); border-color: var(--accent-dark); color: #fff; }
   .btn.primary:hover { background: var(--accent); }
-  #topbar .spacer { flex: 0 0 6px; }
+
+  /* ---------- Sidebar header: hamburger + file name (replaces the old topbar) ---------- */
+  #side-head {
+    flex: 0 0 auto;
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  #btn-menu {
+    flex: 0 0 auto; width: 30px; height: 30px; border-radius: 7px;
+    border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+    font-size: 15px; cursor: pointer; line-height: 1;
+  }
+  #btn-menu:hover { border-color: var(--accent-dark); }
+  #head-name {
+    flex: 1 1 auto; min-width: 0; font-size: 12px; color: var(--text);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  #head-name .no-file { color: var(--muted); }
+  #head-save { flex: 0 0 auto; font-size: 10.5px; color: var(--muted); white-space: nowrap; }
+  #head-save.dirty { color: var(--amber); }
+  #head-save.saved { color: var(--green); }
+
+  /* ---------- Hamburger dropdown ---------- */n  #menu {
+    position: fixed; top: 44px; z-index: 120;
+    width: 260px; max-height: 80vh; overflow-y: auto;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35); padding: 6px;
+  }
+  #menu[hidden] { display: none; }
+  .menu-item {
+    display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+    background: none; border: none; color: var(--text); padding: 8px 9px;
+    border-radius: 7px; cursor: pointer; font-size: 12.5px;
+  }
+  .menu-item:hover { background: var(--panel-2); }
+  .menu-item:disabled { opacity: .4; cursor: default; }
+  .menu-item:disabled:hover { background: none; }
+  .menu-item .mi { flex: 0 0 20px; text-align: center; }
+  .menu-sep { height: 1px; background: var(--border); margin: 5px 4px; }
+  .menu-label { font-size: 10px; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); padding: 7px 9px 3px; }
+  .mode-item.checked::after { content: "✓"; margin-left: auto; color: var(--green); font-weight: 700; }
 
   /* ---------- Split pane: workspace LEFT, sidebar RIGHT (approved deviation) ---------- */
   #app {
@@ -133,8 +141,9 @@
     overflow-x: auto;
     min-height: 36px;
   }
+  #tabbar.hidden-mode { display: none; }
   #tabbar:empty::after {
-    content: "No tabs open — click “Open” on a task card";
+    content: "No windows open — click “Open” on a task card (tabs mode)";
     color: var(--muted); font-size: 11.5px; align-self: center; padding: 0 8px 6px;
   }
   .tab {
@@ -166,7 +175,9 @@
     padding: 24px;
   }
   #welcome .box { max-width: 460px; width: 100%; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 26px; }
-  #welcome h1 { margin: 0 0 6px; font-size: 18px; }
+  #welcome h1 { margin: 0 0 2px; font-size: 19px; display: flex; align-items: center; gap: 8px; }
+  #welcome h1 .gem { color: var(--accent); font-size: 17px; }
+  #welcome .tagline { margin: 0 0 16px; color: var(--muted); font-size: 12px; }
   #welcome p { margin: 0 0 16px; color: var(--muted); }
   #welcome .row { display: flex; gap: 8px; margin-bottom: 10px; }
   #welcome input[type=text] {
@@ -314,32 +325,18 @@
 </head>
 <body>
 
-<header id="topbar">
-  <div id="logo" title="Close the current file and return to the welcome screen"><span class="gem">◆</span> Turnstone</div>
-  <span id="file-chip"><span id="file-chip-name"></span><button class="x" id="file-chip-x" title="Close current file">✕</button></span>
-  <span id="mode-badge">no file</span>
-  <span id="save-indicator"></span>
-  <span class="spacer"></span>
-  <button class="btn" id="btn-copy-link" title="Copy a ?file= link that reopens this exact file with its URL — handy for sharing" disabled>🔗 Link</button>
-  <button class="btn" id="btn-settings" title="Choose which columns show on task cards, in what order — and save the layout as a preset">⚙ Columns</button>
-  <button class="btn" id="btn-install" title="Install Turnstone as an app — works offline, opens in its own window" hidden>⤓ Install</button>
-  <button class="btn" id="btn-theme" title="Toggle light/dark theme">☀️</button>
-  <button class="btn" id="btn-export-csv" title="Download the current data as CSV" disabled>Export CSV</button>
-  <button class="btn" id="btn-export-xlsx" title="Download the current data as XLSX" disabled>Export XLSX</button>
-  <button class="btn" id="btn-restore" title="Re-open the last file used (permission may be requested)" hidden>Restore Workspace</button>
-  <button class="btn primary" id="btn-open">Open File…</button>
-  <input type="file" id="file-input" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
-</header>
+<input type="file" id="file-input" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
 
 <main id="app">
-  <!-- LEFT: tabbed iframe workspace -->
+  <!-- LEFT: tabbed iframe workspace (one of several open modes) -->
   <section id="workspace">
     <div id="tabbar"></div>
     <div id="panes">
       <div id="welcome">
         <div class="box">
-          <h1>Turn your list into a workspace</h1>
-          <p>Load a local CSV/XLSX of URLs. Process each link in tabbed frames, track status &amp; notes, and auto-save back to the file (Chromium) or browser storage.</p>
+          <h1><span class="gem">◆</span> Turnstone</h1>
+          <p class="tagline">Your list, worked through.</p>
+          <p>Load a local CSV/XLSX of URLs. Track status &amp; notes, open links the way you like — tabs, browser tabs, or popup windows — and auto-save back to the file (Chromium) or browser storage.</p>
           <div class="row">
             <button class="btn primary" id="btn-open-2">Choose CSV / XLSX…</button>
             <button class="btn" id="btn-demo">Load demo list</button>
@@ -366,6 +363,29 @@
 
   <!-- RIGHT: task sidebar (approved deviation from PRD's left-hand sidebar) -->
   <aside id="sidebar">
+    <div id="side-head">
+      <button id="btn-menu" title="Menu — open, export, columns, settings">☰</button>
+      <span id="head-name"><span class="no-file">No file loaded</span></span>
+      <span id="head-save"></span>
+    </div>
+    <nav id="menu" hidden>
+      <button class="menu-item" id="mi-open"><span class="mi">📂</span> Open file…</button>
+      <button class="menu-item" id="mi-restore" hidden><span class="mi">↺</span> Restore last file</button>
+      <button class="menu-item" id="mi-close" disabled><span class="mi">✕</span> Close current file</button>
+      <button class="menu-item" id="mi-link" disabled><span class="mi">🔗</span> Copy share link (?file=)</button>
+      <div class="menu-sep"></div>
+      <div class="menu-label">Opening links</div>
+      <button class="menu-item mode-item" data-mode="tabs"><span class="mi">🗂</span> Tabs (iframes)</button>
+      <button class="menu-item mode-item" data-mode="newtab"><span class="mi">↗</span> New browser tab</button>
+      <button class="menu-item mode-item" data-mode="newwin"><span class="mi">◱</span> New popup window</button>
+      <button class="menu-item" id="mi-mode-help"><span class="mi">❔</span> Which should I pick?</button>
+      <div class="menu-sep"></div>
+      <button class="menu-item" id="mi-columns"><span class="mi">⚙</span> Columns &amp; presets…</button>
+      <button class="menu-item" id="mi-export-csv" disabled><span class="mi">⬇</span> Export CSV</button>
+      <button class="menu-item" id="mi-export-xlsx" disabled><span class="mi">⬇</span> Export XLSX</button>
+      <button class="menu-item" id="mi-install" hidden><span class="mi">⤓</span> Install app</button>
+      <button class="menu-item" id="mi-theme"><span class="mi">◐</span> <span id="mi-theme-label">Light mode</span></button>
+    </nav>
     <div id="filters">
       <input type="search" id="search" placeholder="Search tasks…" autocomplete="off">
       <div id="filter-row">
@@ -505,18 +525,15 @@ const state = {
 
 const $ = (sel) => document.querySelector(sel);
 const els = {
-  modeBadge: $('#mode-badge'), saveIndicator: $('#save-indicator'),
-  btnOpen: $('#btn-open'), btnOpen2: $('#btn-open-2'), fileInput: $('#file-input'),
-  btnRestore: $('#btn-restore'), btnDemo: $('#btn-demo'),
-  fileChip: $('#file-chip'), fileChipName: $('#file-chip-name'), fileChipX: $('#file-chip-x'),
-  btnCopyLink: $('#btn-copy-link'),
-  btnInstall: $('#btn-install'),
-  btnSettings: $('#btn-settings'),
+  fileInput: $('#file-input'), btnOpen2: $('#btn-open-2'), btnDemo: $('#btn-demo'),
+  btnMenu: $('#btn-menu'), menu: $('#menu'), headName: $('#head-name'), headSave: $('#head-save'),
+  miOpen: $('#mi-open'), miRestore: $('#mi-restore'), miClose: $('#mi-close'), miLink: $('#mi-link'),
+  miColumns: $('#mi-columns'), miExportCsv: $('#mi-export-csv'), miExportXlsx: $('#mi-export-xlsx'),
+  miInstall: $('#mi-install'), miTheme: $('#mi-theme'), miThemeLabel: $('#mi-theme-label'),
   settingsOverlay: $('#settings-overlay'), settingsCols: $('#settings-cols'), settingsPresets: $('#settings-presets'),
   settingsX: $('#settings-x'), presetName: $('#preset-name'), btnPresetSave: $('#btn-preset-save'), btnColsReset: $('#btn-cols-reset'),
   urlInput: $('#url-input'), btnLoadUrl: $('#btn-load-url'),
-  btnExportCsv: $('#btn-export-csv'), btnExportXlsx: $('#btn-export-xlsx'),
-  btnTheme: $('#btn-theme'), btnTestCsv: $('#btn-test-csv'), btnTestXlsx: $('#btn-test-xlsx'),
+  btnTestCsv: $('#btn-test-csv'), btnTestXlsx: $('#btn-test-xlsx'),
   welcome: $('#welcome'), recents: $('#recents'), recentsList: $('#recents-list'),
   tabbar: $('#tabbar'), panes: $('#panes'),
   search: $('#search'), hideCompleted: $('#hide-completed'), filterInfo: $('#filter-info'),
@@ -676,7 +693,53 @@ function loadMatrix(data, meta) {
   renderCards();
   els.welcome.hidden = true;
   els.welcome.style.display = 'none';
+  maybeShowFirstRunPicker();
   toast(`Loaded ${n} task${n === 1 ? '' : 's'} from ${state.name}`, 'success');
+}
+
+/* ----------------------- First-run open-mode picker ----------------------- */
+const LS_SEEN_PICKER = 'turnstone-mode-picked';
+
+function maybeShowFirstRunPicker() {
+  let seen = false;
+  try { seen = localStorage.getItem(LS_SEEN_PICKER) === '1'; } catch (e) {}
+  if (seen) return;
+  showModePicker(true);
+}
+
+/** Ask the user how links should open (first run, or later via the menu). */
+function showModePicker(firstRun) {
+  log(`Showing open-mode picker (firstRun=${firstRun})`);
+  const overlay = document.createElement('div');
+  overlay.id = 'mode-picker';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:300;padding:20px';
+  const opts = Object.entries(OPEN_MODES).map(([k, v]) => `
+    <button data-pick="${k}" style="display:flex;flex-direction:column;gap:2px;text-align:left;width:100%;margin:6px 0;padding:11px 14px;font-size:13px;cursor:pointer;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text)">
+      <span style="font-weight:600">${v.label}</span>
+      <span style="font-size:11px;color:var(--muted)">${v.hint}</span>
+    </button>`).join('');
+  overlay.innerHTML = `
+    <div style="background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:22px;width:380px;max-width:94vw">
+      <h3 style="margin:0 0 4px;font-size:15px">How do you want to work through your links?</h3>
+      <p style="margin:0 0 12px;font-size:12px;color:var(--muted)">You can change this anytime from the ☰ menu.</p>
+      ${opts}
+      <button id="picker-later" style="margin-top:8px;padding:6px 10px;font-size:11.5px;cursor:pointer;border-radius:7px;border:1px solid var(--border);background:none;color:var(--muted)">${firstRun ? 'Decide later (tabs by default)' : 'Cancel'}</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  const done = () => { overlay.remove(); };
+  overlay.querySelectorAll('button[data-pick]').forEach(b => {
+    b.onclick = () => {
+      setOpenMode(b.dataset.pick, false);
+      try { localStorage.setItem(LS_SEEN_PICKER, '1'); } catch (e) {}
+      toast(`Links will open as ${OPEN_MODES[b.dataset.pick].label.toLowerCase()}`, 'success');
+      done();
+    };
+  });
+  overlay.querySelector('#picker-later').onclick = () => {
+    try { localStorage.setItem(LS_SEEN_PICKER, '1'); } catch (e) {}
+    log('Open-mode picker deferred — staying with current mode');
+    done();
+  };
 }
 
 /* ------------------------- Card column layout ----------------------------- */
@@ -1003,7 +1066,7 @@ async function rememberFile(activeRecord) {
   try {
     await idbPut('handles', activeRecord);
     await idbPut('handles', { key: activeRecord.name, kind: activeRecord.kind, name: activeRecord.name, ts: activeRecord.ts, handle: activeRecord.handle });
-    els.btnRestore.hidden = false;
+    els.miRestore.hidden = false;
     log('File handle remembered in IndexedDB (active + recents)');
   } catch (e) { warn('Could not persist file handle', e); }
 }
@@ -1077,28 +1140,29 @@ function cardCount() { return state.data.length - (state.hasHeader ? 1 : 0); }
 
 function updateChrome() {
   const modeLabels = { fs: 'file write-back ON', fallback: 'fallback: browser storage', remote: 'remote file (read-only source)', demo: 'demo data' };
-  els.modeBadge.textContent = `${state.mode ? modeLabels[state.mode] : 'no file'} · ${state.ext.toUpperCase()}`;
-  els.modeBadge.className = state.mode === 'fs' ? 'fs' : '';
-  els.modeBadge.id = 'mode-badge';
   const has = cardCount() > 0;
-  els.btnExportCsv.disabled = !has;
-  els.btnExportXlsx.disabled = !has;
-  // File chip + shareable-link button (only when the source is a fetchable URL)
-  els.fileChip.classList.toggle('on', !!state.name && state.mode !== null);
-  els.fileChipName.textContent = state.name || '';
-  els.fileChipName.title = state.sourceUrl ? `${state.name} — from ${state.sourceUrl}` : (state.name || '');
-  els.btnCopyLink.disabled = !state.sourceUrl;
+  // Sidebar header: file name + save state
+  els.headName.innerHTML = state.name
+    ? `${esc(state.name)} <span style="color:var(--muted);font-size:10.5px">· ${modeLabels[state.mode] || ''} · ${state.ext.toUpperCase()}</span>`
+    : '<span class="no-file">No file loaded</span>';
+  els.headName.title = state.sourceUrl ? `${state.name} — from ${state.sourceUrl}` : (state.name || '');
+  // Menu item availability
+  els.miClose.disabled = !state.mode;
+  els.miLink.disabled = !state.sourceUrl;
+  els.miExportCsv.disabled = !has;
+  els.miExportXlsx.disabled = !has;
   updateSaveIndicator();
+  renderModeMenu();
 }
 
 function updateSaveIndicator() {
-  const el = els.saveIndicator;
+  const el = els.headSave;
   el.className = '';
   if (!state.mode) { el.textContent = ''; return; }
-  if (state.isDirty) { el.className = 'dirty'; el.textContent = '● unsaved changes'; }
+  if (state.isDirty) { el.className = 'dirty'; el.textContent = '● unsaved'; }
   else if (state.lastSavedAt) {
     el.className = 'saved';
-    el.textContent = `✓ saved ${state.lastSavedWhere || ''} · ${new Date(state.lastSavedAt).toLocaleTimeString()}`;
+    el.textContent = `✓ saved ${new Date(state.lastSavedAt).toLocaleTimeString()}`;
   } else el.textContent = '';
 }
 
@@ -1160,7 +1224,7 @@ function renderCards() {
       ${colRows}
       ${moreBtn}
       <div class="card-mid">
-        <button class="btn-open" data-open="${i}" title="Open in a workspace tab">Open ▶</button>
+        <button class="btn-open" data-open="${i}" title="Open this link (uses your chosen open mode)">Open ▶</button>
         <select class="status" data-status="${i}" title="Task status">
           <option value="incomplete" ${status !== 'complete' ? 'selected' : ''}>Incomplete</option>
           <option value="complete" ${status === 'complete' ? 'selected' : ''}>Complete</option>
@@ -1183,6 +1247,48 @@ function renderCards() {
   els.countLeft.textContent = `${total - done} left`;
   els.filterInfo.textContent = q || state.hideCompleted ? `${visible} shown` : '';
   log(`renderCards done: ${visible} visible, ${done} complete`);
+}
+
+/* ------------------------------ Open modes -------------------------------- */
+/* How a card's link opens: tabbed iframes, a real browser tab, or a popup window.
+   User-selectable at any time; remembered across sessions. */
+const LS_OPEN_MODE = 'turnstone-open-mode';
+const OPEN_MODES = {
+  tabs:   { label: 'Tabs (iframes)',       hint: 'Open inside this app, one tab per link' },
+  newtab: { label: 'New browser tab',      hint: 'Hand off to a full browser tab' },
+  newwin: { label: 'New popup window',     hint: 'Small always-on-top window beside the queue' },
+};
+
+function getOpenMode() {
+  try { const m = localStorage.getItem(LS_OPEN_MODE); if (OPEN_MODES[m]) return m; } catch (e) {}
+  return 'tabs';
+}
+
+function setOpenMode(m, announce = true) {
+  if (!OPEN_MODES[m]) return;
+  try { localStorage.setItem(LS_OPEN_MODE, m); } catch (e) { warn('Could not persist open mode', e); }
+  if (announce) { log(`Open mode → ${OPEN_MODES[m].label}`); toast(`Links now open as ${OPEN_MODES[m].label.toLowerCase()}`); }
+  renderModeMenu();
+}
+
+/** Open a task URL according to the current mode. */
+function openUrlFor(i) {
+  const url = String((state.data[i + (state.hasHeader ? 1 : 0)] || [])[state.urlCol] || '').trim();
+  if (!url) { warn(`openUrlFor(${i}): no URL in row`); return; }
+  const mode = getOpenMode();
+  log(`Opening row ${i} as ${mode}: ${url}`);
+  if (mode === 'tabs') { openInIframe(url, i); return; }
+  if (mode === 'newtab') { window.open(url, '_blank', 'noopener'); return; }
+  if (mode === 'newwin') {
+    const w = window.open(url, 'turnstone-win', 'popup=yes,width=1024,height=768,noopener');
+    if (!w) toast('Popup blocked — allow popups for this site, or use Tabs/New tab mode', 'error');
+  }
+}
+
+function renderModeMenu() {
+  const mode = getOpenMode();
+  els.menu.querySelectorAll('.mode-item').forEach(b => b.classList.toggle('checked', b.dataset.mode === mode));
+  els.tabbar.classList.toggle('hidden-mode', mode !== 'tabs');
 }
 
 /* ------------------------- Tabbed iframe workspace ------------------------ */
@@ -1452,19 +1558,20 @@ let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredInstallPrompt = e;
-  els.btnInstall.hidden = false;
-  log('Turnstone is installable → ⤓ Install button shown');
+  els.miInstall.hidden = false;
+  log('Turnstone is installable → Install item shown in menu');
 });
-els.btnInstall.addEventListener('click', async () => {
+els.miInstall.addEventListener('click', async () => {
+  closeMenu();
   if (!deferredInstallPrompt) return;
   deferredInstallPrompt.prompt();
   const { outcome } = await deferredInstallPrompt.userChoice;
   log(`Install prompt outcome: ${outcome}`);
   deferredInstallPrompt = null;
-  els.btnInstall.hidden = true;
+  els.miInstall.hidden = true;
 });
 window.addEventListener('appinstalled', () => {
-  els.btnInstall.hidden = true;
+  els.miInstall.hidden = true;
   log('Turnstone installed as an app');
   toast('Turnstone installed — find it in your apps menu', 'success');
 });
@@ -1485,34 +1592,50 @@ function loadDemo() {
 }
 
 /* ------------------------------ Event wiring ----------------------------- */
-els.btnOpen.addEventListener('click', openLocalFile);
+/* Hamburger menu */
+function openMenu() {
+  els.menu.hidden = false;
+  const r = els.btnMenu.getBoundingClientRect();
+  els.menu.style.left = Math.min(r.left, window.innerWidth - 276) + 'px';
+  log('Menu opened');
+}
+function closeMenu() { els.menu.hidden = true; }
+els.btnMenu.addEventListener('click', (e) => { e.stopPropagation(); els.menu.hidden ? openMenu() : closeMenu(); });
+document.addEventListener('click', (e) => { if (!els.menu.hidden && !e.target.closest('#menu') && !e.target.closest('#btn-menu')) closeMenu(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
+window.addEventListener('resize', () => { if (!els.menu.hidden) closeMenu(); });
+
+els.miOpen.addEventListener('click', () => { closeMenu(); openLocalFile(); });
 els.btnOpen2.addEventListener('click', openLocalFile);
+els.miRestore.addEventListener('click', () => { closeMenu(); restoreLastFile(); });
+els.miClose.addEventListener('click', () => { closeMenu(); closeCurrentFile(); });
+els.miLink.addEventListener('click', async () => {
+  closeMenu();
+  if (!state.sourceUrl) return;
+  const link = `${location.origin}${location.pathname}?file=${encodeURIComponent(state.sourceUrl)}`;
+  await copyText(link, 'shareable ?file= link');
+  toast('Link copied — anyone opening it gets this same file', 'success');
+});
+els.menu.querySelectorAll('.mode-item').forEach(b => b.addEventListener('click', () => { closeMenu(); setOpenMode(b.dataset.mode); }));
+els.menu.querySelector('#mi-mode-help')?.addEventListener('click', () => { closeMenu(); showModePicker(false); });
+els.miColumns.addEventListener('click', () => { closeMenu(); openSettings(); });
+els.miExportCsv.addEventListener('click', () => { closeMenu(); exportFile('csv'); });
+els.miExportXlsx.addEventListener('click', () => { closeMenu(); exportFile('xlsx'); });
+els.miTheme.addEventListener('click', () => { closeMenu(); toggleThemeFromMenu(); });
+
+function toggleThemeFromMenu() {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  try { localStorage.setItem('turnstone-theme', next); log(`Theme saved to localStorage: ${next}`); }
+  catch (e) { warn('Could not persist theme preference', e); }
+}
+
 els.fileInput.addEventListener('change', async () => {
   const f = els.fileInput.files[0];
   els.fileInput.value = '';
   if (f) await loadFromFileObject(f, null);
 });
-els.btnRestore.addEventListener('click', restoreLastFile);
-els.btnDemo.addEventListener('click', loadDemo);  els.btnCopyLink.addEventListener('click', async () => {
-    if (!state.sourceUrl) return;
-    const link = `${location.origin}${location.pathname}?file=${encodeURIComponent(state.sourceUrl)}`;
-    await copyText(link, 'shareable ?file= link');
-    toast('Link copied — anyone opening it gets this same file', 'success');
-  });
-
-  els.fileChipX.addEventListener('click', () => closeCurrentFile());
-  $('#logo').addEventListener('click', () => closeCurrentFile());
-
-  els.urlInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const v = els.urlInput.value.trim();
-      if (v) loadFromUrl(v);
-    }
-  });
-
-  els.btnLoadUrl.addEventListener('click', () => { const v = els.urlInput.value.trim(); if (v) loadFromUrl(v); });
-els.btnSettings.addEventListener('click', openSettings);
+els.btnDemo.addEventListener('click', loadDemo);
 els.settingsX.addEventListener('click', closeSettings);
 els.settingsOverlay.addEventListener('click', (e) => { if (e.target === els.settingsOverlay) closeSettings(); });
 els.btnPresetSave.addEventListener('click', savePreset);
@@ -1578,8 +1701,6 @@ els.settingsCols.addEventListener('drop', (e) => {
   renderCards();
   renderSettings();
 });
-els.btnExportCsv.addEventListener('click', () => exportFile('csv'));
-els.btnExportXlsx.addEventListener('click', () => exportFile('xlsx'));
 els.btnTestCsv.addEventListener('click', () => loadTestFile('csv'));
 els.btnTestXlsx.addEventListener('click', () => loadTestFile('xlsx'));
 
@@ -1611,16 +1732,9 @@ function loadTestFile(ext) {
 /* ------------------------------ Theme (light/dark) ----------------------- */
 function applyTheme(theme, announce = true) {
   document.documentElement.dataset.theme = theme;
-  els.btnTheme.textContent = theme === 'dark' ? '☀️' : '🌙';
-  els.btnTheme.title = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
+  els.miThemeLabel.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
   if (announce) log(`Theme → ${theme}`);
 }
-els.btnTheme.addEventListener('click', () => {
-  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-  applyTheme(next);
-  try { localStorage.setItem('turnstone-theme', next); log(`Theme saved to localStorage: ${next}`); }
-  catch (e) { warn('Could not persist theme preference', e); }
-});
 
 els.search.addEventListener('input', () => {
   state.search = els.search.value;
@@ -1637,17 +1751,14 @@ els.cards.addEventListener('click', (e) => {
   const toggleBtn = e.target.closest('[data-toggle-col]');
   if (openBtn) {
     const i = +openBtn.dataset.open;
-    const url = String((state.data[i + (state.hasHeader ? 1 : 0)] || [])[state.urlCol] || '').trim();
-    log(`Card Open clicked (rowIndex=${i}) → ${url}`);
-    openInIframe(url, i);
+    openUrlFor(i);
   } else if (titleBtn) {
-    // Clicking the card title opens the URL in the workspace AND expands the card.
+    // Clicking the card title opens the link (per current mode) AND expands the card.
     const card = titleBtn.closest('.card');
     const i = +card.dataset.rowIndex;
-    const url = String((state.data[i + (state.hasHeader ? 1 : 0)] || [])[state.urlCol] || '').trim();
-    log(`Card title clicked (rowIndex=${i}) → opens ${url} + expand`);
+    log(`Card title clicked (rowIndex=${i}) → open + expand`);
     state.expanded[i] = true;
-    openInIframe(url, i);
+    openUrlFor(i);
     renderCards();
   } else if (toggleBtn) {
     const i = +toggleBtn.dataset.toggleCol;
@@ -1742,7 +1853,7 @@ function closeCurrentFile() {
 
   try {
     const rec = await idbGet('handles', 'active');
-    if (rec) { log('Previous workspace found in IndexedDB → showing Restore button'); els.btnRestore.hidden = false; }
+    if (rec) { log('Previous workspace found in IndexedDB → showing Restore item'); els.miRestore.hidden = false; }
     await renderRecents();
   } catch (e) { warn('IndexedDB unavailable — persistence limited to this page load', e); }
 
@@ -1755,7 +1866,7 @@ function closeCurrentFile() {
     if (openFirst && state.mode) {
       const row = state.data[state.hasHeader ? 1 : 0] || [];
       const url = String(row[state.urlCol] || '').trim();
-      if (url) { log('?open=1 → auto-opening first task'); openInIframe(url, 0); }
+      if (url) { log('?open=1 → auto-opening first task'); openUrlFor(0); }
       else warn('?open=1 requested but first row has no URL');
     }
   } else {

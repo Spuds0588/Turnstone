@@ -28,11 +28,12 @@ The 🔗 **Link** button (topbar, when a remote file is open) copies a shareable
 
 ## Working the list
 
-- **Right sidebar** — searchable task cards with status dropdowns, notes, and per-card ↗ escape hatches for sites that refuse to be iframed.
+- **Pick your experience** — the first time you load a file, Turnstone asks how to open links: **Tabs (iframes)** inside the app, a **new browser tab**, or a **popup window**. Change it anytime from the ☰ menu — many sites refuse to be iframed, so tab-handoff modes keep queues of those usable.
+- **Right sidebar** — searchable task cards with status dropdowns, notes, and per-card ↗ escape hatches. The ☰ menu (top of the sidebar) holds everything else: open/close, share link, open-mode, columns & presets, exports, install, and theme.
 - **Copy buttons** — every value (name, URL, notes, and each extra column) has a ⧉ button sitting right after the text; hover a card to reveal them (always visible on touch screens).
-- **Cards stay compact** — beyond the fixed name/URL/status/notes, only the **first 3 data columns** show by default. Clicking a card **opens its URL in a workspace tab *and* expands it** to reveal the remaining columns (or use the *▼ +N more columns* toggle without opening anything).
-- **Column presets (⚙ Columns)** — a topbar gear opens a panel to reorder (drag), show/hide, and **save the layout as a preset keyed to the file's header**. Any CSV/XLSX loaded later whose header matches that exact column order (case/whitespace-insensitive) **auto-applies the preset** — order and hidden columns included.
-- **Left workspace** — tabbed iframes that keep their state when you switch tabs. One ↗ on every tab too.
+- **Cards stay compact** — beyond the fixed name/URL/status/notes, only the **first 3 data columns** show by default. Clicking a card **opens its link *and* expands it** to reveal the remaining columns (or use the *▼ +N more columns* toggle without opening anything).
+- **Column presets (⚙ Columns)** — reorder (drag), show/hide, and **save the layout as a preset keyed to the file's header**. Any CSV/XLSX loaded later whose header matches that exact column order (case/whitespace-insensitive) **auto-applies the preset** — order and hidden columns included.
+- **Left workspace** — in Tabs mode, iframes keep their state when you switch tabs. One ↗ on every tab too.
 - **Saving** — Chromium: silent write-back to the picked file. Everywhere else: automatic IndexedDB snapshots + Export CSV/XLSX, and a `beforeunload` guard when there are unexported changes. Files that already carry `Status`/`Notes` columns reopen with their progress intact.
 
 ## Theming
