@@ -1,5 +1,19 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-23 — Future state: ports (bookmarklet, Chrome extension, Tauri)
+
+**Request:** add other versions/ports of Turnstone to future state — a bookmarklet version, a Chrome extension version, and a Tauri application version.
+
+### Recorded in `todo.md`
+- **Bookmarklet** — capture the current page's links (or a pasted list) into a Turnstone queue; options: fully self-contained inline UI vs. seeding the hosted app via URL hash; sync status back via localStorage/postMessage.
+- **Chrome extension (MV3)** — side-panel queue over the active tab, native iframe/XFO bypass, downloads API for exports, context-menu link capture, badge count, chrome.storage sync; shares the web app's core code.
+- **Tauri app** — native desktop shell with a Rust backend: unrestricted filesystem write-back (every OS, no permission prompts), no CORS limits, system tray, global hotkey capture, auto-update; small binary vs Electron.
+- **Shared prerequisite noted** — extract a DOM-free `core.js` (parse/analyze/presets/persistence) so all ports reuse one canonical codebase; this also un-blocks the Deferred/V2 iframe-bypass item, which the extension and Tauri ports make feasible.
+
+No code changes in this step — planning only.
+
+---
+
 ## 2026-09-23 — Queue UX: click-to-open, one-click complete, auto-open/auto-advance, sorting (v0.6)
 
 **Request:** no Open button — clicking a card opens its link; optional auto-open on card selection; optional auto-open-next-on-complete; complete dropdown becomes a single button; completed cards hidden by default with a reveal option plus a subtle per-card undo; sort cards by any column asc/desc.

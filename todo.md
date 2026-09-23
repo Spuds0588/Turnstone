@@ -84,6 +84,12 @@ Status legend: `[ ]` todo · `[x]` done · `[~]` partially done / deferred
 - [ ] Persistent local file access without re-authorization prompts.
 - [ ] Google Drive / OneDrive sync.
 
+## Future state: other versions & ports of Turnstone
+- [ ] **Bookmarklet version** — a one-click bookmarklet that captures the current page's links (or a pasted list) into a Turnstone queue in a popup/side panel. Single-file constraint: inline the minimal card-list UI and state in the bookmarklet body, or open the hosted app with links pre-seeded via a compact URL hash. Status sync back to the queue via `localStorage`/`postMessage`.
+- [ ] **Chrome extension version** — Manifest V3 extension that unlocks the things a web SPA can't do: a side-panel queue over the active tab, native iframe/X-Frame-Options bypass via `chrome.tabs`/`webRequest`, `chrome.downloads` for exports, context-menu "add link to Turnstone", badge with remaining-task count, and `chrome.storage` sync for presets/statuses. Reuses the same core parsing/layout code as the web app.
+- [ ] **Tauri application version** — native desktop app (tiny bundle vs Electron) with a Rust backend: true filesystem read/write without permission prompts (real silent write-back on every OS), no CORS at all (fetch + iframe any URL, `tauri` shell can disable web security per-webview), system tray queue, global hotkey to capture the frontmost browser's URL, auto-update. Keep the web app as the canonical core so all three ports share one codebase (extract `core.js`: parse/analyze/presets/persistence DOM-free).
+- [ ] Porting prerequisite: refactor `index.html` so parsing, matrix analysis, preset logic, and state persistence live in a DOM-free `core.js` shared by the web app, extension, and Tauri shells.
+
 ## Future state: embedded comms hand-off (phone / SMS / mail)
 - [ ] **Phonelayer embedded** — detect `tel:` links on cards and hand off to the appropriate web handler (installed PWA dialer / OS handler via `tel:` + Web Share API where available), with a card action button and per-mode setting in the ☰ menu.
 - [ ] **Maillayer embedded** — same for `mailto:` (and `sms:`): card action buttons + menu settings to route email/SMS through the user's preferred web handler (default mail client, `mailto:`, `sms:` deep links); queue templates using other columns (e.g. personalized subject/body from Name/Notes).
