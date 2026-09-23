@@ -1,5 +1,19 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-23 — Bookmarklet scope: CSV-only fallback when SheetJS can't load
+
+**Request:** the bookmarklet must work in even the most secure environments — if SheetJS fails to load, fall back to CSV-only for that session and make the UI say so.
+
+### Added to the bookmarklet scope in `todo.md`
+- The payload embeds its own tiny RFC-4180 CSV parser (quotes, embedded commas/newlines), so a failed CDN injection never means a broken app.
+- On SheetJS load failure/timeout (blocked network, strict CSP, no external scripts): **CSV-only session** — CSV loading, cards, link modes, and CSV export keep working; XLSX loading is disabled with a visible badge ("CSV-only — SheetJS unavailable") and a toast if the user tries an .xlsx file; XLSX export hides itself.
+- Failure is always visible and explained — never silent or broken. This makes the no-external-scripts case (the strictest lockdown) a fully supported first-class mode.
+- Budget unchanged (< ~8KB minified) with the fallback parser included.
+
+No code changes in this step — scope documentation only.
+
+---
+
 ## 2026-09-23 — Port plans revised: extension is sidebar-only + tab switching; Tauri keeps iframes
 
 **Request:** update the Chrome-extension and Tauri plans per feedback.
