@@ -15,7 +15,13 @@
 - Manifest JSON parses from the Blob URL with correct fields and a data-URI icon.
 - In the sandbox preview (no sibling files served): SW registration fails soft with a warning — no unhandled errors, app fully functional.
 - README gained an Install section + `sw.js` docs entry.
-- Post-push: live Pages verification planned (SW registration, cache contents, offline reload).
+
+### Verified in production (post-push `87c5068`)
+- Pages rebuilt; `sw.js`, `icon-192.png`, `icon-512.png` all HTTP 200.
+- SW registered and **activated** on the live site (`turnstone-v0.4.0`, scope `/Turnstone/`); page controlled.
+- Cache inspection: all 8 precache entries present (shell, both CDN libs, icons, both samples); cache matches serve the shell for deep-link paths (`ignoreSearch`) and the CDN libs.
+- App fully functional under the SW: sample CSV loads 10 cards with 3 seeded statuses while controlled.
+- Note: the ⤓ Install button needs a real (non-embedded) browser session — `beforeinstallprompt` doesn't fire in the automation browser; on regular Chrome/Edge the button appears once the SW is active.
 
 ---
 
