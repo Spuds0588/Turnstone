@@ -1,5 +1,20 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-23 — Bookmarklet scope: composes the app live, session-only memory
+
+**Request:** define the bookmarklet's scope — it composes the Turnstone app live in a new tab; keep what's possible given that session/localStorage won't stick, but the core items remain: CSV/XLSX parsing via SheetJS, card rendering, ideally file write-back, export, and iframe/new-tab/window link modes.
+
+### Recorded in `todo.md`
+- **Composition model:** bookmarklet injects CSS + builds the full app DOM in a new tab — no hosted file, any origin.
+- **Kept core:** SheetJS parsing (covers CSV and XLSX, so PapaParse is optional), card rendering with complete/undo and show-completed, the three link-opening modes, and CSV/XLSX export downloads.
+- **Write-back:** included via the File System Access API where available (pick file once per session, silent write-back while the tab lives); export is the fallback elsewhere.
+- **Explicit non-assumption:** storage does NOT persist — state is session-only in JS, with an in-page "Copy state / paste-restore" pair as the manual carry-across-sessions mechanism.
+- **Practical constraints noted:** SheetJS CDN injected dynamically at runtime (the one network dependency); payload budget < ~8KB minified so it survives paste into bookmark fields.
+
+No code changes in this step — scope documentation only.
+
+---
+
 ## 2026-09-23 — Future state: ports (bookmarklet, Chrome extension, Tauri)
 
 **Request:** add other versions/ports of Turnstone to future state — a bookmarklet version, a Chrome extension version, and a Tauri application version.
