@@ -2,6 +2,13 @@
 
 Status legend: `[ ]` todo · `[x]` done · `[~]` partially done / deferred
 
+## v0.4.1 Card layout tweaks
+- [x] Inline ⧉ copy buttons right after each displayed value (name/URL/notes/extra columns), hover-revealed, always-on for touch, ✓ feedback on copy.
+- [x] Cards show only the first 3 data columns by default; per-card ▼/▲ toggle; clicking a card opens its URL AND expands it.
+- [x] ⚙ Columns settings panel: drag-reorder, show/hide, reset-to-file-order, preset save/apply/delete (localStorage).
+- [x] Header-signature presets auto-apply on file load when the header row matches exactly (order + hidden columns).
+- [x] Sandbox-verified across synthetic files, demo, test CSV/XLSX; SW cache version bumped.
+
 ## v0.4 PWA (installable + offline)
 - [x] App icons (192/512) generated programmatically and embedded as data URIs (favicon + apple-touch-icon).
 - [x] Inline web-app manifest built at runtime (Blob URL) — standalone display, deep-link `start_url`, dark theme colors; no `manifest.json` file.

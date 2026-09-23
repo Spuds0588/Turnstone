@@ -245,6 +245,56 @@
   .card-notes textarea:focus { outline: none; border-color: var(--accent-dark); }
   mark { background: var(--mark-bg); color: var(--mark-fg); border-radius: 2px; padding: 0 1px; }
 
+  /* Inline copy icons sit right after the value they copy; revealed on hover
+     of the card (always visible on touch devices, or right after a copy). */
+  #cards .copy { opacity: 0; transition: opacity .12s; }
+  #cards .card:hover .copy, #cards .copy:focus-visible, #cards .copy.ok { opacity: 1; }
+  @media (hover: none) { #cards .copy { opacity: 1; } }
+
+  /* Data-column rows (collapsed cards show the first 3; expanding shows all). */
+  .col-row { display: flex; align-items: baseline; gap: 5px; font-size: 11.5px; min-width: 0; }
+  .col-row .ck { flex: 0 0 auto; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .5px; }
+  .col-row .cv { flex: 1 1 auto; color: var(--text); word-break: break-word; min-width: 0; }
+  .col-row .emptyv { color: var(--muted); }
+  .col-more {
+    align-self: flex-start; background: none; border: none; color: var(--accent);
+    font-size: 11px; cursor: pointer; padding: 1px 0;
+  }
+  .col-more:hover { text-decoration: underline; }
+  .card.ex .col-more { color: var(--muted); }
+
+  /* Column settings overlay */
+  #settings-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  #settings-overlay[hidden] { display: none; }
+  #settings-box {
+    background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px; width: 400px; max-width: 94vw; max-height: 86vh; overflow-y: auto;
+  }
+  #settings-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  #settings-head h2 { margin: 0; font-size: 15px; }
+  #settings-box .hint { font-size: 11px; color: var(--muted); margin: 6px 0; }
+  #settings-cols { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
+  .set-col {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px; font-size: 12.5px;
+  }
+  .set-col.fixed { color: var(--muted); }
+  .set-col.fixed em { font-style: normal; font-size: 10.5px; opacity: .85; }
+  .set-col .drag { cursor: grab; color: var(--muted); font-size: 12px; user-select: none; }
+  .set-col.fixed .drag { cursor: default; opacity: .5; }
+  .set-col.dragging { opacity: .5; }
+  .set-col label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .set-col .pos { margin-left: auto; color: var(--muted); font-size: 10.5px; }
+  #settings-presets { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
+  .preset-row { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }
+  .preset-row .pname { font-weight: 600; }
+  .preset-row .pmeta { color: var(--muted); font-size: 10.5px; flex: 1; }
+  .srow { display: flex; gap: 6px; margin-top: 8px; }
+  .srow input[type=text] { flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; font-size: 12px; }
+
   /* ---------- Toast ---------- */
   #toast {
     position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%) translateY(8px);
@@ -271,6 +321,7 @@
   <span id="save-indicator"></span>
   <span class="spacer"></span>
   <button class="btn" id="btn-copy-link" title="Copy a ?file= link that reopens this exact file with its URL — handy for sharing" disabled>🔗 Link</button>
+  <button class="btn" id="btn-settings" title="Choose which columns show on task cards, in what order — and save the layout as a preset">⚙ Columns</button>
   <button class="btn" id="btn-install" title="Install Turnstone as an app — works offline, opens in its own window" hidden>⤓ Install</button>
   <button class="btn" id="btn-theme" title="Toggle light/dark theme">☀️</button>
   <button class="btn" id="btn-export-csv" title="Download the current data as CSV" disabled>Export CSV</button>
@@ -326,6 +377,26 @@
     <div id="sidebar-footer"><span id="count-total">0 tasks</span><span id="count-done" class="done">0 done</span><span id="count-left">0 left</span></div>
   </aside>
 </main>
+
+<div id="settings-overlay" hidden>
+  <div id="settings-box">
+    <div id="settings-head">
+      <h2>Task card columns</h2>
+      <button class="icon" id="settings-x" title="Close">✕</button>
+    </div>
+    <p class="hint">Drag to reorder · untick to hide. URL, name, status and notes are fixed card features. Changes apply live.</p>
+    <div id="settings-cols"></div>
+    <p class="hint">Save the layout as a preset — any CSV/XLSX whose header row matches this exact column order loads with it pre-applied.</p>
+    <div class="srow">
+      <input type="text" id="preset-name" placeholder="Preset name (e.g. Client audit)" maxlength="40">
+      <button class="btn primary" id="btn-preset-save">Save preset</button>
+    </div>
+    <div id="settings-presets"></div>
+    <div class="srow">
+      <button class="btn" id="btn-cols-reset">Reset to file order</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast"></div>
 
@@ -427,6 +498,9 @@ const state = {
   isDirty: false,
   search: '', hideCompleted: false,
   sourceUrl: null,      // remote URL the file was fetched from (?file=/ pasted), enables 🔗 Link
+  colOrder: null,       // card-display order of data columns (indices); null = file order
+  colHidden: {},        // column index → true when hidden from cards
+  expanded: {},         // card index → true when all data columns are shown
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -437,6 +511,9 @@ const els = {
   fileChip: $('#file-chip'), fileChipName: $('#file-chip-name'), fileChipX: $('#file-chip-x'),
   btnCopyLink: $('#btn-copy-link'),
   btnInstall: $('#btn-install'),
+  btnSettings: $('#btn-settings'),
+  settingsOverlay: $('#settings-overlay'), settingsCols: $('#settings-cols'), settingsPresets: $('#settings-presets'),
+  settingsX: $('#settings-x'), presetName: $('#preset-name'), btnPresetSave: $('#btn-preset-save'), btnColsReset: $('#btn-cols-reset'),
   urlInput: $('#url-input'), btnLoadUrl: $('#btn-load-url'),
   btnExportCsv: $('#btn-export-csv'), btnExportXlsx: $('#btn-export-xlsx'),
   btnTheme: $('#btn-theme'), btnTestCsv: $('#btn-test-csv'), btnTestXlsx: $('#btn-test-xlsx'),
@@ -592,12 +669,160 @@ function loadMatrix(data, meta) {
   closeAllTabs();
   els.search.value = ''; state.search = '';
   els.hideCompleted.checked = false; state.hideCompleted = false;
+  state.expanded = {};
+  applyLayoutFor(state.data[0] || []);   // auto-apply a saved preset when the header matches
 
   updateChrome();
   renderCards();
   els.welcome.hidden = true;
   els.welcome.style.display = 'none';
   toast(`Loaded ${n} task${n === 1 ? '' : 's'} from ${state.name}`, 'success');
+}
+
+/* ------------------------- Card column layout ----------------------------- */
+const COLLAPSED_COLS = 3;   // data columns shown on a collapsed card
+const LS_PRESETS = 'turnstone-col-presets';
+
+/** Header signature: trimmed, lowercased header values joined with '¦'. */
+function headerSignature(headerRow) {
+  return (headerRow || []).map(h => String(h || '').trim().toLowerCase()).join('¦');
+}
+
+function loadPresets() {
+  try { return JSON.parse(localStorage.getItem(LS_PRESETS) || '{}'); }
+  catch (e) { warn('Could not read column presets', e); return {}; }
+}
+
+function savePresets(p) {
+  try { localStorage.setItem(LS_PRESETS, JSON.stringify(p)); return true; }
+  catch (e) { warn('Could not persist column presets', e); return false; }
+}
+
+/** If a saved preset matches this file's header exactly, apply its layout. */
+function applyLayoutFor(headerRow) {
+  const width = (state.data[0] || []).length;
+  if (!width) return;
+  const sig = headerSignature(headerRow);
+  const presets = loadPresets();
+  const preset = sig && presets[sig];
+  if (preset && Array.isArray(preset.colOrder)) {
+    const valid = preset.colOrder.filter(c => Number.isInteger(c) && c >= 0 && c < width);
+    for (let c = 0; c < width; c++) if (!valid.includes(c)) valid.push(c); // tolerate schema drift
+    state.colOrder = valid;
+    state.colHidden = {};
+    for (const c of preset.hidden || []) if (c >= 0 && c < width) state.colHidden[c] = true;
+    log(`Preset "${preset.name}" auto-applied (header signature matched)`);
+    toast(`Layout preset "${preset.name}" applied`, 'success');
+  } else {
+    state.colOrder = null;
+    state.colHidden = {};
+    log('No matching layout preset for this header — using file order');
+  }
+}
+
+/** Data-column display order for cards (fixed roles excluded). */
+function cardColumns() {
+  const width = state.data.reduce((m, r) => Math.max(m, r.length), 0);
+  const fixed = new Set([state.urlCol, state.nameCol, state.statusCol, state.notesCol].filter(c => c >= 0));
+  const all = [];
+  for (let c = 0; c < width; c++) if (!fixed.has(c)) all.push(c);
+  const order = state.colOrder ? state.colOrder.filter(c => !fixed.has(c) && c < width) : [];
+  for (const c of all) if (!order.includes(c)) order.push(c); // append anything the preset didn't mention
+  return order.filter(c => !state.colHidden[c]);
+}
+
+function colLabel(c) {
+  if (state.hasHeader) return String((state.data[0] || [])[c] || '').trim() || `Column ${c + 1}`;
+  return `Column ${c + 1}`;
+}
+
+function visibleCardCount() { return cardColumns().length; }
+
+/* ------------------------------ Settings UI -------------------------------- */
+function openSettings() {
+  log('Opening column settings');
+  renderSettings();
+  els.settingsOverlay.hidden = false;
+}
+function closeSettings() { els.settingsOverlay.hidden = true; }
+
+function renderSettings() {
+  const width = state.data.reduce((m, r) => Math.max(m, r.length), 0);
+  const fixed = new Set([state.urlCol, state.nameCol, state.statusCol, state.notesCol].filter(c => c >= 0));
+  const roles = { [state.urlCol]: 'URL', [state.nameCol]: 'name', [state.statusCol]: 'status', [state.notesCol]: 'notes' };
+  const order = state.colOrder ? state.colOrder.filter(c => c < width) : [];
+  for (let c = 0; c < width; c++) if (!order.includes(c)) order.push(c);
+
+  const frag = document.createDocumentFragment();
+  for (const c of order) {
+    const div = document.createElement('div');
+    div.className = 'set-col' + (fixed.has(c) ? ' fixed' : '');
+    div.draggable = !fixed.has(c);
+    div.dataset.col = c;
+    div.innerHTML = fixed.has(c)
+      ? `<span class="drag">⋮⋮</span><em>${esc(String(roles[c] || '').toUpperCase())}</em> <span>${esc(colLabel(c))}</span><span class="pos">card feature</span>`
+      : `<span class="drag" title="Drag to reorder">⋮⋮</span>
+         <label><input type="checkbox" data-colshow="${c}" ${state.colHidden[c] ? '' : 'checked'}> ${esc(colLabel(c))}</label>
+         <span class="pos">#${order.indexOf(c) + 1}</span>`;
+    frag.appendChild(div);
+  }
+  if (!order.length) els.settingsCols.innerHTML = '<p class="hint">No extra columns — every column in this file is a fixed card feature.</p>';
+  else { els.settingsCols.innerHTML = ''; els.settingsCols.appendChild(frag); }
+
+  const presets = loadPresets();
+  const sig = headerSignature(state.hasHeader ? state.data[0] : []);
+  els.settingsPresets.innerHTML = '';
+  const entries = Object.entries(presets);
+  if (!entries.length) { els.settingsPresets.innerHTML = '<p class="hint">No presets saved yet.</p>'; }
+  for (const [s, p] of entries) {
+    const row = document.createElement('div');
+    row.className = 'preset-row';
+    row.innerHTML = `<span class="pname">${esc(p.name)}</span>
+      <span class="pmeta">${(p.colOrder || []).length} columns · ${p.hidden?.length ? p.hidden.length + ' hidden' : 'none hidden'}${s === sig ? ' · matches this file' : ''}</span>
+      <button class="btn" data-preset-apply="${esc(s)}" ${s === sig ? 'disabled' : ''}>Apply here</button>
+      <button class="icon" data-preset-del="${esc(s)}" title="Delete preset">🗑</button>`;
+    els.settingsPresets.appendChild(row);
+  }
+}
+
+function savePreset() {
+  if (!state.hasHeader) { toast('This file has no header row — presets need column names', 'error'); return; }
+  const name = els.presetName.value.trim();
+  if (!name) { toast('Give the preset a name first', 'error'); return; }
+  const width = state.data.reduce((m, r) => Math.max(m, r.length), 0);
+  const order = state.colOrder ? state.colOrder.filter(c => c < width) : [];
+  for (let c = 0; c < width; c++) if (!order.includes(c)) order.push(c);
+  const hidden = Object.keys(state.colHidden).map(Number).filter(c => c < width);
+  const sig = headerSignature(state.data[0]);
+  const presets = loadPresets();
+  presets[sig] = { name, colOrder: order, hidden, ts: Date.now() };
+  if (savePresets(presets)) {
+    log(`Column preset "${name}" saved for header signature (${sig.split('¦').length} cols)`);
+    toast(`Preset "${name}" saved — files with this exact header auto-apply it`, 'success');
+    els.presetName.value = '';
+    renderSettings();
+  } else toast('Could not save preset (storage unavailable?)', 'error');
+}
+
+function applyPresetByKey(sig) {
+  const p = loadPresets()[sig];
+  if (!p) return;
+  state.colOrder = (p.colOrder || []).slice();
+  state.colHidden = {};
+  for (const c of p.hidden || []) state.colHidden[c] = true;
+  state.expanded = {};
+  log(`Preset "${p.name}" applied manually`);
+  renderCards();
+  renderSettings();
+}
+
+function resetColLayout() {
+  state.colOrder = null;
+  state.colHidden = {};
+  state.expanded = {};
+  log('Column layout reset to file order');
+  renderCards();
+  renderSettings();
 }
 
 /** Read a File/Blob (picked locally) and load it. */
@@ -880,9 +1105,26 @@ function updateSaveIndicator() {
 function renderCards() {
   const q = state.search.trim().toLowerCase();
   const total = cardCount();
+  const cols = cardColumns();               // display-ordered, hidden-removed
+  const collapsed = cols.slice(0, COLLAPSED_COLS);
+  const extra = cols.slice(COLLAPSED_COLS); // shown only when expanded
   let visible = 0;
-  log(`renderCards: total=${total}, search="${q}", hideCompleted=${state.hideCompleted}`);
+  log(`renderCards: total=${total}, cols=${cols.length} (collapsed ${collapsed.length}, extra ${extra.length}), search="${q}", hideCompleted=${state.hideCompleted}`);
   const frag = document.createDocumentFragment();
+
+  const copyBtn = (value, label, key) =>
+    `<button class="icon copy" data-copy-col="${key}" data-copy-label="${esc(label)}" title="Copy ${esc(label)}">⧉</button>`;
+
+  const colRow = (c, i) => {
+    const row = state.data[i + (state.hasHeader ? 1 : 0)] || [];
+    const raw = String(row[c] ?? '').trim();
+    if (!raw) return ''; // no value → no row, no clutter
+    return `<div class="col-row">
+      <span class="ck">${esc(colLabel(c))}</span>
+      <span class="cv">${esc(raw)}</span>
+      ${copyBtn(raw, colLabel(c), `${i}:${c}`)}
+    </div>`;
+  };
 
   for (let i = 0; i < total; i++) {
     const row = state.data[i + (state.hasHeader ? 1 : 0)] || [];
@@ -892,22 +1134,31 @@ function renderCards() {
     const notes = state.notes[i] || '';
 
     if (state.hideCompleted && status === 'complete') continue;
-    if (q && !(`${name} ${url} ${notes}`.toLowerCase().includes(q))) continue;
+    if (q && !(`${name} ${url} ${notes} ${row.join(' ')}`.toLowerCase().includes(q))) continue;
     visible++;
 
+    const expanded = !!state.expanded[i] || extra.length === 0;
+    const shown = expanded ? cols : collapsed;
+    const colRows = shown.map(c => colRow(c, i)).join('');
+    const moreBtn = extra.length
+      ? `<button class="col-more" data-toggle-col="${i}">${expanded ? '▲ Less' : `▼ +${extra.length} more column${extra.length === 1 ? '' : 's'}`}</button>`
+      : '';
+
     const card = document.createElement('article');
-    card.className = 'card' + (status === 'complete' ? ' done' : '');
+    card.className = 'card' + (status === 'complete' ? ' done' : '') + (expanded ? ' ex' : '');
     card.dataset.rowIndex = i; // PRD: DOM↔array mapping via data-row-index
     card.innerHTML = `
       <div class="card-top">
-        <button class="card-title" title="Open in workspace">${highlight(name, state.search.trim())}</button>
-        <button class="icon copy" data-copy="name" data-i="${i}" title="Copy name">⧉</button>
+        <button class="card-title" title="Open in workspace + show all columns">${highlight(name, state.search.trim())}</button>
+        ${copyBtn(name, 'name', `${i}:name`)}
         <a class="icon" href="${esc(url)}" target="_blank" rel="noopener" title="Open in new browser tab">↗</a>
       </div>
       <div class="card-url">
         <a href="${esc(url)}" target="_blank" rel="noopener" title="${esc(url)}">${highlight(url, state.search.trim())}</a>
-        <button class="icon copy" data-copy="url" data-i="${i}" title="Copy URL">⧉</button>
+        ${copyBtn(url, 'URL', `${i}:url`)}
       </div>
+      ${colRows}
+      ${moreBtn}
       <div class="card-mid">
         <button class="btn-open" data-open="${i}" title="Open in a workspace tab">Open ▶</button>
         <select class="status" data-status="${i}" title="Task status">
@@ -916,7 +1167,7 @@ function renderCards() {
         </select>
       </div>
       <div class="card-notes">
-        <span class="label">Notes <button class="icon copy" data-copy="notes" data-i="${i}" title="Copy notes">⧉</button></span>
+        <span class="label">Notes ${copyBtn(notes, 'notes', `${i}:notes`)}</span>
         <textarea rows="2" placeholder="Add a note…" data-notes="${i}">${esc(notes)}</textarea>
       </div>`;
     frag.appendChild(card);
@@ -1261,7 +1512,72 @@ els.btnDemo.addEventListener('click', loadDemo);  els.btnCopyLink.addEventListen
   });
 
   els.btnLoadUrl.addEventListener('click', () => { const v = els.urlInput.value.trim(); if (v) loadFromUrl(v); });
-els.urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') els.btnLoadUrl.click(); });
+els.btnSettings.addEventListener('click', openSettings);
+els.settingsX.addEventListener('click', closeSettings);
+els.settingsOverlay.addEventListener('click', (e) => { if (e.target === els.settingsOverlay) closeSettings(); });
+els.btnPresetSave.addEventListener('click', savePreset);
+els.presetName.addEventListener('keydown', (e) => { if (e.key === 'Enter') savePreset(); });
+els.btnColsReset.addEventListener('click', resetColLayout);
+
+els.settingsCols.addEventListener('change', (e) => {
+  const cb = e.target.closest('input[data-colshow]');
+  if (!cb) return;
+  const c = +cb.dataset.colshow;
+  if (cb.checked) delete state.colHidden[c];
+  else state.colHidden[c] = true;
+  log(`Column ${c} (${colLabel(c)}) → ${cb.checked ? 'shown' : 'hidden'}`);
+  renderCards();
+  renderSettings();
+});
+els.settingsPresets.addEventListener('click', (e) => {
+  const applyBtn = e.target.closest('[data-preset-apply]');
+  if (applyBtn) { applyPresetByKey(applyBtn.dataset.presetApply); return; }
+  const delBtn = e.target.closest('[data-preset-del]');
+  if (delBtn) {
+    const sig = delBtn.dataset.presetDel;
+    const presets = loadPresets();
+    const name = presets[sig]?.name || sig;
+    delete presets[sig];
+    savePresets(presets);
+    log(`Preset "${name}" deleted`);
+    toast(`Preset "${name}" deleted`);
+    renderSettings();
+  }
+});
+
+/* Drag-to-reorder inside the settings panel (HTML5 DnD, desktop convenience). */
+let dragCol = null;
+els.settingsCols.addEventListener('dragstart', (e) => {
+  const row = e.target.closest('.set-col:not(.fixed)');
+  if (!row) return;
+  dragCol = +row.dataset.col;
+  row.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+});
+els.settingsCols.addEventListener('dragend', () => {
+  els.settingsCols.querySelectorAll('.dragging').forEach(r => r.classList.remove('dragging'));
+});
+els.settingsCols.addEventListener('dragover', (e) => {
+  const over = e.target.closest('.set-col:not(.fixed)');
+  if (over && dragCol !== null) e.preventDefault();
+});
+els.settingsCols.addEventListener('drop', (e) => {
+  const over = e.target.closest('.set-col:not(.fixed)');
+  if (!over || dragCol === null) return;
+  e.preventDefault();
+  const target = +over.dataset.col;
+  if (target === dragCol) return;
+  const width = state.data.reduce((m, r) => Math.max(m, r.length), 0);
+  const order = state.colOrder ? state.colOrder.filter(c => c < width) : [];
+  for (let c = 0; c < width; c++) if (!order.includes(c)) order.push(c);
+  order.splice(order.indexOf(dragCol), 1);
+  order.splice(order.indexOf(target), 0, dragCol);
+  state.colOrder = order;
+  log(`Column order → [${order.join(', ')}]`);
+  dragCol = null;
+  renderCards();
+  renderSettings();
+});
 els.btnExportCsv.addEventListener('click', () => exportFile('csv'));
 els.btnExportXlsx.addEventListener('click', () => exportFile('xlsx'));
 els.btnTestCsv.addEventListener('click', () => loadTestFile('csv'));
@@ -1317,26 +1633,45 @@ els.hideCompleted.addEventListener('change', () => { state.hideCompleted = els.h
 els.cards.addEventListener('click', (e) => {
   const openBtn = e.target.closest('[data-open]');
   const titleBtn = e.target.closest('.card-title');
-  const copyBtn = e.target.closest('.copy');
+  const copyBtn = e.target.closest('.copy[data-copy-col]');
+  const toggleBtn = e.target.closest('[data-toggle-col]');
   if (openBtn) {
     const i = +openBtn.dataset.open;
     const url = String((state.data[i + (state.hasHeader ? 1 : 0)] || [])[state.urlCol] || '').trim();
     log(`Card Open clicked (rowIndex=${i}) → ${url}`);
     openInIframe(url, i);
   } else if (titleBtn) {
+    // Clicking the card title opens the URL in the workspace AND expands the card.
     const card = titleBtn.closest('.card');
     const i = +card.dataset.rowIndex;
     const url = String((state.data[i + (state.hasHeader ? 1 : 0)] || [])[state.urlCol] || '').trim();
-    log(`Card title clicked (rowIndex=${i}) → ${url}`);
+    log(`Card title clicked (rowIndex=${i}) → opens ${url} + expand`);
+    state.expanded[i] = true;
     openInIframe(url, i);
+    renderCards();
+  } else if (toggleBtn) {
+    const i = +toggleBtn.dataset.toggleCol;
+    state.expanded[i] = !state.expanded[i];
+    log(`Card ${i} expand → ${state.expanded[i]}`);
+    renderCards();
   } else if (copyBtn) {
-    const i = +copyBtn.dataset.i;
-    const row = state.data[i + (state.hasHeader ? 1 : 0)] || [];
-    const what = copyBtn.dataset.copy;
-    const value = what === 'url' ? String(row[state.urlCol] || '')
-      : what === 'name' ? String(state.nameCol >= 0 ? row[state.nameCol] : row[state.urlCol] || '')
-      : (state.notes[i] || '');
-    copyText(value.trim(), what).then(ok => {
+    const key = copyBtn.dataset.copyCol;           // "rowIndex:colIndex" or a fixed kind
+    const label = copyBtn.dataset.copyLabel || 'value';
+    let value;
+    if (key.endsWith(':name')) {
+      const i = +key.split(':')[0];
+      const row = state.data[i + (state.hasHeader ? 1 : 0)] || [];
+      value = String(state.nameCol >= 0 ? row[state.nameCol] : row[state.urlCol] || '');
+    } else if (key.endsWith(':url')) {
+      const i = +key.split(':')[0];
+      value = String((state.data[i + (state.hasHeader ? 1 : 0)] || [])[state.urlCol] || '');
+    } else if (key.endsWith(':notes')) {
+      value = state.notes[+key.split(':')[0]] || '';
+    } else {
+      const [i, c] = key.split(':').map(Number);
+      value = String((state.data[i + (state.hasHeader ? 1 : 0)] || [])[c] ?? '');
+    }
+    copyText(value.trim(), label).then(ok => {
       copyBtn.classList.add('ok'); copyBtn.textContent = '✓';
       setTimeout(() => { copyBtn.classList.remove('ok'); copyBtn.textContent = '⧉'; }, 900);
       if (!ok) toast('Copy failed — your browser blocked clipboard access', 'error');
@@ -1381,6 +1716,7 @@ function closeCurrentFile() {
   state.sourceUrl = null; state.data = []; state.hasHeader = false;
   state.urlCol = 0; state.nameCol = -1; state.statusCol = -1; state.notesCol = -1;
   state.status = []; state.notes = []; state.isDirty = false; state.lastSavedAt = null; state.lastSavedWhere = null;
+  state.colOrder = null; state.colHidden = {}; state.expanded = {};
   closeAllTabs();
   els.search.value = ''; state.search = '';
   els.hideCompleted.checked = false; state.hideCompleted = false;

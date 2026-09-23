@@ -1,5 +1,22 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-23 — Card layout tweaks: inline copies, column collapse/expand, layout presets (v0.4.1)
+
+**Request:** (1) copy icons always sit just right of the value they copy and show on hover; (2) cards show only the first 3 data columns by default, and clicking a card opens the URL *and* expands it to show the rest; (3) a settings gear to choose which columns show, in what order, saved as presets that auto-apply when other files load with the same headers in the same order.
+
+### Delivered
+- **Inline hover copies** — every value row (name, URL, notes, each extra column) ends with its own ⧉ button (`data-copy-col="row:col"`), revealed on card hover (`opacity` transition), always visible on touch devices (`hover: none`) and flashed ✓ on copy.
+- **Compact cards + expand** — fixed card features (name/URL/status/notes) stay put; data columns render as labeled rows showing only the first 3. A ▼ +N toggle expands/contracts a single card; **clicking the card title opens the URL in a workspace tab and expands the card** in one action. Empty cells render no row.
+- **⚙ Columns panel** — lists every column (URL/name/status/notes pinned as fixed card features; extras draggable + checkbox-toggled), Apply/Delete per preset, Reset to file order. Presets are saved in `localStorage` keyed by a header signature (trimmed/lowercased header row joined with `¦`), and `loadMatrix` auto-applies a matching preset on any file load (order + hidden set, tolerant of extra/missing columns). Empty cells stay rowless; column order also drives search (full-row match) and export is unchanged.
+
+### Verified in sandbox
+- 6-column synthetic file: collapsed = 3 data rows (fixed cols excluded), toggle expands to 4 with correct labels; title click opens the iframe tab AND sets `ex`.
+- Settings: 8 rows for an 8-col file (4 fixed), hide via checkbox shrinks cards, drag reorder + reset work, preset save/apply/delete with live toast.
+- Preset auto-apply: reload with identical header applies the saved order/hidden automatically; a file with a changed column name does NOT match (fresh order). Demo + test CSV/XLSX regressions pass (10 cards, 3 seeded, no extra-column UI when there are none).
+- Hover reveal confirmed (transition-aware read: opacity 1 on hover/`.ok`; idle 0; touch always-on via media query).
+
+---
+
 ## 2026-09-23 — PWA: installable + offline (v0.4)
 
 **Request:** make Turnstone installable as a PWA (manifest + service worker, still single-file friendly) so it works offline and can be installed from the browser.
