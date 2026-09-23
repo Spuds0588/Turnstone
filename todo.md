@@ -106,6 +106,14 @@ Status legend: `[ ]` todo · `[x]` done · `[~]` partially done / deferred
 - [ ] **Tauri application version** — native desktop app (tiny bundle vs Electron) that **matches the web version's full experience**, including the tabbed-iframe workspace — with the key difference that the iframe CORS/X-Frame-Options problem **disappears**: the Tauri webview shell can permissively load any frame (and fetch any URL via the Rust side), so sites that block iframing on the web work inside the app. True filesystem read/write without permission prompts (silent write-back on every OS), system tray queue, auto-update. Keep the web app as the canonical core so all ports share one codebase (extract `core.js`: parse/analyze/presets/persistence DOM-free); the only Tauri-specific layer is the shell config + any Rust-side fetch/write commands.
 - [ ] Porting prerequisite: refactor `index.html` so parsing, matrix analysis, preset logic, and state persistence live in a DOM-free `core.js` shared by the web app, extension, and Tauri shells.
 
+## Future state: web MCP server (agent setup & takeover)
+- [ ] Ship a Turnstone **web MCP server** so AI agents can set the workspace up **for** their users and take over on request:
+  - Tools: `load_queue` (URL/local path → parse + open workspace), `set_open_mode`, `get_state` / `set_status` / `set_notes` (per-row), `complete_row` / `advance` (drive the auto-advance queue), `export` (CSV/XLSX), and `screenshot` for verifying setup.
+  - "Set up for my user" flow: agent loads the user's file, applies/creates the right column preset, picks the open mode, and hands over a ready workspace (optionally via a `?file=` deep link the user just clicks).
+  - "Take over for me" flow: agent works the queue — opens links, flips statuses, writes notes — with all changes flowing through the same write-back engine (FS API / export) as manual use.
+  - Transport options to evaluate: Streamable HTTP MCP server (works with hosted agents, needs localhost/loopback for browser control) vs a small local companion process speaking stdio MCP + CDP to the user's own browser.
+  - Same core constraint as every port: build on the DOM-free `core.js` extraction so the agent tools and the web UI can never drift apart.
+
 ## Future state: embedded comms hand-off (phone / SMS / mail)
 - [ ] **Phonelayer embedded** — detect `tel:` links on cards and hand off to the appropriate web handler (installed PWA dialer / OS handler via `tel:` + Web Share API where available), with a card action button and per-mode setting in the ☰ menu.
 - [ ] **Maillayer embedded** — same for `mailto:` (and `sms:`): card action buttons + menu settings to route email/SMS through the user's preferred web handler (default mail client, `mailto:`, `sms:` deep links); queue templates using other columns (e.g. personalized subject/body from Name/Notes).

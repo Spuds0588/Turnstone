@@ -62,7 +62,11 @@ Implementation note: the web-app manifest is generated at runtime from icons emb
 index.html          # sales/landing page (SEO + AEO optimized) — the Pages root
 app.html            # the application itself (single-file SPA)
 sw.js               # service worker — offline shell; bump VERSION to invalidate caches
-icon-192/512.png    # PWA + favicon icons
+assets/             # logo system — SVG source of truth + generated PNG icons
+  logo.svg          #   master: circular grey stone, engraved dark checkmark
+  logo-light.svg    #   light-theme variant / logo-dark.svg: dark-theme variant
+  build-icons.js    #   regenerates all PNGs from the master (node assets/build-icons.js)
+icon-192/512.png    # PWA icons (generated — do not hand-edit)
 sample-links.csv    # demo queue (CSV) used by the deep-link examples
 sample-links.xlsx   # demo queue (XLSX, multi-sheet)
 ports/              # future editions of Turnstone (see ports/README.md)
@@ -74,6 +78,7 @@ PRD-Turnstone.md    # master product document
 todo.md             # task tracker + future-state plans
 history.md          # build log
 testing-notes.md    # test files and the manual production test plan
+ports/README.md     # how the ports relate and what's scaffolded
 ```
 
 ## Roadmap: other versions & ports
@@ -84,7 +89,7 @@ The web app is the canonical core; these ports (scaffolded under [`ports/`](port
 - **Chrome extension (MV3)** — the queue lives in Chrome's **Side Panel** with no iframe workflow at all: links open as real browser tabs, and **selecting a card switches the active tab** to that page. Statuses/presets persist in `chrome.storage`; exports via `chrome.downloads`; right-click any link to queue it.
 - **Tauri desktop app** — the **full web experience including the tabbed iframe workspace**, with the CORS / `X-Frame-Options` wall gone: sites that refuse iframing on the web load natively. Silent filesystem write-back on every OS, system tray, auto-update, tiny bundle.
 - Shared prerequisite (planned): extract the DOM-free core — parsing, matrix analysis, presets, persistence — from `app.html` into a `core.js` all ports consume.
-- Further future state (see [`todo.md`](todo.md)): embedded **phone / SMS / mail hand-off layers**, bypassing CORS natively, Google Drive / OneDrive sync.
+- Further future state (see [`todo.md`](todo.md)): a **web MCP server** so AI agents can set up the workspace for their users (load the queue, apply presets, pick the open mode) or take over and work it on request — plus embedded **phone / SMS / mail hand-off layers**, native CORS bypass, and Google Drive / OneDrive sync.
 
 ## Docs
 

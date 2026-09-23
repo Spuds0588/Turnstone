@@ -1,5 +1,21 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-23 — v0.7.1: New logo (engraved stone) + web-MCP future state
+
+**Request:** the product logo is a circular grey stone with a dark-grey checkmark engraved into it — compose it as SVG, break it out into asset files, keep easy light/dark variants. Also add web MCP setup to the future-state plans (agents set up the workspace for users, or take over on request).
+
+### Logo system (`assets/`)
+- `logo.svg` (master), `logo-light.svg` (brighter stone for white surfaces), `logo-dark.svg` (rimmed stone for dark surfaces) — the engraving is a second, +2px-offset copy of the check under the main one, reading as the groove's shadow lip. Theme swap is a plain CSS rule keyed off the app's existing `data-theme` attribute.
+- `build-icons.js`: zero-dependency rasterizer + PNG encoder that regenerates all rasters from the master geometry (`node assets/build-icons.js` → `assets/icon-192/512.png`, `icon-maskable-512.png` at 80% safe zone, plus root-level copies the SW precaches). PNGs verified structurally (chunks, zlib stream, RGBA8) and via ASCII render showing the engraved check.
+- Consumed everywhere: `app.html` favicon + apple-touch-icon data URIs now the new icon (old gem retired); welcome-screen branding shows the real logo with light/dark variants; the inline PWA manifest gains the 512px and maskable icons; sales page hero shows the logo and its favicon path was fixed (`assets/icon-192.png`); SW precaches the SVGs and bumps to `v0.7.1`.
+
+### Future state: web MCP server (`todo.md`)
+- Agent tools (`load_queue`, `set_open_mode`, `get_state`/`set_status`/`set_notes`, `complete_row`/`advance`, `export`, `screenshot`), a "set up for my user" flow (load file, apply preset, pick mode, hand over a ready workspace / deep link) and a "take over for me" flow (agent works the queue through the same write-back engine), transport options (Streamable HTTP vs local stdio+CDP companion), and the shared `core.js` constraint.
+
+Also: README repo-layout tree + roadmap updated for the new assets and the MCP item.
+
+---
+
 ## 2026-09-23 — v0.7: Sales page + ports scaffolding
 
 **Request:** scaffold the bookmarklet / extension / Tauri ports; make `index.html` an SEO/AEO sales page following the SupportLayer/Hushwing pattern (biggest selling point: a modern streamlined workspace with **no expensive backend** — spreadsheet users get an instantly upgraded experience); move the actual app to a linked `app.html`; README notes future-state plans. **No animated background.**

@@ -2,7 +2,7 @@
    Version bump this constant to invalidate all caches on the next load. */
 'use strict';
 
-const VERSION = 'turnstone-v0.7.0';
+const VERSION = 'turnstone-v0.7.1';
 
 /* Same-origin paths are relative to this file (served from the app root). */
 const PRECACHE = [
@@ -13,6 +13,9 @@ const PRECACHE = [
   'sample-links.xlsx',
   'icon-192.png',
   'icon-512.png',
+  'assets/logo.svg',
+  'assets/logo-light.svg',
+  'assets/logo-dark.svg',
   /* CDN libraries the app needs at boot (kept immutable in the cache). */
   'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js',
   'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js',
