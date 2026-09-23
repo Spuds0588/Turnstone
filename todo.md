@@ -2,6 +2,14 @@
 
 Status legend: `[ ]` todo · `[x]` done · `[~]` partially done / deferred
 
+## v0.4 PWA (installable + offline)
+- [x] App icons (192/512) generated programmatically and embedded as data URIs (favicon + apple-touch-icon).
+- [x] Inline web-app manifest built at runtime (Blob URL) — standalone display, deep-link `start_url`, dark theme colors; no `manifest.json` file.
+- [x] `sw.js`: versioned precache (shell + CDN libs + icons + samples), SWR for same-origin, cache-first for CDN, offline navigation fallback (deep links covered), old-cache purge.
+- [x] ⤓ Install button driven by `beforeinstallprompt`/`appinstalled`.
+- [x] SW registration guarded to https/localhost; fails soft everywhere else.
+- [x] README Install section; sandbox sanity tests pass; live Pages verification post-push.
+
 ## v0.3.1 Production deployment
 - [x] GitHub Pages enabled (main/root) → https://spuds0588.github.io/Turnstone/ — build verified, all assets 200, CORS `*` on sample files.
 - [x] Prod E2E in a real browser: CSV via `?file=` and XLSX via `?url=&open=1`, both loading from the Pages site itself; Link-button clipboard copy confirmed.

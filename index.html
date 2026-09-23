@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Turnstone — URL List Processor</title>
+<meta name="description" content="Zero-server workspace for CSV/XLSX link lists: tabbed browsing, status tracking, and write-back — all client-side.">
+<meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4f6fa" media="(prefers-color-scheme: light)">
+<link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAAAIZElEQVR4nO3Y55LcRBSG4b1QbKLTep3BcAHYROd1BsO1YTBhc3J2idLM9IxCqyWNwunu856q7wbUz/tHKysB3fHrz5Pj1/9stI+/M/ur0T75PrsXtfv0h+z+rt1nP2b3T+0+/6m4f5374ufi/nPuxA3bNip38qZtm5WTthLcHbv2PKnaFD74Q8F/6pZtW6VJmxM9F3jwx4/f7PTtxaRNDn7Hrv3RCD349eHPbzuuGD76NoUPfvA3w5+dtN1Ol8IHP/iXxW925k5gIRj44Ad/H/izk7btvCx88IO/b/yL7fgXAvjBPxZ+M2nz8wM/+MfG70UERfjgB/+Y+NOt3p0O/OBXi3/0CMAPft/wjxYB+MHvK/7Vu7uTgR/8avEPFgH4wR8K/kEiAD/4Q8J/9l6PAYAf/KHhNwM/+NXi7xwB+MEfOv5OEYAf/DHgP3tvr30A4Ad/LPjNlgoA/OCPAX+rAMAP/tjwp1tbbxgB+MEfI/5GAYAf/LHibxQB+MEfM35nAOAHf+z4nRGAH/wa8K+t73cLAPzgDxm/NQDwg18LfmsE4JfBv7GRgF8Af+sAwD8MfjPwj4v/3P0WAYB/WPyLCMA/Fv5cAOCXx18VAfiHwZ+LAPzj4d/cTGoH/nHwOwMAvwx+M/APj78yAPDL4rdHAP6+8VsDAL8f+PMRgH8I/KUAwO8X/kUE4B8C/7n7B4sAwO8n/qoIwN8d/zwA8PuNvxgB+PvBXwgA/H3h39pKBhv4+8M/CQD84eC3RwD+ZfGffzAJAPwh4c9HAP4u+BsHAH6/8C8iAH8X/I0CAL+f+KsiAH9z/LUBgN9v/MUIwN8OvzMA8IeB3wz87fFXBgD+evzb24l3A387/NYAwB8m/nIE4K/DXwoA/GHjX0QA/ib4zz84XAQA/jjwV0UA/jL+eQDgjwt/MQLw2/FPAgB/nPjNwF+NPxMA+GPEXx0B+NNdeDgJAPwx4y9HAH6Dv3EAGvHv7CTRDfx5/I0CAH9cA3+LAMAf58DfIADwxz3wOwIAv45px28NAPy6phl/KQDw65xW/BceHi0C0Ih/dzdhs2nEPw8A/CwbgRb8kwDAz7LThL8QAPiZK4L48F98NA8A/MwVQZz4ZwGAn7kiiBd/owDAr3sx468NIAb8e3sJ67hY8TsDAD/LLkb8lQGAnzWPIFz81gDAz5pHEDb+UgDgZ80jCB9/LgDws3YRhI//4qOX0wDAz7pEECr+SQAx4N/fT5jQQsZfCAD8rO8I/MZ/6fE8APCzviPwH/8sAPCzviMIA3+jAMDP2kUQDv7aAMDPukTgO35nAOBnXRYC/soAwM+GjcAP/NYAfMR/cJCwQOcz/lIA4GfDRuAX/lwA4GfDRuAf/kuPX00DAD8bMwJf8E8CAD8bcz7hLwQAfiYdwbj4Lz+ZBwB+Jh3B+PhnAfiB//AwYcomjb9RAOBnw0Ygh782APCzMSaF3xkA+NmYk8BfGcAY+M2kPzyTnxR+awBj4icCJom/FIAE/hM3NiaTfgimD38uAEn8ZkdHCVMyH/DPA/ABPxHomS/4Lz95naz4hD/dyZtEEPN8wm8JQB6/mfRDsfjxX3maC8Af/EQQ33zEnwnAP/wnb25OJv1wLF78swD8xU8E4c9n/LUB+IDf7OXLhAU23/E7A/AJf7pTt4ggpIWAvzIAH/GbST8siwe/NQCf8ROB/wsJfymAEPCfurU1mfRDs/Dx5wIICT8R+LcQ8c8DCBE/EfizUPFfefomWQkZf7rTt4kA/MvhtwQQHn6zV68SNvJCx//lL7kAwsVPBOBfBn8mgPDxT7ctDkPDYsE/CyAe/GbSQGJeTPhrAwgRPxGAvyl+ZwAh40935g4RgN+NvzKAGPCbScOJYbHitwYQE36z168TtuRixl8KIEb80+2IQwpxsePPBRAzfjNpUCFNA/55ABrwEwH4y3ubrGjCn271LhGAf4q/IoC48ZtJQ/Nx2vB/9WspAB34iQD8Kf5CALrwT7ebvHmTqJ9W/JkAdOI3kwYIfhn8swB049ccgXb8zgA04U939p6uCMDvCEAjfjNpmOAfD781AM34NUQAfkcA4I87AvA7AgB/dnuTvX2bRDPwOwIAfxl/TBGA3xEA+Kvxp1tbDzsC8Lv2zhYA+LP4zaQhg79//FeflQIAvw1/iBGAvx5/IQDwu/CHFAH4m+HPBAD+JvjX1vcnkwYO/n7wzwIAfxv8PkcA/nb4nQGAvxp/unP395N37xJvBv72+CsDAH89fjNp+OBfHr81APA3x+9DBOBfHn8pAPC3xy8ZAfi74c8FAP7l8U93AP7A8M8DAH93/GbgDwf/JID0wN8P/nTnHwwbAfj7w3/12XtbAODvgt/s/fuk94G/X/xf/1YKAPx94B8iAvD3j78QAPj7xN9nBOAfBn8mAPAPgX+6Q/B7ir82APB3x28Gfv/wOwMAf3/401142C4C8A+PvzIA8PeP3wz8/uC3BgD+4fCbffiQVA784+GfB2AiAP/w+F0RgF8If3rgHw//dEfgF8TfMADwD4XfDPwy+BsEAP6h8acDvwz+UgD5CMAPfmX4FwGAH/xx43cEAH7wx4//m98/2AOwRQB+8KvBXwwA/OCPDX9tACYC8INfJf70wA/+GPE3DsAeAfjBrwR/OQDwgz9s/K0DWEQAfvArxD8NAPzgDx//0gHYIgA/+NXgL0YAfvCrw28O/OBXi786APCD30/8vQdQjgD84FeEPx8B+MGvEP8iAvCDXyl+WwTgB78q/NkIwA9+lfizB37wR/Grs8uBH/xq8ZsDP/jV4s8e+ME/FH5p260O/ODvC7+05U4HfvAvi1/abq8HfvA3xS9tdfADP/iLkzYpeuDXh1/aXHr/A7XwS70zcxxbAAAAAElFTkSuQmCCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBgcIrAAAAA9gJzzAAAAAASUVORK5CYII=">
+<link rel="apple-touch-icon" id="apple-icon" href="data:image/png;base64,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">
 <script>
   /* Theme boot — runs before first paint to avoid a flash of the wrong theme. */
   (function () {
@@ -266,6 +271,7 @@
   <span id="save-indicator"></span>
   <span class="spacer"></span>
   <button class="btn" id="btn-copy-link" title="Copy a ?file= link that reopens this exact file with its URL — handy for sharing" disabled>🔗 Link</button>
+  <button class="btn" id="btn-install" title="Install Turnstone as an app — works offline, opens in its own window" hidden>⤓ Install</button>
   <button class="btn" id="btn-theme" title="Toggle light/dark theme">☀️</button>
   <button class="btn" id="btn-export-csv" title="Download the current data as CSV" disabled>Export CSV</button>
   <button class="btn" id="btn-export-xlsx" title="Download the current data as XLSX" disabled>Export XLSX</button>
@@ -430,6 +436,7 @@ const els = {
   btnRestore: $('#btn-restore'), btnDemo: $('#btn-demo'),
   fileChip: $('#file-chip'), fileChipName: $('#file-chip-name'), fileChipX: $('#file-chip-x'),
   btnCopyLink: $('#btn-copy-link'),
+  btnInstall: $('#btn-install'),
   urlInput: $('#url-input'), btnLoadUrl: $('#btn-load-url'),
   btnExportCsv: $('#btn-export-csv'), btnExportXlsx: $('#btn-export-xlsx'),
   btnTheme: $('#btn-theme'), btnTestCsv: $('#btn-test-csv'), btnTestXlsx: $('#btn-test-xlsx'),
@@ -1147,6 +1154,68 @@ window.addEventListener('beforeunload', (e) => {
 // Safety net: flush pending debounced saves when the tab is hidden.
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden' && state.isDirty) { log('Visibility hidden → flushing pending save'); saveNow(); }
+});
+
+/* ------------------------------ PWA plumbing ------------------------------ */
+/* Inline manifest built at runtime from embedded icon data URIs — keeps the
+   PWA single-file friendly (no separate manifest.json needed). */
+const ICON_192 = document.querySelector('link#apple-icon').href;   // same embedded 192px PNG
+const ICON_512_PNG = (() => {                                       // lazily fetched below when needed
+  return null;
+})();
+(function buildManifest() {
+  try {
+    const icon = (src, size) => ({ src, sizes: size + 'x' + size, type: 'image/png', purpose: 'any' });
+    const manifest = {
+      name: 'Turnstone — URL List Processor',
+      short_name: 'Turnstone',
+      description: 'Zero-server workspace for CSV/XLSX link lists: tabbed browsing, status tracking, and write-back — all client-side.',
+      start_url: location.pathname,
+      scope: './',
+      display: 'standalone',
+      background_color: '#0f1115',
+      theme_color: '#0f1115',
+      icons: [icon(ICON_192, 192)],
+    };
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' }));
+    document.head.appendChild(link);
+    log('Inline PWA manifest registered (icons embedded, no extra file)');
+  } catch (e) { warn('Manifest build failed (PWA features limited)', e); }
+})();
+
+/* Service worker: offline shell. Skipped on plain file:// (nothing to serve). */
+if (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then((reg) => log(`Service worker registered (scope: ${reg.scope})`))
+      .catch((e) => warn('Service worker registration failed (offline mode unavailable)', e));
+  }
+} else {
+  log(`Service worker skipped on ${location.protocol} origin`);
+}
+
+/* Install button: only shown when the browser fires beforeinstallprompt. */
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  els.btnInstall.hidden = false;
+  log('Turnstone is installable → ⤓ Install button shown');
+});
+els.btnInstall.addEventListener('click', async () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  log(`Install prompt outcome: ${outcome}`);
+  deferredInstallPrompt = null;
+  els.btnInstall.hidden = true;
+});
+window.addEventListener('appinstalled', () => {
+  els.btnInstall.hidden = true;
+  log('Turnstone installed as an app');
+  toast('Turnstone installed — find it in your apps menu', 'success');
 });
 
 /* ----------------------------- Demo dataset ------------------------------ */

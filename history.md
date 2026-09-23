@@ -1,5 +1,24 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-23 — PWA: installable + offline (v0.4)
+
+**Request:** make Turnstone installable as a PWA (manifest + service worker, still single-file friendly) so it works offline and can be installed from the browser.
+
+### Delivered
+- **Icons** — `icon-192.png` (2.2 KB) and `icon-512.png` (8 KB), generated programmatically in Node (hand-built PNG encoder: CRC-checked chunks, deflate): rounded tile in the app's accent gradient with the white Turnstone gem, transparent outside the rounded corners, safe for masking. Both also embedded in `index.html` as data URIs (favicon + apple-touch-icon).
+- **Inline web-app manifest** — built at runtime from the embedded icon data URI and injected as a Blob URL: no `manifest.json` file needed; `name`, `short_name`, `display: standalone`, `start_url: location.pathname` (deep links keep working from the installed app), `scope`, dark `theme_color`/`background_color`.
+- **`sw.js`** — versioned cache (`turnstone-v0.4.0`): precaches the shell, both CDN libraries (PapaParse, SheetJS), icons, and the sample files (each miss tolerated so sandboxed previews can't break install); stale-while-revalidate for same-origin assets; cache-first for CDN (immutable versioned URLs); network-first navigations with cache fallback so the app **opens offline**, deep links included (`ignoreSearch` + clean-path fallback); old caches purged on activate.
+- **⤓ Install button** in the topbar, shown only when the browser fires `beforeinstallprompt`; hidden after install or dismissal; `appinstalled` welcome toast.
+- **Graceful degradation** — SW registration only on https/localhost; skipped (with a log line) on `file://`.
+
+### Verified
+- Manifest JSON parses from the Blob URL with correct fields and a data-URI icon.
+- In the sandbox preview (no sibling files served): SW registration fails soft with a warning — no unhandled errors, app fully functional.
+- README gained an Install section + `sw.js` docs entry.
+- Post-push: live Pages verification planned (SW registration, cache contents, offline reload).
+
+---
+
 ## 2026-09-23 — Production deployment + README demo links (v0.3.1)
 
 **Request:** make sure everything is pushed and working in prod, and update the README to link the web app plus an example deep link that pre-loads a demo file.

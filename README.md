@@ -36,9 +36,22 @@ The 🔗 **Link** button (topbar, when a remote file is open) copies a shareable
 
 Light/dark out of the box: follows your OS preference live, remembers your explicit choice, no flash on load.
 
+## Install it as an app (PWA)
+
+Turnstone is installable: visit the live site in Chrome/Edge (or any Chromium browser) and use the **⤓ Install** button in the topbar — or your browser's *Install app* menu entry. It then:
+
+- opens in its own window, outside the browser chrome
+- **works fully offline** (service worker precaches the app shell, parser libraries, icons, and the sample files)
+- keeps your recent-file list, statuses, and notes in local storage on that device
+
+No app store, no backend, no build step — installing just pins the same single-file app to your machine. (Installability and offline mode require HTTPS or localhost, i.e. the live site or a local server; opening `index.html` straight from disk skips the service worker gracefully.)
+
+Implementation note: the web-app manifest is generated at runtime from icons embedded in `index.html` as data URIs, so the PWA adds only one real file to the repo — `sw.js`.
+
 ## Docs
 
 - `PRD-Turnstone.md` — master document (§4 = agent rules, mirrored in `agents.md`)
 - `todo.md` — task tracker
 - `history.md` — build log (v0.1 MVP → v0.3 URL-param hardening)
 - `testing-notes.md` — test files and the manual production test plan
+- `sw.js` — service worker (offline app shell; bump its `VERSION` to invalidate caches)
