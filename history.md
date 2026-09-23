@@ -1,5 +1,23 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-23 — Queue UX: click-to-open, one-click complete, auto-open/auto-advance, sorting (v0.6)
+
+**Request:** no Open button — clicking a card opens its link; optional auto-open on card selection; optional auto-open-next-on-complete; complete dropdown becomes a single button; completed cards hidden by default with a reveal option plus a subtle per-card undo; sort cards by any column asc/desc.
+
+### Delivered
+- **Click = open** — the Open ▶ button is gone; clicking a card's title opens its link (per selected mode) and expands the card. The card-URL link and ↗ still force real browser tabs.
+- **✓ Complete / ↺ Incomplete** — the status dropdown is now a single button: green ✓ Complete on open cards; completed cards get a subtle dashed ↺ Incomplete to flip back. Cards dim slightly when done.
+- **Completed hidden by default** — a **Show completed** checkbox (replaces "Hide completed", inverted semantics); the filter line shows `N shown · M hidden` while filtered.
+- **Automation options** (☰ menu, persisted): **Open link when card is selected** (opening happens on title click which also expands), and **Auto-open next after completing** — completing a card opens the next incomplete card's link (file order, wrapping), with a 🎉 "queue finished" toast on the last one.
+- **Sorting** — a Sort row in the sidebar: column dropdown (file order default; fixed roles marked `*`) + asc/desc toggle. Numeric-aware ordering, case-insensitive strings; persists per file until reset.
+
+### Verified in sandbox
+- Test CSV: 7 visible (3 completed hidden), filter info `7 shown · 3 hidden`; Show completed → 10 with 3 undo buttons; undo flips status and re-hides.
+- Title click opens iframe tab + expands (no Open button anywhere); Complete hides the card; auto-advance opens next incomplete; toggles persist in localStorage and check/uncheck in the menu.
+- Sorting by Name asc/desc and by Status groups completes first when ascending; file order resets cleanly; demo + test regressions pass.
+
+---
+
 ## 2026-09-23 — Open modes + hamburger UI (v0.5)
 
 **Request:** iframed tabs are one mode among several, not the default for everyone — users pick tabs / new browser tab / popup windows when they first load a file, changeable live in settings. Drop the branding topbar (brand the launch screen instead) and move its UI into a hamburger menu at the top of the sidebar for maximum vertical space. Also add phone/SMS/mail hand-off layers to future state.

@@ -2,6 +2,14 @@
 
 Status legend: `[ ]` todo · `[x]` done · `[~]` partially done / deferred
 
+## v0.6 Queue UX
+- [x] No Open button — clicking a card opens its link (per open mode) and expands it.
+- [x] Single ✓ Complete button replaces the status dropdown; completed cards get a subtle ↺ Incomplete undo.
+- [x] Completed cards hidden by default; "Show completed" checkbox reveals them (filter line shows hidden count).
+- [x] Automation toggles in ☰ menu (persisted): open link on card selection; auto-open next incomplete after completing (wraps, 🎉 on finish).
+- [x] Sort cards by any column, ascending/descending (numeric-aware); file-order default.
+- [x] Sandbox-verified: hide/reveal, undo, auto-advance, sort asc/desc/by-status, regressions.
+
 ## v0.5 Open modes + hamburger UI
 - [x] Open modes: tabs (iframes) / new browser tab / popup window — persisted, applied everywhere links open, popup-blocked toast.
 - [x] First-run mode picker on first file load (3 options + decide later); re-openable from ☰ → "Which should I pick?".

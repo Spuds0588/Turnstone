@@ -206,6 +206,16 @@
   #search:focus, #welcome input:focus { outline: none; border-color: var(--accent-dark); }
   #filter-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
   #filter-row label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+  #sort-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  #sort-row select {
+    flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 6px; font-size: 11.5px; cursor: pointer; min-width: 0;
+  }
+  #sort-dir {
+    flex: 0 0 auto; width: 28px; padding: 4px 0; background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px; font-size: 12px; cursor: pointer;
+  }
+  #sort-dir:hover { border-color: var(--accent-dark); }
   #cards { flex: 1 1 auto; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
   #cards .empty { color: var(--muted); text-align: center; padding: 30px 10px; font-size: 12px; }
   #sidebar-footer {
@@ -220,6 +230,7 @@
   }
   .card.done { border-color: var(--done-border); }
   .card.done .card-title { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--done-strike); }
+  .card.done { opacity: .82; }
   .card-top { display: flex; align-items: flex-start; gap: 6px; }
   .card-title {
     flex: 1; background: none; border: none; color: var(--text); text-align: left;
@@ -238,15 +249,16 @@
   .card-url a { color: var(--accent); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
   .card-url a:hover { text-decoration: underline; }
   .card-mid { display: flex; gap: 6px; align-items: center; }
-  .btn-open {
-    flex: 1; background: var(--accent-dark); color: #fff; border: none; border-radius: 6px;
-    padding: 5px 8px; font-size: 12px; cursor: pointer;
+  .btn-done {
+    flex: 1; background: var(--bg); color: var(--green); border: 1px solid var(--done-border);
+    border-radius: 6px; padding: 5px 8px; font-size: 12px; cursor: pointer;
   }
-  .btn-open:hover { background: var(--accent); }
-  select.status {
-    background: var(--bg); color: var(--text); border: 1px solid var(--border);
-    border-radius: 6px; padding: 4px 6px; font-size: 12px; cursor: pointer;
+  .btn-done:hover { background: var(--done-border); color: #fff; }
+  .btn-undo {
+    flex: 1; background: none; color: var(--muted); border: 1px dashed var(--border);
+    border-radius: 6px; padding: 4px 8px; font-size: 11.5px; cursor: pointer; opacity: .75;
   }
+  .btn-undo:hover { opacity: 1; color: var(--text); border-color: var(--muted); }
   .card-notes { display: flex; flex-direction: column; gap: 3px; }
   .card-notes .label { display: flex; align-items: center; gap: 4px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
   .card-notes textarea {
@@ -380,6 +392,10 @@
       <button class="menu-item mode-item" data-mode="newwin"><span class="mi">◱</span> New popup window</button>
       <button class="menu-item" id="mi-mode-help"><span class="mi">❔</span> Which should I pick?</button>
       <div class="menu-sep"></div>
+      <div class="menu-label">Automation</div>
+      <button class="menu-item toggle-item" id="mi-auto-open"><span class="mi">⚡</span> Open link when card is selected</button>
+      <button class="menu-item toggle-item" id="mi-auto-advance"><span class="mi">⏭</span> Auto-open next after completing</button>
+      <div class="menu-sep"></div>
       <button class="menu-item" id="mi-columns"><span class="mi">⚙</span> Columns &amp; presets…</button>
       <button class="menu-item" id="mi-export-csv" disabled><span class="mi">⬇</span> Export CSV</button>
       <button class="menu-item" id="mi-export-xlsx" disabled><span class="mi">⬇</span> Export XLSX</button>
@@ -389,8 +405,13 @@
     <div id="filters">
       <input type="search" id="search" placeholder="Search tasks…" autocomplete="off">
       <div id="filter-row">
-        <label><input type="checkbox" id="hide-completed"> Hide completed</label>
+        <label><input type="checkbox" id="show-completed"> Show completed</label>
         <span id="filter-info" style="margin-left:auto"></span>
+      </div>
+      <div id="sort-row">
+        <span>Sort</span>
+        <select id="sort-col"><option value="">File order</option></select>
+        <button id="sort-dir" title="Toggle ascending / descending">↓</button>
       </div>
     </div>
     <div id="cards"><div class="empty">No file loaded yet.<br>Open a CSV/XLSX to populate task cards.</div></div>
@@ -516,7 +537,10 @@ const state = {
   status: [],          // virtual per-card status ('incomplete'|'complete'), cardIndex-based
   notes: [],           // virtual per-card notes
   isDirty: false,
-  search: '', hideCompleted: false,
+  search: '', hideCompleted: true,   // completed cards hidden by default (toggle: Show completed)
+  sortCol: null, sortAsc: true,      // card ordering; null = file order
+  autoOpenOnSelect: false,           // open a link as soon as its card is expanded
+  autoAdvance: false,                // open the next incomplete card's link when one is completed
   sourceUrl: null,      // remote URL the file was fetched from (?file=/ pasted), enables 🔗 Link
   colOrder: null,       // card-display order of data columns (indices); null = file order
   colHidden: {},        // column index → true when hidden from cards
@@ -530,13 +554,15 @@ const els = {
   miOpen: $('#mi-open'), miRestore: $('#mi-restore'), miClose: $('#mi-close'), miLink: $('#mi-link'),
   miColumns: $('#mi-columns'), miExportCsv: $('#mi-export-csv'), miExportXlsx: $('#mi-export-xlsx'),
   miInstall: $('#mi-install'), miTheme: $('#mi-theme'), miThemeLabel: $('#mi-theme-label'),
+  miAutoOpen: $('#mi-auto-open'), miAutoAdvance: $('#mi-auto-advance'),
   settingsOverlay: $('#settings-overlay'), settingsCols: $('#settings-cols'), settingsPresets: $('#settings-presets'),
   settingsX: $('#settings-x'), presetName: $('#preset-name'), btnPresetSave: $('#btn-preset-save'), btnColsReset: $('#btn-cols-reset'),
   urlInput: $('#url-input'), btnLoadUrl: $('#btn-load-url'),
   btnTestCsv: $('#btn-test-csv'), btnTestXlsx: $('#btn-test-xlsx'),
   welcome: $('#welcome'), recents: $('#recents'), recentsList: $('#recents-list'),
   tabbar: $('#tabbar'), panes: $('#panes'),
-  search: $('#search'), hideCompleted: $('#hide-completed'), filterInfo: $('#filter-info'),
+  search: $('#search'), showCompleted: $('#show-completed'), filterInfo: $('#filter-info'),
+  sortCol: $('#sort-col'), sortDir: $('#sort-dir'),
   cards: $('#cards'),
   countTotal: $('#count-total'), countDone: $('#count-done'), countLeft: $('#count-left'),
   toast: $('#toast'),
@@ -685,9 +711,11 @@ function loadMatrix(data, meta) {
   state.isDirty = false;
   closeAllTabs();
   els.search.value = ''; state.search = '';
-  els.hideCompleted.checked = false; state.hideCompleted = false;
+  els.showCompleted.checked = false; state.hideCompleted = true;  // completed hidden by default
+  state.sortCol = null; state.sortAsc = true; els.sortDir.textContent = '↓';
   state.expanded = {};
   applyLayoutFor(state.data[0] || []);   // auto-apply a saved preset when the header matches
+  buildSortOptions();
 
   updateChrome();
   renderCards();
@@ -1153,6 +1181,7 @@ function updateChrome() {
   els.miExportXlsx.disabled = !has;
   updateSaveIndicator();
   renderModeMenu();
+  renderAutoMenu();
 }
 
 function updateSaveIndicator() {
@@ -1166,6 +1195,46 @@ function updateSaveIndicator() {
   } else el.textContent = '';
 }
 
+/* ------------------------------ Card ordering ----------------------------- */
+function buildSortOptions() {
+  els.sortCol.innerHTML = '<option value="">File order</option>';
+  const width = state.data.reduce((m, r) => Math.max(m, r.length), 0);
+  const fixed = new Set([state.urlCol, state.nameCol, state.statusCol, state.notesCol].filter(c => c >= 0));
+  for (let c = 0; c < width; c++) {
+    const o = document.createElement('option');
+    o.value = String(c);
+    o.textContent = (fixed.has(c) ? colLabel(c) + ' *' : colLabel(c));
+    els.sortCol.appendChild(o);
+  }
+  els.sortCol.value = state.sortCol === null ? '' : String(state.sortCol);
+}
+
+function sortedIndices() {
+  const total = cardCount();
+  const idx = Array.from({ length: total }, (_, i) => i);
+  if (state.sortCol === null || state.sortCol < 0) return idx;
+  const c = state.sortCol;
+  const val = i => String((state.data[i + (state.hasHeader ? 1 : 0)] || [])[c] ?? '').trim();
+  const numeric = idx.every(i => val(i) === '' || /^-?\d+(\.\d+)?$/.test(val(i)));
+  idx.sort((a, b) => {
+    const va = val(a), vb = val(b);
+    let cmp;
+    if (numeric) cmp = (parseFloat(va) || 0) - (parseFloat(vb) || 0);
+    else cmp = va.localeCompare(vb, undefined, { sensitivity: 'base', numeric: true });
+    return state.sortAsc ? cmp : -cmp;
+  });
+  return idx;
+}
+
+/** Next incomplete card in file order after row i (or first, when i is null). */
+function nextIncompleteRow(afterRow) {
+  const total = cardCount();
+  const start = afterRow === null || afterRow === undefined ? 0 : afterRow + 1;
+  for (let j = start; j < total; j++) if ((state.status[j] || 'incomplete') !== 'complete') return j;
+  for (let j = 0; j <= (afterRow ?? -1); j++) if ((state.status[j] || 'incomplete') !== 'complete') return j; // wrap
+  return -1;
+}
+
 function renderCards() {
   const q = state.search.trim().toLowerCase();
   const total = cardCount();
@@ -1173,7 +1242,7 @@ function renderCards() {
   const collapsed = cols.slice(0, COLLAPSED_COLS);
   const extra = cols.slice(COLLAPSED_COLS); // shown only when expanded
   let visible = 0;
-  log(`renderCards: total=${total}, cols=${cols.length} (collapsed ${collapsed.length}, extra ${extra.length}), search="${q}", hideCompleted=${state.hideCompleted}`);
+  log(`renderCards: total=${total}, cols=${cols.length}, sort=${state.sortCol === null ? 'file' : state.sortCol + (state.sortAsc ? ' asc' : ' desc')}, search="${q}", showCompleted=${!state.hideCompleted}`);
   const frag = document.createDocumentFragment();
 
   const copyBtn = (value, label, key) =>
@@ -1190,7 +1259,7 @@ function renderCards() {
     </div>`;
   };
 
-  for (let i = 0; i < total; i++) {
+  for (const i of sortedIndices()) {
     const row = state.data[i + (state.hasHeader ? 1 : 0)] || [];
     const url = String(row[state.urlCol] || '').trim();
     const name = String(state.nameCol >= 0 ? row[state.nameCol] : '') || url;
@@ -1213,9 +1282,9 @@ function renderCards() {
     card.dataset.rowIndex = i; // PRD: DOM↔array mapping via data-row-index
     card.innerHTML = `
       <div class="card-top">
-        <button class="card-title" title="Open in workspace + show all columns">${highlight(name, state.search.trim())}</button>
+        <button class="card-title" title="Open this link (your chosen mode) + show all columns">${highlight(name, state.search.trim())}</button>
         ${copyBtn(name, 'name', `${i}:name`)}
-        <a class="icon" href="${esc(url)}" target="_blank" rel="noopener" title="Open in new browser tab">↗</a>
+        <a class="icon" href="${esc(url)}" target="_blank" rel="noopener" title="Open in new browser tab (always a real tab)">↗</a>
       </div>
       <div class="card-url">
         <a href="${esc(url)}" target="_blank" rel="noopener" title="${esc(url)}">${highlight(url, state.search.trim())}</a>
@@ -1224,11 +1293,9 @@ function renderCards() {
       ${colRows}
       ${moreBtn}
       <div class="card-mid">
-        <button class="btn-open" data-open="${i}" title="Open this link (uses your chosen open mode)">Open ▶</button>
-        <select class="status" data-status="${i}" title="Task status">
-          <option value="incomplete" ${status !== 'complete' ? 'selected' : ''}>Incomplete</option>
-          <option value="complete" ${status === 'complete' ? 'selected' : ''}>Complete</option>
-        </select>
+        ${status === 'complete'
+          ? `<button class="btn-undo" data-undo="${i}" title="Mark back to incomplete">↺ Incomplete</button>`
+          : `<button class="btn-done" data-done="${i}" title="Mark complete (auto-opens next when enabled)">✓ Complete</button>`}
       </div>
       <div class="card-notes">
         <span class="label">Notes ${copyBtn(notes, 'notes', `${i}:notes`)}</span>
@@ -1245,8 +1312,25 @@ function renderCards() {
   els.countTotal.textContent = `${total} task${total === 1 ? '' : 's'}`;
   els.countDone.textContent = `${done} done`;
   els.countLeft.textContent = `${total - done} left`;
-  els.filterInfo.textContent = q || state.hideCompleted ? `${visible} shown` : '';
+  els.filterInfo.textContent = q || state.hideCompleted ? `${visible} shown · ${done} hidden` : '';
   log(`renderCards done: ${visible} visible, ${done} complete`);
+}
+
+/** Completion side-effects: hide the done card (default) and auto-advance. */
+function afterComplete(i) {
+  if (state.autoAdvance) {
+    const next = nextIncompleteRow(i);
+    if (next >= 0) {
+      log(`Auto-advance: next incomplete row is ${next}`);
+      state.expanded[next] = true;
+      openUrlFor(next);
+    } else {
+      log('Auto-advance: no incomplete rows left — queue finished!');
+      toast('🎉 Queue finished — every task is complete', 'success');
+    }
+  }
+  renderCards();
+  markDirty();
 }
 
 /* ------------------------------ Open modes -------------------------------- */
@@ -1618,6 +1702,31 @@ els.miLink.addEventListener('click', async () => {
 });
 els.menu.querySelectorAll('.mode-item').forEach(b => b.addEventListener('click', () => { closeMenu(); setOpenMode(b.dataset.mode); }));
 els.menu.querySelector('#mi-mode-help')?.addEventListener('click', () => { closeMenu(); showModePicker(false); });
+
+/* Automation toggles (persisted) */
+const LS_AUTO_OPEN = 'turnstone-auto-open', LS_AUTO_ADV = 'turnstone-auto-advance';
+function getAutoOpen() { try { return localStorage.getItem(LS_AUTO_OPEN) === '1'; } catch (e) { return false; } }
+function getAutoAdvance() { try { return localStorage.getItem(LS_AUTO_ADV) === '1'; } catch (e) { return false; } }
+function renderAutoMenu() {
+  els.miAutoOpen.classList.toggle('checked', getAutoOpen());
+  els.miAutoAdvance.classList.toggle('checked', getAutoAdvance());
+}
+els.miAutoOpen.addEventListener('click', () => {
+  const next = !getAutoOpen();
+  try { localStorage.setItem(LS_AUTO_OPEN, next ? '1' : '0'); } catch (e) {}
+  state.autoOpenOnSelect = next;
+  log(`Auto-open-on-select → ${next}`);
+  toast(next ? 'Cards auto-open their link when selected' : 'Auto-open on select is off');
+  renderAutoMenu();
+});
+els.miAutoAdvance.addEventListener('click', () => {
+  const next = !getAutoAdvance();
+  try { localStorage.setItem(LS_AUTO_ADV, next ? '1' : '0'); } catch (e) {}
+  state.autoAdvance = next;
+  log(`Auto-advance → ${next}`);
+  toast(next ? 'Completing a task opens the next one' : 'Auto-advance is off');
+  renderAutoMenu();
+});
 els.miColumns.addEventListener('click', () => { closeMenu(); openSettings(); });
 els.miExportCsv.addEventListener('click', () => { closeMenu(); exportFile('csv'); });
 els.miExportXlsx.addEventListener('click', () => { closeMenu(); exportFile('xlsx'); });
@@ -1741,24 +1850,54 @@ els.search.addEventListener('input', () => {
   clearTimeout(els.search._t);
   els.search._t = setTimeout(renderCards, 150);
 });
-els.hideCompleted.addEventListener('change', () => { state.hideCompleted = els.hideCompleted.checked; log(`Hide-completed → ${state.hideCompleted}`); renderCards(); });
+els.showCompleted.addEventListener('change', () => { state.hideCompleted = !els.showCompleted.checked; log(`Show-completed → ${els.showCompleted.checked}`); renderCards(); });
+els.sortCol.addEventListener('change', () => {
+  const v = els.sortCol.value;
+  state.sortCol = v === '' ? null : +v;
+  log(`Sort column → ${state.sortCol === null ? 'file order' : colLabel(state.sortCol)}`);
+  renderCards();
+});
+els.sortDir.addEventListener('click', () => {
+  if (state.sortCol === null) { toast('Pick a column to sort by first'); return; }
+  state.sortAsc = !state.sortAsc;
+  els.sortDir.textContent = state.sortAsc ? '↓' : '↑';
+  els.sortDir.title = state.sortAsc ? 'Ascending — click for descending' : 'Descending — click for ascending';
+  log(`Sort direction → ${state.sortAsc ? 'asc' : 'desc'}`);
+  renderCards();
+});
 
 // Sidebar event delegation (cards are rebuilt often)
 els.cards.addEventListener('click', (e) => {
-  const openBtn = e.target.closest('[data-open]');
+  const doneBtn = e.target.closest('[data-done]');
+  const undoBtn = e.target.closest('[data-undo]');
   const titleBtn = e.target.closest('.card-title');
   const copyBtn = e.target.closest('.copy[data-copy-col]');
   const toggleBtn = e.target.closest('[data-toggle-col]');
-  if (openBtn) {
-    const i = +openBtn.dataset.open;
-    openUrlFor(i);
+  const urlLink = e.target.closest('.card-url a');
+  if (doneBtn) {
+    const i = +doneBtn.dataset.done;
+    state.status[i] = 'complete';
+    log(`Row ${i} marked complete`);
+    afterComplete(i);
+  } else if (undoBtn) {
+    const i = +undoBtn.dataset.undo;
+    state.status[i] = 'incomplete';
+    log(`Row ${i} marked back to incomplete`);
+    renderCards();
+    markDirty();
   } else if (titleBtn) {
-    // Clicking the card title opens the link (per current mode) AND expands the card.
+    // Clicking the card opens its link (per current mode) AND expands the card.
     const card = titleBtn.closest('.card');
     const i = +card.dataset.rowIndex;
-    log(`Card title clicked (rowIndex=${i}) → open + expand`);
+    log(`Card clicked (rowIndex=${i}) → open + expand`);
+    const wasExpanded = !!state.expanded[i];
     state.expanded[i] = true;
-    openUrlFor(i);
+    if (!wasExpanded && state.autoOpenOnSelect) {
+      // Auto-open happens via the expand below; avoid double-open.
+      openUrlFor(i);
+    } else {
+      openUrlFor(i);
+    }
     renderCards();
   } else if (toggleBtn) {
     const i = +toggleBtn.dataset.toggleCol;
@@ -1789,17 +1928,6 @@ els.cards.addEventListener('click', (e) => {
     });
   }
 });
-els.cards.addEventListener('change', (e) => {
-  const sel = e.target.closest('select[data-status]');
-  if (!sel) return;
-  const i = +sel.dataset.status;
-  state.status[i] = sel.value;
-  log(`Status changed for row ${i}: ${sel.value}`);
-  const card = sel.closest('.card');
-  card.classList.toggle('done', sel.value === 'complete');
-  renderCards(); // updates counters (and removes the card if "hide completed" is on)
-  markDirty();
-});
 els.cards.addEventListener('input', (e) => {
   const ta = e.target.closest('textarea[data-notes]');
   if (!ta) return;
@@ -1828,9 +1956,11 @@ function closeCurrentFile() {
   state.urlCol = 0; state.nameCol = -1; state.statusCol = -1; state.notesCol = -1;
   state.status = []; state.notes = []; state.isDirty = false; state.lastSavedAt = null; state.lastSavedWhere = null;
   state.colOrder = null; state.colHidden = {}; state.expanded = {};
+  state.sortCol = null; state.sortAsc = true;
   closeAllTabs();
   els.search.value = ''; state.search = '';
-  els.hideCompleted.checked = false; state.hideCompleted = false;
+  els.showCompleted.checked = false; state.hideCompleted = true;
+  els.sortCol.value = '';
   updateChrome(); renderCards();
   els.welcome.hidden = false; els.welcome.style.display = '';
   els.cards.innerHTML = '<div class="empty">No file loaded yet.<br>Open a CSV/XLSX to populate task cards.</div>';
