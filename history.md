@@ -1,5 +1,21 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-23 — Production deployment + README demo links (v0.3.1)
+
+**Request:** make sure everything is pushed and working in prod, and update the README to link the web app plus an example deep link that pre-loads a demo file.
+
+### Delivered
+- **Enabled GitHub Pages** for the repo (`main` branch, root) → **https://spuds0588.github.io/Turnstone/** — the natural prod home for a zero-server static app.
+- **README** now opens with the live-app link and two copy-pasteable example deep links: the CSV one (`?file=` pre-loading `sample-links.csv` from the repo itself) and an XLSX one with `&open=1` that auto-opens the first task.
+
+### Verified in production
+- Pages build completed; app root, `index.html`, `sample-links.csv`, and `sample-links.xlsx` all HTTP 200.
+- `access-control-allow-origin: *` confirmed on the sample files, so the app can fetch its own samples cross-origin.
+- Live E2E in a real browser against the Pages URL: CSV via `?file=` → 10 cards, 3 seeded statuses, chip + Link button working (clipboard copy confirmed); XLSX via `?url=&open=1` → sheet `Links`, 10 cards, first task auto-opened in a workspace tab.
+- README pushed (`18dcd16`), verified live on `raw.githubusercontent.com` (3 live-link + 5 demo-param mentions); repo in sync with `origin/main`.
+
+---
+
 ## 2026-09-23 — URL-parameter loading + workflow polish (v0.3)
 
 **Request:** load spreadsheets via URL parameter, add scope-appropriate features, build → test → push → verify (E2E against the pushed GitHub URLs).

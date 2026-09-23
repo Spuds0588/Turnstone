@@ -2,6 +2,11 @@
 
 Status legend: `[ ]` todo · `[x]` done · `[~]` partially done / deferred
 
+## v0.3.1 Production deployment
+- [x] GitHub Pages enabled (main/root) → https://spuds0588.github.io/Turnstone/ — build verified, all assets 200, CORS `*` on sample files.
+- [x] Prod E2E in a real browser: CSV via `?file=` and XLSX via `?url=&open=1`, both loading from the Pages site itself; Link-button clipboard copy confirmed.
+- [x] README: live-app link + two example deep links (CSV `?file=`, XLSX `?url=&open=1`); verified live on GitHub.
+
 ## v0.3 URL-parameter loading + workflow polish
 - [x] Hardened `loadFromUrl`: format detected from content (ZIP magic bytes) with URL-extension and Content-Type fallbacks; `?url=` alias for `?file=`; URL validation (scheme, non-URL input, self-link); loud failure on HTML error pages served as HTTP 200; CORS-specific error hint.
 - [x] Shareable deep links: 🔗 Link button copies a `?file=` URL for the loaded remote file; source URL kept in session snapshot and recents (remote files re-open with one click, statuses restored).
