@@ -98,10 +98,12 @@ html = mustReplace(html, '\n</style>', `
 const sha = git('rev-parse --short HEAD', 'unknown');
 // Tracked modifications only, and never the artifact itself: a rebuild always
 // rewrites this file, so counting it would brand every build as dirty.
-/* Both the artifact and the size registry are outputs of this script, so neither may
-   count as "the tree is dirty" — the registry is rewritten by every build. */
+/* Only the sources that feed this build may count as "the tree is dirty". Generated
+   artifacts — this one, the size registry, and the other ports' dist folders — are
+   outputs, so rebuilding them must never make the stamp claim a dirty source tree. */
 const relOut = path.relative(ROOT, OUT).split(path.sep).join('/');
-const dirty = git(`diff --quiet HEAD -- . ":!${relOut}" ":!assets/sizes.json"`, 'dirty') === 'dirty' ? ' + uncommitted changes' : '';
+const GENERATED = [relOut, 'assets/sizes.json', 'ports/bookmarklet/dist', 'ports/extension/dist'];
+const dirty = git(`diff --quiet HEAD -- . ${GENERATED.map((p) => `":!${p}"`).join(' ')}`, 'dirty') === 'dirty' ? ' + uncommitted changes' : '';
 const stamp = [
   '<!--',
   '  Turnstone — standalone BETA build.',
