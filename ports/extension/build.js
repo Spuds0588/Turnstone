@@ -202,6 +202,15 @@ js = patch(js, '  document.body.appendChild(a); a.click(); a.remove();',
   document.body.appendChild(a); a.click(); a.remove();`,
   'export download');
 
+/* The side panel IS one of the editions and has no site beside it: it cannot link to
+   versions.html, which it does not package. Remove the pointer outright rather than
+   hide it, so the markup carries no href the integrity check below would reject. */
+js = patch(js, /  \/\* Point at the other editions[\s\S]*?log\(hasSite \? 'Edition pointer shown[^\n]*\n/,
+  `  /* No edition pointer here: the panel is itself one of the editions, and it does
+     not package the site that describes the others. */\n`,
+  'edition-pointer block');
+js = patch(js, "  editionsHint: $('#editions-hint'),\n", '', 'edition-pointer element ref');
+
 /* --- 3. Gone: PWA plumbing, install prompt, unload guard ------------------ */
 /* Anchored on the end of buildManifest, not on the first "})();" after the
    heading — the icon constants above it are an IIFE too, and stopping there left
@@ -239,7 +248,7 @@ for (const dead of ['openInIframe', 'renderTabbar', 'activateTab(', 'closeTab(',
 }
 if (!js.includes('function closeAllTabs()')) throw new Error('the closeAllTabs shim is missing');
 if (/addEventListener\('beforeunload'/.test(js)) throw new Error('a beforeunload handler survived patching');
-for (const gone of ['buildManifest', 'ICON_192', 'serviceWorker', 'ICON_512_PNG', 'STANDALONE_BUILD']) {
+for (const gone of ['buildManifest', 'ICON_192', 'serviceWorker', 'ICON_512_PNG', 'STANDALONE_BUILD', 'editionsHint', 'editions-hint']) {
   if (js.includes(gone)) throw new Error(`PWA machinery survived: ${gone}`);
 }
 if (!js.includes("document.body.classList.toggle('has-file'")) throw new Error('has-file flag was not wired');
@@ -254,6 +263,10 @@ markup = patch(markup, '<button class="menu-item mode-item" data-mode="tabs"><sp
 markup = patch(markup, '      <button class="menu-item mode-item" data-mode="newtab"><span class="mi">↗</span> New browser tab</button>\n', '', 'newtab menu item');
 markup = patch(markup, '      <button class="menu-item mode-item" data-mode="newwin"><span class="mi">◱</span> New popup window</button>\n', '', 'newwin menu item');
 markup = patch(markup, '      <button class="menu-item" id="mi-mode-help"><span class="mi">❔</span> Which should I pick?</button>\n', '', 'mode-help menu item');
+
+/* The edition pointer's target is not packaged, and the panel is one of the editions. */
+markup = patch(markup, /          <p class="help" id="editions-hint" hidden>[\s\S]*?<\/p>\n/,
+  '', 'edition pointer markup');
 
 /* The deep-link sentence describes a URL a side panel does not have. */
 markup = patch(markup, 'Deep-link support: <code>?file=&lt;url&gt;</code> or <code>?url=&lt;url&gt;</code>; add <code>&amp;open=1</code> to auto-open the first task.',

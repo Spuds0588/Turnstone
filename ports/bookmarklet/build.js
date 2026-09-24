@@ -142,8 +142,11 @@ markup = patch(markup, 'src="assets/logo-light.svg"', `src="${svgUri(path.join(R
 markup = patch(markup, 'or browser storage.', 'or, in this build, this tab only — export to keep your work.', 'autosave copy');
 markup = patch(markup, '<button class="btn" id="btn-test-csv"', '<button class="btn" hidden id="btn-test-csv"', 'test-CSV button');
 markup = patch(markup, '<button class="btn" id="btn-test-xlsx"', '<button class="btn" hidden id="btn-test-xlsx"', 'test-XLSX button');
-/* The deep-link paragraph points at app.html? The overlay has no URL of its own. */
-markup = markup.replace(/<p style="font-size:11px; color:var\(--muted\); margin:0 0 10px">Any public link-list[\s\S]*?<\/p>/, '');
+/* The deep-link paragraph describes a ?file= URL — which an overlay on somebody
+   else's page has no way to be launched with, since the query string belongs to the
+   host page. Asserted rather than a bare replace: a silent no-op here would ship an
+   overlay advertising a parameter it does not have. */
+markup = patch(markup, /<p class="help">Any public link-list URL works[\s\S]*?<\/p>\n?/, '', 'URL-help paragraph');
 if (/(src|href)="(assets|vendor)\//.test(markup)) throw new Error('markup still references files on disk');
 
 /* ---------------------------------------------------------- variants ------ */

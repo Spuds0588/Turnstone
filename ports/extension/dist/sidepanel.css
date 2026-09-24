@@ -154,6 +154,9 @@
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
     padding: 24px;
   }
+  /* An id rule beats the UA sheet's [hidden] { display: none }, so hiding the welcome
+     screen needs its own rule — and given one, the app needs no inline display write. */
+  #welcome[hidden] { display: none; }
   #welcome .box { max-width: 460px; width: 100%; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 26px; }
   #welcome h1 { margin: 0 0 2px; font-size: 19px; display: flex; align-items: center; gap: 8px; }
   #welcome h1 .logo { width: 17px; height: 17px; vertical-align: -2.5px; }
@@ -321,6 +324,56 @@
   .preset-row .pmeta { color: var(--muted); font-size: 10.5px; flex: 1; }
   .srow { display: flex; gap: 6px; margin-top: 8px; }
   .srow input[type=text] { flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; font-size: 12px; }
+
+  /* ---------- Inline dialogs (open-mode picker, sheet picker) ---------- */
+  /* None of this is an inline `style="…"` attribute. A strict CSP drops those
+     (style-src-attr), which cost the dialogs their whole layout on exactly the
+     locked-down sites the bookmarklet exists for — so every rule that used to be
+     written into the markup lives here, keyed by id or class. Nothing in the app
+     writes a style attribute any more; the one position it genuinely computes at
+     runtime is the hamburger menu's `left`, which cannot be known ahead of time. */
+  #mode-picker {
+    position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 300;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  #sheet-picker {
+    position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 999;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-box {
+    background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    border-radius: 12px; padding: 22px; width: 380px; max-width: 94vw;
+  }
+  .modal-box.wide-options { width: auto; min-width: 280px; }
+  .modal-title { margin: 0 0 4px; font-size: 15px; }
+  .modal-sub { margin: 0 0 12px; font-size: 12px; color: var(--muted); }
+  .modal-cancel {
+    margin-top: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer;
+    border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--muted);
+  }
+  .modal-cancel:hover { color: var(--text); border-color: var(--muted); }
+  /* The execCommand clipboard fallback parks its textarea off-screen by class, so a
+     strict style-src does not have to allow it. */
+  .clip-fallback { position: fixed; left: -9999px; top: 0; opacity: 0; }
+  .pick-opt {
+    display: flex; flex-direction: column; gap: 2px; text-align: left; width: 100%;
+    margin: 6px 0; padding: 11px 14px; font-size: 13px; cursor: pointer;
+    border-radius: 9px; border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  }
+  .pick-opt:hover { border-color: var(--accent-dark); }
+  .pick-opt .label { font-weight: 600; }
+  .pick-opt .hint { font-size: 11px; color: var(--muted); }
+  .sheet-opt {
+    display: block; width: 100%; text-align: left; margin: 4px 0; padding: 7px 12px;
+    font-size: 13px; cursor: pointer; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  }
+  .sheet-opt:hover { border-color: var(--accent-dark); }
+  .sheet-opt.current { border-color: var(--accent-dark); font-weight: 600; }
+  /* Small print under the drop zone, and the "mode" tail on the sidebar file name. */
+  #welcome .help { font-size: 11px; margin: 0 0 10px; }
+  #filter-info { margin-left: auto; }
+  .head-mode { color: var(--muted); font-size: 10.5px; }
 
   /* ---------- Toast ---------- */
   #toast {

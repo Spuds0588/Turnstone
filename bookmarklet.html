@@ -103,9 +103,10 @@
     <li><strong>Write back into a picked file unless you chose the <code>full</code> variant</strong> (that
       needs SheetJS's writer). <code>csv</code> and <code>core</code> import workbooks one-way and export CSV.</li>
     <li><strong>Promise pixel-perfect styling on strict-CSP sites.</strong> The overlay needs no CSP
-      exemption to run — scripts, styles and DOM are all constructed by the payload — but a site with a
-      strict <code>style-src</code> drops the app's handful of inline <code>style</code> attributes, so a
-      few dialogs look plainer. Everything still works.</li>
+      exemption to run — scripts, styles and DOM are all constructed by the payload — and the app no
+      longer carries a single inline <code>style</code> attribute, so the dialogs render whole even where
+      <code>style-src 'self'</code> is enforced. Only the small stone mark is lost when
+      <code>img-src data:</code> is refused; the wordmark stays.</li>
     <li><strong>Fetch a remote list on a site with a closed <code>connect-src</code>.</strong> Local drops
       are unaffected; pasting a URL there fails with a fetch/CORS message rather than silently.</li>
   </ul>

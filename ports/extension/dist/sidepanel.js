@@ -129,7 +129,7 @@ async function copyText(text, label = 'text') {
   } catch (e) {
     warn('Clipboard API failed, falling back to execCommand', e);
     const ta = document.createElement('textarea');
-    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    ta.value = text; ta.className = 'clip-fallback';
     document.body.appendChild(ta); ta.select();
     const ok = document.execCommand('copy');
     ta.remove();
@@ -653,8 +653,7 @@ function loadMatrix(data, meta) {
 
   updateChrome();
   renderCards();
-  els.welcome.hidden = true;
-  els.welcome.style.display = 'none';
+  els.welcome.hidden = true;   // #welcome[hidden] in the stylesheet — no inline write needed
   maybeShowFirstRunPicker();
   const noun = `task${n === 1 ? '' : 's'}`;
   toast(`Loaded ${n} ${noun} from ${state.name}${resumed.length ? ` — resumed ${resumed.join(' · ')}` : ''}`, 'success');
@@ -675,18 +674,17 @@ function showModePicker(firstRun) {
   log(`Showing open-mode picker (firstRun=${firstRun})`);
   const overlay = document.createElement('div');
   overlay.id = 'mode-picker';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:300;padding:20px';
   const opts = Object.entries(OPEN_MODES).map(([k, v]) => `
-    <button data-pick="${k}" style="display:flex;flex-direction:column;gap:2px;text-align:left;width:100%;margin:6px 0;padding:11px 14px;font-size:13px;cursor:pointer;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text)">
-      <span style="font-weight:600">${v.label}</span>
-      <span style="font-size:11px;color:var(--muted)">${v.hint}</span>
+    <button data-pick="${k}" class="pick-opt">
+      <span class="label">${v.label}</span>
+      <span class="hint">${v.hint}</span>
     </button>`).join('');
   overlay.innerHTML = `
-    <div style="background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:22px;width:380px;max-width:94vw">
-      <h3 style="margin:0 0 4px;font-size:15px">How do you want to work through your links?</h3>
-      <p style="margin:0 0 12px;font-size:12px;color:var(--muted)">You can change this anytime from the ☰ menu.</p>
+    <div class="modal-box">
+      <h3 class="modal-title">How do you want to work through your links?</h3>
+      <p class="modal-sub">You can change this anytime from the ☰ menu.</p>
       ${opts}
-      <button id="picker-later" style="margin-top:8px;padding:6px 10px;font-size:11.5px;cursor:pointer;border-radius:7px;border:1px solid var(--border);background:none;color:var(--muted)">${firstRun ? 'Decide later (tabs by default)' : 'Cancel'}</button>
+      <button id="picker-later" class="modal-cancel">${firstRun ? 'Decide later (tabs by default)' : 'Cancel'}</button>
     </div>`;
   document.body.appendChild(overlay);
   const done = () => { overlay.remove(); };
@@ -1048,13 +1046,13 @@ function pickSheetName(buf, current) {
     const names = await sheetNamesOf(buf);
     log(`Multi-sheet workbook detected: [${names.join(', ')}]`);
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:999';
+    overlay.id = 'sheet-picker';
     overlay.innerHTML = `
-      <div style="background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:22px;min-width:280px">
-        <h3 style="margin:0 0 4px;font-size:15px">Multiple sheets found</h3>
-        <p style="margin:0 0 12px;font-size:12px;color:var(--muted)">Which worksheet holds your task list?</p>
-        ${names.map(n => `<button data-sheet="${esc(n)}" style="display:block;width:100%;text-align:left;margin:4px 0;padding:7px 12px;font-size:13px;cursor:pointer;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text)${n === current ? ';border-color:var(--accent-dark);font-weight:600' : ''}">${esc(n)}</button>`).join('')}
-        <button id="sheet-cancel" style="margin-top:8px;padding:6px 12px;font-size:12px;cursor:pointer;border-radius:8px;border:1px solid var(--border);background:none;color:var(--muted)">Cancel</button>
+      <div class="modal-box wide-options">
+        <h3 class="modal-title">Multiple sheets found</h3>
+        <p class="modal-sub">Which worksheet holds your task list?</p>
+        ${names.map(n => `<button data-sheet="${esc(n)}" class="sheet-opt${n === current ? ' current' : ''}">${esc(n)}</button>`).join('')}
+        <button id="sheet-cancel" class="modal-cancel">Cancel</button>
       </div>`;
     document.body.appendChild(overlay);
     overlay.querySelector('#sheet-cancel').onclick = () => { overlay.remove(); resolve(null); };
@@ -1144,7 +1142,7 @@ function updateChrome() {
   const has = cardCount() > 0;
   // Sidebar header: file name + save state
   els.headName.innerHTML = state.name
-    ? `${esc(state.name)} <span style="color:var(--muted);font-size:10.5px">· ${modeLabels[state.mode] || ''} · ${state.ext.toUpperCase()}</span>`
+    ? `${esc(state.name)} <span class="head-mode">· ${modeLabels[state.mode] || ''} · ${state.ext.toUpperCase()}</span>`
     : '<span class="no-file">No file loaded</span>';
   els.headName.title = state.sourceUrl ? `${state.name} — from ${state.sourceUrl}` : (state.name || '');
   // Menu item availability
@@ -1859,7 +1857,7 @@ function closeCurrentFile() {
   els.showCompleted.checked = false; state.hideCompleted = true;
   els.sortCol.value = '';
   updateChrome(); renderCards();
-  els.welcome.hidden = false; els.welcome.style.display = '';
+  els.welcome.hidden = false;
   els.cards.innerHTML = '<div class="empty">No file loaded yet.<br>Open a link list to populate task cards.</div>';
   toast('File closed — pick or paste another when ready');
 }
@@ -1970,6 +1968,9 @@ if (EXT) {
 
   // A build without SheetJS says so before the user drops a workbook on it.
   if (!HAS_XLSX_WRITE) els.btnTestXlsx.hidden = true;   // the test button builds a workbook to re-parse
+
+  /* No edition pointer here: the panel is itself one of the editions, and it does
+     not package the site that describes the others. */
   if (!HAS_XLSX) {
     els.dzFormats.textContent = 'CSV · TSV · JSON · HTML · XML';
     els.capNotice.hidden = false;

@@ -115,10 +115,18 @@ logic" that item was blocked on:
 
 ## Known limitations
 
-- **Inline `style="…"` attributes are dropped under a strict `style-src`.** The app carries 15
-  of them (2 in markup, 13 inside `innerHTML` dialog templates). On a page with `style-src
-  'self'` the CSP console reports them and those bits of dialog chrome lose their padding —
-  every feature still works, it just looks slightly plain. Moving them to classes is the fix.
+- **No inline `style="…"` attributes anywhere — this used to be the limitation, and is now
+  fixed.** The app carried 15 (2 in markup, 13 inside `innerHTML` dialog templates) plus a
+  runtime-styled toast and off-screen clipboard textarea. Every one of them is a class keyed by
+  id or class name, so a page running `style-src 'self'` renders the dialogs *whole*. The only
+  style the app writes at runtime is the hamburger menu's `left`, which is computed from the
+  button's position and cannot be known ahead of time; CSSOM writes are not CSP-governed, so it
+  costs nothing even on a strict page.
+- **The logo needs `img-src data:`.** It is a data-URI SVG `<img>` (the standalone build inlines
+  the two `assets/logo-*.svg` files). A page with a strict `img-src 'self'` refuses it and logs a
+  violation, and the overlay shows the wordmark without the small stone mark. Cosmetic only —
+  nothing else in the app loads an image. Inlining the SVG would remove the last CSP message the
+  payload can produce on a strict page.
 - **Remote `?file=`/URL loading** is the app's one `fetch`, so a page whose `connect-src` is
   closed will refuse it; the app already reports that as a fetch/CORS failure. Dropping a local
   file is unaffected.
@@ -166,6 +174,10 @@ host page's `?file=` ignored, and `SESSION_ONLY`/`STANDALONE_BUILD` flipped.
 - **Under `script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'`** (payload
   injected as a same-origin script, i.e. with no CSP exemption): mounted, 2 constructed sheets
   and 0 `<style>` elements, XLSX drop → 10 tasks / 3 done / 7 left, complete + notes working.
-  The only CSP console output is the inline-`style`-attribute limitation above.
+  The only CSP console output is the `img-src` refusal of the logo's data URI (see limitations) —
+  **no `style-src` violation at all**, which is the change: the 15 inline attributes are gone.
+  The harness was also reporting a violation from its *own* `<style>` block, which made the
+  result impossible to attribute; it now links `test-harness.css`, so every message on that page
+  is the payload's.
 - Hosted `app.html` regression pass after the capability changes: XLSX load, Test-XLSX
   (write + async read), multi-sheet inspection, and the capability notice staying hidden.

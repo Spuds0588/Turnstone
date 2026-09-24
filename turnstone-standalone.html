@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   Turnstone — standalone BETA build.
-  Generated 2026-09-24T19:07:41.200Z from app.html @ ecafdc4.
+  Generated 2026-09-24T19:48:16.804Z from app.html @ 1cc8ac6 + uncommitted changes.
 
   Self-contained by construction: the app shell, PapaParse, SheetJS and the logo
   artwork are all inlined above, and the app makes no third-party requests, so this
@@ -191,6 +191,9 @@
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
     padding: 24px;
   }
+  /* An id rule beats the UA sheet's [hidden] { display: none }, so hiding the welcome
+     screen needs its own rule — and given one, the app needs no inline display write. */
+  #welcome[hidden] { display: none; }
   #welcome .box { max-width: 460px; width: 100%; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 26px; }
   #welcome h1 { margin: 0 0 2px; font-size: 19px; display: flex; align-items: center; gap: 8px; }
   #welcome h1 .logo { width: 17px; height: 17px; vertical-align: -2.5px; }
@@ -359,6 +362,56 @@
   .srow { display: flex; gap: 6px; margin-top: 8px; }
   .srow input[type=text] { flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; font-size: 12px; }
 
+  /* ---------- Inline dialogs (open-mode picker, sheet picker) ---------- */
+  /* None of this is an inline `style="…"` attribute. A strict CSP drops those
+     (style-src-attr), which cost the dialogs their whole layout on exactly the
+     locked-down sites the bookmarklet exists for — so every rule that used to be
+     written into the markup lives here, keyed by id or class. Nothing in the app
+     writes a style attribute any more; the one position it genuinely computes at
+     runtime is the hamburger menu's `left`, which cannot be known ahead of time. */
+  #mode-picker {
+    position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 300;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  #sheet-picker {
+    position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 999;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-box {
+    background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    border-radius: 12px; padding: 22px; width: 380px; max-width: 94vw;
+  }
+  .modal-box.wide-options { width: auto; min-width: 280px; }
+  .modal-title { margin: 0 0 4px; font-size: 15px; }
+  .modal-sub { margin: 0 0 12px; font-size: 12px; color: var(--muted); }
+  .modal-cancel {
+    margin-top: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer;
+    border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--muted);
+  }
+  .modal-cancel:hover { color: var(--text); border-color: var(--muted); }
+  /* The execCommand clipboard fallback parks its textarea off-screen by class, so a
+     strict style-src does not have to allow it. */
+  .clip-fallback { position: fixed; left: -9999px; top: 0; opacity: 0; }
+  .pick-opt {
+    display: flex; flex-direction: column; gap: 2px; text-align: left; width: 100%;
+    margin: 6px 0; padding: 11px 14px; font-size: 13px; cursor: pointer;
+    border-radius: 9px; border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  }
+  .pick-opt:hover { border-color: var(--accent-dark); }
+  .pick-opt .label { font-weight: 600; }
+  .pick-opt .hint { font-size: 11px; color: var(--muted); }
+  .sheet-opt {
+    display: block; width: 100%; text-align: left; margin: 4px 0; padding: 7px 12px;
+    font-size: 13px; cursor: pointer; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  }
+  .sheet-opt:hover { border-color: var(--accent-dark); }
+  .sheet-opt.current { border-color: var(--accent-dark); font-weight: 600; }
+  /* Small print under the drop zone, and the "mode" tail on the sidebar file name. */
+  #welcome .help { font-size: 11px; margin: 0 0 10px; }
+  #filter-info { margin-left: auto; }
+  .head-mode { color: var(--muted); font-size: 10.5px; }
+
   /* ---------- Toast ---------- */
   #toast {
     position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%) translateY(8px);
@@ -407,13 +460,15 @@
             <input type="text" id="url-input" placeholder="…or paste a link-list URL" spellcheck="false">
             <button class="btn" id="btn-load-url">Load</button>
           </div>
-          <p style="font-size:11px; color:var(--muted); margin:0 0 10px">Any public link-list URL works (host must allow CORS). Deep-link support: <code>?file=&lt;url&gt;</code> or <code>?url=&lt;url&gt;</code>; add <code>&amp;open=1</code> to auto-open the first task.</p>
+          <p class="help">Any public link-list URL works (host must allow CORS). Deep-link support: <code>?file=&lt;url&gt;</code> or <code>?url=&lt;url&gt;</code>; add <code>&amp;open=1</code> to auto-open the first task.</p>
           <p class="or">or try it with sample data</p>
           <div class="row">
             <button class="btn" id="btn-demo" title="Load the small built-in demo list">Demo list</button>
             <button class="btn" id="btn-test-csv" title="Load the bundled sample dataset (CSV)">Test CSV</button>
             <button class="btn" id="btn-test-xlsx" title="Load the bundled sample dataset as a real XLSX parse">Test XLSX</button>
           </div>
+          <p class="help" id="editions-hint" hidden>On a machine that will not allow this page, or a site that refuses to be framed?
+            <a href="versions.html">See the other editions</a> — offline single-file, bookmarklet and side-panel builds.</p>
           <div id="recents" hidden>
             <h2>Recent files</h2>
             <div id="recents-list"></div>
@@ -457,7 +512,7 @@
       <input type="search" id="search" placeholder="Search tasks…" autocomplete="off">
       <div id="filter-row">
         <label><input type="checkbox" id="show-completed"> Show completed</label>
-        <span id="filter-info" style="margin-left:auto"></span>
+        <span id="filter-info"></span>
       </div>
       <div id="sort-row">
         <span>Sort</span>
@@ -645,6 +700,7 @@ const els = {
   miAutoOpen: $('#mi-auto-open'), miAutoAdvance: $('#mi-auto-advance'),
   settingsOverlay: $('#settings-overlay'), settingsCols: $('#settings-cols'), settingsPresets: $('#settings-presets'),
   settingsX: $('#settings-x'), presetName: $('#preset-name'), btnPresetSave: $('#btn-preset-save'), btnColsReset: $('#btn-cols-reset'),
+  editionsHint: $('#editions-hint'),
   urlInput: $('#url-input'), btnLoadUrl: $('#btn-load-url'),
   btnTestCsv: $('#btn-test-csv'), btnTestXlsx: $('#btn-test-xlsx'),
   welcome: $('#welcome'), recents: $('#recents'), recentsList: $('#recents-list'),
@@ -685,7 +741,7 @@ async function copyText(text, label = 'text') {
   } catch (e) {
     warn('Clipboard API failed, falling back to execCommand', e);
     const ta = document.createElement('textarea');
-    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    ta.value = text; ta.className = 'clip-fallback';
     document.body.appendChild(ta); ta.select();
     const ok = document.execCommand('copy');
     ta.remove();
@@ -1209,8 +1265,7 @@ function loadMatrix(data, meta) {
 
   updateChrome();
   renderCards();
-  els.welcome.hidden = true;
-  els.welcome.style.display = 'none';
+  els.welcome.hidden = true;   // #welcome[hidden] in the stylesheet — no inline write needed
   maybeShowFirstRunPicker();
   const noun = `task${n === 1 ? '' : 's'}`;
   toast(`Loaded ${n} ${noun} from ${state.name}${resumed.length ? ` — resumed ${resumed.join(' · ')}` : ''}`, 'success');
@@ -1231,18 +1286,17 @@ function showModePicker(firstRun) {
   log(`Showing open-mode picker (firstRun=${firstRun})`);
   const overlay = document.createElement('div');
   overlay.id = 'mode-picker';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:300;padding:20px';
   const opts = Object.entries(OPEN_MODES).map(([k, v]) => `
-    <button data-pick="${k}" style="display:flex;flex-direction:column;gap:2px;text-align:left;width:100%;margin:6px 0;padding:11px 14px;font-size:13px;cursor:pointer;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text)">
-      <span style="font-weight:600">${v.label}</span>
-      <span style="font-size:11px;color:var(--muted)">${v.hint}</span>
+    <button data-pick="${k}" class="pick-opt">
+      <span class="label">${v.label}</span>
+      <span class="hint">${v.hint}</span>
     </button>`).join('');
   overlay.innerHTML = `
-    <div style="background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:22px;width:380px;max-width:94vw">
-      <h3 style="margin:0 0 4px;font-size:15px">How do you want to work through your links?</h3>
-      <p style="margin:0 0 12px;font-size:12px;color:var(--muted)">You can change this anytime from the ☰ menu.</p>
+    <div class="modal-box">
+      <h3 class="modal-title">How do you want to work through your links?</h3>
+      <p class="modal-sub">You can change this anytime from the ☰ menu.</p>
       ${opts}
-      <button id="picker-later" style="margin-top:8px;padding:6px 10px;font-size:11.5px;cursor:pointer;border-radius:7px;border:1px solid var(--border);background:none;color:var(--muted)">${firstRun ? 'Decide later (tabs by default)' : 'Cancel'}</button>
+      <button id="picker-later" class="modal-cancel">${firstRun ? 'Decide later (tabs by default)' : 'Cancel'}</button>
     </div>`;
   document.body.appendChild(overlay);
   const done = () => { overlay.remove(); };
@@ -1604,13 +1658,13 @@ function pickSheetName(buf, current) {
     const names = await sheetNamesOf(buf);
     log(`Multi-sheet workbook detected: [${names.join(', ')}]`);
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:999';
+    overlay.id = 'sheet-picker';
     overlay.innerHTML = `
-      <div style="background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:22px;min-width:280px">
-        <h3 style="margin:0 0 4px;font-size:15px">Multiple sheets found</h3>
-        <p style="margin:0 0 12px;font-size:12px;color:var(--muted)">Which worksheet holds your task list?</p>
-        ${names.map(n => `<button data-sheet="${esc(n)}" style="display:block;width:100%;text-align:left;margin:4px 0;padding:7px 12px;font-size:13px;cursor:pointer;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text)${n === current ? ';border-color:var(--accent-dark);font-weight:600' : ''}">${esc(n)}</button>`).join('')}
-        <button id="sheet-cancel" style="margin-top:8px;padding:6px 12px;font-size:12px;cursor:pointer;border-radius:8px;border:1px solid var(--border);background:none;color:var(--muted)">Cancel</button>
+      <div class="modal-box wide-options">
+        <h3 class="modal-title">Multiple sheets found</h3>
+        <p class="modal-sub">Which worksheet holds your task list?</p>
+        ${names.map(n => `<button data-sheet="${esc(n)}" class="sheet-opt${n === current ? ' current' : ''}">${esc(n)}</button>`).join('')}
+        <button id="sheet-cancel" class="modal-cancel">Cancel</button>
       </div>`;
     document.body.appendChild(overlay);
     overlay.querySelector('#sheet-cancel').onclick = () => { overlay.remove(); resolve(null); };
@@ -1700,7 +1754,7 @@ function updateChrome() {
   const has = cardCount() > 0;
   // Sidebar header: file name + save state
   els.headName.innerHTML = state.name
-    ? `${esc(state.name)} <span style="color:var(--muted);font-size:10.5px">· ${modeLabels[state.mode] || ''} · ${state.ext.toUpperCase()}</span>`
+    ? `${esc(state.name)} <span class="head-mode">· ${modeLabels[state.mode] || ''} · ${state.ext.toUpperCase()}</span>`
     : '<span class="no-file">No file loaded</span>';
   els.headName.title = state.sourceUrl ? `${state.name} — from ${state.sourceUrl}` : (state.name || '');
   // Menu item availability
@@ -2534,7 +2588,7 @@ function closeCurrentFile() {
   els.showCompleted.checked = false; state.hideCompleted = true;
   els.sortCol.value = '';
   updateChrome(); renderCards();
-  els.welcome.hidden = false; els.welcome.style.display = '';
+  els.welcome.hidden = false;
   els.cards.innerHTML = '<div class="empty">No file loaded yet.<br>Open a link list to populate task cards.</div>';
   toast('File closed — pick or paste another when ready');
 }
@@ -2546,6 +2600,14 @@ function closeCurrentFile() {
 
   // A build without SheetJS says so before the user drops a workbook on it.
   if (!HAS_XLSX_WRITE) els.btnTestXlsx.hidden = true;   // the test button builds a workbook to re-parse
+
+  /* Point at the other editions — but only where there is a site to point at. The
+     standalone build has no versions.html beside it, and the bookmarklet is running
+     on somebody else's origin, so both leave the hint hidden. This is the one place
+     a user who landed straight on the app can discover the other three. */
+  const hasSite = !STANDALONE_BUILD && !SESSION_ONLY;
+  els.editionsHint.hidden = !hasSite;
+  log(hasSite ? 'Edition pointer shown (other builds available on this site)' : 'Edition pointer hidden (no site beside this build)');
   if (!HAS_XLSX) {
     els.dzFormats.textContent = 'CSV · TSV · JSON · HTML · XML';
     els.capNotice.hidden = false;

@@ -39,7 +39,7 @@
             <input type="text" id="url-input" placeholder="…or paste a link-list URL" spellcheck="false">
             <button class="btn" id="btn-load-url">Load</button>
           </div>
-          <p style="font-size:11px; color:var(--muted); margin:0 0 10px">Any public link-list URL works (host must allow CORS). Paste the address of a list shared as a web file.</p>
+          <p class="help">Any public link-list URL works (host must allow CORS). Paste the address of a list shared as a web file.</p>
           <p class="or">or try it with sample data</p>
           <div class="row">
             <button class="btn" id="btn-demo" title="Load the small built-in demo list">Demo list</button>
@@ -86,7 +86,7 @@
       <input type="search" id="search" placeholder="Search tasks…" autocomplete="off">
       <div id="filter-row">
         <label><input type="checkbox" id="show-completed"> Show completed</label>
-        <span id="filter-info" style="margin-left:auto"></span>
+        <span id="filter-info"></span>
       </div>
       <div id="sort-row">
         <span>Sort</span>
