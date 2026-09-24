@@ -6,6 +6,8 @@ A zero-server, browser-based workspace that transforms a list of URLs — CSV, T
 
 **▶ Launch the app: <https://spuds0588.github.io/Turnstone/app.html>**
 
+**▶ Every version and download: <https://spuds0588.github.io/Turnstone/versions.html>** — the hosted app, the offline single-file build, and the three bookmarklet variants (drag one onto your bookmarks bar), with each edition's formats, limits, and which one to pick.
+
 **▶ See it work instantly** — this link pre-loads the demo task list straight from this repo via the `?file=` parameter:
 
 > <https://spuds0588.github.io/Turnstone/app.html?file=https%3A%2F%2Fspuds0588.github.io%2FTurnstone%2Fsample-links.csv>
@@ -116,6 +118,8 @@ sample-links.json   #   checking that each importer lands 10 cards with the same
 sample-links.html   #   columns (name/URL/status/notes) and 3 already complete
 sample-links.xml
 turnstone-standalone.html  # BETA single-file build — the whole app in one document (generated)
+versions.html       # versions & downloads page (bookmarklet drag-install links, edition picker)
+versions.js         #   the script behind it — fetches the bookmarklet payloads so links/sizes can't drift
 vendor/             # vendored libraries — no CDN at runtime (PapaParse, SheetJS)
 ports/              # other editions of Turnstone (see ports/README.md)
   bookmarklet/      #   built: composes the app in an overlay on any page — no libs, no network
@@ -133,7 +137,7 @@ ports/README.md     # how the ports relate and what's scaffolded
 
 The web app is the canonical core; these ports (scaffolded under [`ports/`](ports/README.md)) share its logic rather than forking it:
 
-- **Bookmarklet — built.** One click on any page composes the whole app there, in a shadow-DOM overlay: parsing, cards, statuses/notes, link modes, exports. **No hosted file, no network and no libraries** — three variants split by parser weight (`csv` ~142 KB, `core` ~152 KB with a dependency-free XLSX reader, `full` ~1.09 MB with vendored PapaParse + SheetJS for workbook writing). Works on strict-CSP pages without injecting a single script into the page, leaves the host page's globals and storage alone, and is session-only by design with **Copy state / Restore state** to carry a queue. Install from [`ports/bookmarklet/dist/install.html`](ports/bookmarklet/dist/install.html); see [`ports/bookmarklet/README.md`](ports/bookmarklet/README.md).
+- **Bookmarklet — built.** One click on any page composes the whole app there, in a shadow-DOM overlay: parsing, cards, statuses/notes, link modes, exports. **No hosted file, no network and no libraries** — three variants split by parser weight (`csv` ~142 KB, `core` ~152 KB with a dependency-free XLSX reader, `full` ~1.09 MB with vendored PapaParse + SheetJS for workbook writing). Works on strict-CSP pages without injecting a single script into the page, leaves the host page's globals and storage alone, and is session-only by design with **Copy state / Restore state** to carry a queue. Install by dragging from the [**versions & downloads page**](https://spuds0588.github.io/Turnstone/versions.html) (or [`ports/bookmarklet/dist/install.html`](ports/bookmarklet/dist/install.html)); see [`ports/bookmarklet/README.md`](ports/bookmarklet/README.md).
 - **Chrome extension (MV3)** — the queue lives in Chrome's **Side Panel** with no iframe workflow at all: links open as real browser tabs, and **selecting a card switches the active tab** to that page. Statuses/presets persist in `chrome.storage`; exports via `chrome.downloads`; right-click any link to queue it.
 - **Tauri desktop app** — the **full web experience including the tabbed iframe workspace**, with the CORS / `X-Frame-Options` wall gone: sites that refuse iframing on the web load natively. Silent filesystem write-back on every OS, system tray, auto-update, tiny bundle.
 - **Bundled single-file HTML** — `turnstone-standalone.html` (**beta, built**): one document holding the whole app (shell + vendored libraries + logo art inlined) for `file://` use, USB sticks, internal shares, and machines where nothing can be installed. No server, no CDN, no checkout — since the app already makes zero external requests, this build is genuinely self-contained. Regenerate with `node assets/build-standalone.js`; the script fails loudly if a `vendor/` or `assets/` reference survives. A CSV-only variant (no binary parser) is still to come.

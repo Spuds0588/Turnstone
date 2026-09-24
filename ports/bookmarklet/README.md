@@ -8,9 +8,14 @@ file, no network request and no libraries required**.
 node ports/bookmarklet/build.js          # → dist/ payloads + install page
 ```
 
-Open `ports/bookmarklet/dist/install.html` (or `ports/bookmarklet/test.html` while
-developing) and drag a link onto your bookmarks bar. On the live site the install page is at
-<https://spuds0588.github.io/Turnstone/ports/bookmarklet/dist/install.html>.
+Open the [**versions & downloads page**](../../versions.html) — the umbrella page that also covers the
+standalone build and the hosted app — or the bookmarklet-only `ports/bookmarklet/dist/install.html`, and
+drag a link onto your bookmarks bar. While developing, `ports/bookmarklet/test.html` is the harness.
+
+One CSP footnote that bites in both places: clicking an in-page `javascript:` link is a **page** script
+execution, so a page with a strict `script-src` refuses it (*"Refused to run the JavaScript URL …"*), even
+though the installed bookmark itself is exempt. Both `versions.html` and `test-csp.html` account for this;
+dragging to the bookmarks bar is unaffected either way.
 
 ## Three decisions that changed from the original scope — and why
 

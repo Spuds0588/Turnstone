@@ -1,6 +1,6 @@
 (function(){
-/* Turnstone bookmarklet — "core" variant, generated 2026-09-24T17:29:17.134Z
-   from app.html @ 5bf8906 + uncommitted changes. Regenerate with: node ports/bookmarklet/build.js --variant core
+/* Turnstone bookmarklet — "core" variant, generated 2026-09-24T18:00:13.934Z
+   from app.html @ 063a5d5 + uncommitted changes. Regenerate with: node ports/bookmarklet/build.js --variant core
    Lines are %0A-encoded at the end of the build; everything above is app.html. */
 'use strict';
 var __TS_BMK__ = { variant: "core", libs: ["papa-shim","xlsx-shim"],

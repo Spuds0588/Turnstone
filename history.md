@@ -1,5 +1,20 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-24 — Versions & downloads page (install the right edition, or find out which one)
+
+**Request:** make the bookmarklet actually accessible and installable from a proper page — instructions to drag it onto the bookmarks bar and to test it, plus the variants' limitations and intended use cases, steering to other editions (current and future) when a format or feature isn't supported. And put that on the GitHub site as a versions/downloads page.
+
+`versions.html` (+ `versions.js`) is now the front door for every edition: the hosted web app, the download-able standalone single-file build, and the three bookmarklet variants, each with what it carries, what it costs in size, who it is for, and a **“if what you need isn't supported, go here”** table that maps an unsupported format or feature to the edition that solves it.
+
+Design decisions worth recording:
+- **The drag links are built at load time from `dist/`**, not pasted into the page. A bookmarklet can only be installed by dragging an anchor whose `href` *is* the payload, and hand-copying three payloads into a page would drift the moment `app.html` changed. Fetching them keeps the page a few KB while the links and sizes are always the real build. They are also formatted by **UTF-8 byte count, not `String.length`** — the payloads carry non-ASCII (ticks, dashes, and SheetJS's codepage table), and character counting under-reported the `full` variant by ~240 KB (851 KB instead of 1.06 MB).
+- **The page needs `script-src 'self' 'unsafe-inline'`, and that was found the hard way.** With a stricter `script-src 'self'`, clicking a bookmarklet link did nothing: *”Refused to run the JavaScript URL because it violates the following Content Security Policy directive: script-src 'self'“*. Clicking a `javascript:` link is a page script execution and is CSP-governed, whereas the installed bookmark is exempt. Dragging works either way; the relaxation exists purely so “click it here to try it” works, and nothing external is permitted (scripts stay same-origin, `connect-src 'self'`). This is the same distinction the port README documents for `test-csp.html`.
+- **Every claim on the page is honest about the hard limits**, because a versions page is where users find out something will not work: bookmarklet memory is session-only (*“this tab only — export to keep”*, with Copy/Restore state and export as the ways out), workbooks are read-only unless you install `full`, a strict `style-src` costs some dialog chrome, and a closed `connect-src` blocks remote-URL loads. Future editions (extension, Tauri, CSV-only standalone, PDF) are listed with their real status rather than aspirational copy.
+
+Wired in: footer + roadmap answer on the sales page, the repo layout and ports section in `README.md`, `sw.js` precaches the page and its script (`v0.9.4`), and the generated bookmarklet install page now links back to it as the umbrella page.
+
+Verified in-browser: the three rows build with real `javascript:` hrefs and live sizes (142 KB / 152 KB / 1.06 MB); clicking `core` **on that page** mounts the overlay, the XLSX fixture loads (7 visible of 10, 3 complete, notes intact) and ✕ Close leaves the page exactly as it was, with no CSP violations in the console.
+
 ## 2026-09-24 — Bookmarklet: the whole app on any page, with no libraries and no network
 
 **Request:** "begin work on the bookmarklet version of the app, maintaining as much functionality as we can, while having no dependencies. If we can vendor any libraries or support in while still working, we can pursue that. And if we need to split it into multiple versions to support different file types because of the parsers lengths, I am open to that."

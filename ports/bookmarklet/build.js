@@ -279,6 +279,8 @@ function installPage() {
   <p>Drag a link below onto your <strong>bookmarks bar</strong> (or copy a payload from
      <code>dist/*.txt</code> into a new bookmark's URL field). Then click it on any page to work a
      link list without leaving that page.</p>
+  <p><a href="../../../versions.html">← All versions &amp; downloads</a> — the same links, plus the standalone build,
+     the hosted app and which edition to pick for a given format.</p>
   <table>
     <thead><tr><th>Install</th><th>Bundled</th><th>Payload</th><th>Formats</th></tr></thead>
     <tbody>
