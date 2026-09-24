@@ -95,7 +95,9 @@ html = mustReplace(html, '\n</style>', `
 
 /* Build stamp, right after the doctype. */
 const sha = git('rev-parse --short HEAD', 'unknown');
-const dirty = git('status --porcelain', '') ? ' + uncommitted changes' : '';
+// Tracked modifications only: untracked files (the artifact itself, editor state)
+// must not brand every build as dirty.
+const dirty = git('diff --quiet HEAD', 'dirty') === 'dirty' ? ' + uncommitted changes' : '';
 const stamp = [
   '<!--',
   '  Turnstone — standalone BETA build.',
