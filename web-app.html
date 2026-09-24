@@ -14,18 +14,27 @@
 <link rel="stylesheet" href="site.css">
 </head>
 <body>
+
+<nav class="topnav" aria-label="Site">
+  <div class="inner">
+    <a class="brand" href="index.html"><img src="assets/logo-dark.svg" alt="">Turnstone</a>
+    <a class="link" href="index.html">Overview</a>
+    <a class="link" href="versions.html">All versions</a>
+    <a class="link" href="web-app.html" aria-current="page">Web app</a>
+    <a class="link" href="standalone.html">Standalone</a>
+    <a class="link" href="bookmarklet.html">Bookmarklet</a>
+    <a class="link" href="extension.html">Extension</a>
+    <span class="spacer"></span>
+    <a class="go" href="app.html">Launch app →</a>
+  </div>
+</nav>
+
 <div class="wrap">
 
   <header class="top">
     <img src="assets/logo-dark.svg" alt="">
     <h1>Web app <span class="pill rec">Start here</span></h1>
   </header>
-
-  <nav class="crumb">
-    <a href="index.html">Overview</a><span class="sep">›</span>
-    <a href="versions.html">All versions</a><span class="sep">›</span>
-    <span class="here">Web app</span>
-  </nav>
 
   <p class="sub">
     The canonical edition, and the one to try first. It is the full experience — the only one with
@@ -84,7 +93,7 @@
     app</strong>. It appears in the ☰ menu only once the browser has offered it.</p></div>
   <div class="step"><span class="n">3</span><p>Launch it from your apps menu like any other application. It opens
     in its own window and works offline.</p></div>
-  <p class="tight" style="color:var(--dim);font-size:13px">
+  <p class="lede">
     On a machine where nothing may be installed, this step is the one to skip — take the
     <a href="standalone.html">standalone build</a> or the <a href="bookmarklet.html">bookmarklet</a> instead.
   </p>

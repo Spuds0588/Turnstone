@@ -17,17 +17,27 @@
 <link rel="stylesheet" href="site.css">
 </head>
 <body>
+
+<nav class="topnav" aria-label="Site">
+  <div class="inner">
+    <a class="brand" href="index.html"><img src="assets/logo-dark.svg" alt="">Turnstone</a>
+    <a class="link" href="index.html">Overview</a>
+    <a class="link" href="versions.html" aria-current="page">All versions</a>
+    <a class="link" href="web-app.html">Web app</a>
+    <a class="link" href="standalone.html">Standalone</a>
+    <a class="link" href="bookmarklet.html">Bookmarklet</a>
+    <a class="link" href="extension.html">Extension</a>
+    <span class="spacer"></span>
+    <a class="go" href="app.html">Launch app →</a>
+  </div>
+</nav>
+
 <div class="wrap">
 
   <header class="top">
     <img src="assets/logo-dark.svg" alt="">
     <h1>Which version?</h1>
   </header>
-
-  <nav class="crumb">
-    <a href="index.html">Overview</a><span class="sep">›</span>
-    <span class="here">All versions</span>
-  </nav>
 
   <p class="sub">
     Turnstone is one app with four front doors. They do the same job — turn a link list into a queue you
@@ -56,139 +66,148 @@
 
   <!-- ------------------------------------------------ pick by constraint -->
   <h2>Pick by what you are up against</h2>
-  <p class="tight" style="color:var(--dim)">
-    Find your situation in the left column; the right column is the edition that handles it. Where two are
-    listed, the first is the easier one to live with.
+  <p class="lede">
+    Find your situation below; the second line is the edition that handles it. Where two are listed,
+    the first is the easier one to live with.
   </p>
-  <table>
+  <table class="situation stacked">
+    <colgroup><col class="w-sit"><col class="w-use"><col class="w-why"></colgroup>
     <thead><tr><th>Your situation</th><th>Use</th><th>Why</th></tr></thead>
     <tbody>
       <tr>
         <td>A normal desktop or laptop, an ordinary browser, and you just want to get through the list</td>
-        <td><a href="web-app.html">Web app</a></td>
-        <td>Most capability, least setup. Remembered state and silent write-back.</td>
+        <td data-label="Use"><a href="web-app.html">Web app</a></td>
+        <td data-label="Why">Most capability, least setup. Remembered state and silent write-back.</td>
       </tr>
       <tr>
         <td>You want it to look and behave like an installed program, and work offline</td>
-        <td><a href="web-app.html">Web app, installed as a PWA</a></td>
-        <td>Its own window, its own icon, offline from the cache after the first visit.</td>
+        <td data-label="Use"><a href="web-app.html">Web app, installed as a PWA</a></td>
+        <td data-label="Why">Its own window, its own icon, offline from the cache after the first visit.</td>
       </tr>
       <tr>
         <td>Nothing may be installed <em>and</em> nothing may be fetched — air-gapped, locked-down, or a
             shared machine</td>
-        <td><a href="standalone.html">Standalone build</a></td>
-        <td>One HTML file, no server, no network, no admin rights. Full app inside it.</td>
+        <td data-label="Use"><a href="standalone.html">Standalone build</a></td>
+        <td data-label="Why">One HTML file, no server, no network, no admin rights. Full app inside it.</td>
       </tr>
       <tr>
         <td>You cannot leave the page you are on, or the browser is stripped of extensions</td>
-        <td><a href="bookmarklet.html">Bookmarklet</a> (<code>core</code>)</td>
-        <td>A bookmark, not an install. The app is composed as an overlay on the page you are already on.</td>
+        <td data-label="Use"><a href="bookmarklet.html">Bookmarklet</a> (<code>core</code>)</td>
+        <td data-label="Why">A bookmark, not an install. The app is composed as an overlay on the page you
+          are already on.</td>
       </tr>
       <tr>
         <td>The site blocks framing, and you want the queue visible next to it anyway</td>
-        <td><a href="extension.html">Chrome extension</a></td>
-        <td>No iframes at all: links open as real tabs and the panel drives them.</td>
+        <td data-label="Use"><a href="extension.html">Chrome extension</a></td>
+        <td data-label="Why">No iframes at all: links open as real tabs and the panel drives them.</td>
       </tr>
       <tr>
         <td>Firefox or Safari</td>
-        <td><a href="web-app.html">Web app</a>, or the <a href="standalone.html">standalone build</a></td>
-        <td>The extension needs Chromium's Side Panel API. Everything else is browser-agnostic.</td>
+        <td data-label="Use"><a href="web-app.html">Web app</a>, or the <a href="standalone.html">standalone build</a></td>
+        <td data-label="Why">The extension needs Chromium's Side Panel API. Everything else is browser-agnostic.</td>
       </tr>
       <tr>
         <td>You need it to survive closing the window and coming back tomorrow</td>
-        <td><a href="web-app.html">Web app</a> or the <a href="extension.html">extension</a></td>
-        <td>Both keep statuses, notes and presets locally. The bookmarklet is memory-only by design.</td>
+        <td data-label="Use"><a href="web-app.html">Web app</a> or the <a href="extension.html">extension</a></td>
+        <td data-label="Why">Both keep statuses, notes and presets locally. The bookmarklet is memory-only by
+          design.</td>
       </tr>
       <tr>
         <td>Your list is a real spreadsheet (<code>.xlsx</code>, <code>.xls</code>, <code>.ods</code>)</td>
-        <td><a href="web-app.html">Web app</a>, the <a href="standalone.html">standalone build</a>, or
+        <td data-label="Use"><a href="web-app.html">Web app</a>, the <a href="standalone.html">standalone build</a>, or
             bookmarklet <code>core</code>/<code>full</code></td>
-        <td>Only the bookmarklet's <code>csv</code> variant cannot open a workbook — and it says so.</td>
+        <td data-label="Why">Only the bookmarklet's <code>csv</code> variant cannot open a workbook — and it says so.</td>
       </tr>
       <tr>
         <td>The file is enormous, or you only need the links</td>
-        <td><a href="bookmarklet.html">Bookmarklet</a> <code>csv</code></td>
-        <td>About <span data-size-of="ports/bookmarklet/dist/turnstone-bookmarklet-csv.txt" data-size-fallback="141 KB">141 KB</span> with no libraries at all. Nothing gets parsed that you did not need.</td>
+        <td data-label="Use"><a href="bookmarklet.html">Bookmarklet</a> <code>csv</code></td>
+        <td data-label="Why">About <span data-size-of="ports/bookmarklet/dist/turnstone-bookmarklet-csv.txt" data-size-fallback="141 KB">141 KB</span> with no libraries at all. Nothing gets parsed that you did not need.</td>
       </tr>
     </tbody>
   </table>
 
   <!-- ------------------------------------------------ the four editions -->
   <h2>The four editions</h2>
-  <div class="grid four">
+  <div class="grid">
 
     <div class="card edition">
       <h3>Web app <span class="pill rec">Start here</span></h3>
       <p class="tight who">The full experience, hosted. Split-pane workspace, every input format, silent write-back to your file in Chromium, installable as a PWA, and it remembers your queue.</p>
       <p class="meta">Needs: a normal browser. Nothing to install.</p>
-      <p class="tight" style="margin-top:10px"><a href="web-app.html">Details →</a></p>
+      <p class="more"><a href="web-app.html">Details →</a></p>
     </div>
 
     <div class="card edition">
       <h3>Standalone <span class="pill ok">Available</span></h3>
       <p class="tight who">The same app as one HTML file — parsers and artwork inlined. Copy it anywhere and double-click; no server, no network, no install.</p>
       <p class="meta">Needs: a browser, and permission to run a local file. <span data-size-of="turnstone-standalone.html" data-size-fallback="1.07 MB">1.07 MB</span>.</p>
-      <p class="tight" style="margin-top:10px"><a href="standalone.html">Details →</a></p>
+      <p class="more"><a href="standalone.html">Details →</a></p>
     </div>
 
     <div class="card edition">
       <h3>Bookmarklet <span class="pill ok">Available</span></h3>
       <p class="tight who">A bookmark that opens the whole app as an overlay on whatever page you are on. No install, no network, no libraries — three sizes from <span data-size-of="ports/bookmarklet/dist/turnstone-bookmarklet-csv.txt" data-size-fallback="141 KB">141 KB</span>.</p>
       <p class="meta">Needs: dragging a link to your bookmarks bar. Memory-only between tabs.</p>
-      <p class="tight" style="margin-top:10px"><a href="bookmarklet.html">Details →</a></p>
+      <p class="more"><a href="bookmarklet.html">Details →</a></p>
     </div>
 
     <div class="card edition">
       <h3>Chrome extension <span class="pill ok">Available</span></h3>
       <p class="tight who">A side panel beside any page, with no iframes: links open as real browser tabs and selecting a card switches to that card's tab. Badge counts down what is left.</p>
       <p class="meta">Needs: Chromium 114+, loaded unpacked. <span data-version-of="ports/extension/dist/build.json" data-version-fallback="v0.1.0">v0.1.0</span>.</p>
-      <p class="tight" style="margin-top:10px"><a href="extension.html">Details →</a></p>
+      <p class="more"><a href="extension.html">Details →</a></p>
     </div>
 
   </div>
 
   <!-- ------------------------------------------------ side by side -->
   <h2>Side by side</h2>
-  <table>
+  <p class="lede">Seven answers per edition. On a narrow screen each edition folds into its own card,
+    labelled, rather than a table you have to drag sideways.</p>
+  <table class="spec stacked">
+    <colgroup>
+      <col class="c-ed"><col class="c-num"><col class="c-ins"><col class="c-net">
+      <col class="c-rem"><col class="c-tab"><col class="c-wb">
+    </colgroup>
     <thead>
-      <tr><th>Edition</th><th>Size</th><th>Install</th><th>Network</th><th>Remembers</th><th>Tabbed workspace</th><th>Workbook write-back</th></tr>
+      <tr><th>Edition</th><th>Size</th><th>Install</th><th>Network</th><th>Remembers</th><th>Tabbed panes</th><th>Workbook write-back</th></tr>
     </thead>
     <tbody>
       <tr>
         <td><a href="web-app.html">Web app</a></td>
-        <td>0 — hosted</td>
-        <td>None (or PWA)</td>
-        <td>First visit</td>
-        <td>Yes</td>
-        <td><strong>Yes</strong></td>
-        <td>Yes (Chromium)</td>
+        <td data-label="Size">0 — hosted</td>
+        <td data-label="Install">None (or PWA)</td>
+        <td data-label="Network">First visit</td>
+        <td data-label="Remembers">Yes</td>
+        <td data-label="Tabbed panes"><strong>Yes</strong></td>
+        <td data-label="Workbook write-back">Yes (Chromium)</td>
       </tr>
       <tr>
         <td><a href="standalone.html">Standalone</a></td>
-        <td><span data-size-of="turnstone-standalone.html" data-size-fallback="1.07 MB">1.07 MB</span></td>
-        <td>Copy a file</td>
-        <td><strong>Never</strong></td>
-        <td>Yes</td>
-        <td><strong>Yes</strong></td>
-        <td>Where File System Access exists</td>
+        <td data-label="Size"><span data-size-of="turnstone-standalone.html" data-size-fallback="1.07 MB">1.07 MB</span></td>
+        <td data-label="Install">Copy a file</td>
+        <td data-label="Network"><strong>Never</strong></td>
+        <td data-label="Remembers">Yes</td>
+        <td data-label="Tabbed panes"><strong>Yes</strong></td>
+        <td data-label="Workbook write-back">Where the browser allows it</td>
       </tr>
       <tr>
         <td><a href="bookmarklet.html">Bookmarklet</a></td>
-        <td><span data-size-of="ports/bookmarklet/dist/turnstone-bookmarklet-csv.txt" data-size-fallback="141 KB">141 KB</span>–<span data-size-of="ports/bookmarklet/dist/turnstone-bookmarklet-full.txt" data-size-fallback="1.06 MB">1.06 MB</span></td>
-        <td>Drag a bookmark</td>
-        <td><strong>Never</strong></td>
-        <td>No — Copy/Restore state</td>
-        <td>Yes</td>
-        <td>Only the <code>full</code> variant</td>
+        <td data-label="Size"><span data-size-of="ports/bookmarklet/dist/turnstone-bookmarklet-csv.txt" data-size-fallback="141 KB">141 KB</span>–<span data-size-of="ports/bookmarklet/dist/turnstone-bookmarklet-full.txt" data-size-fallback="1.06 MB">1.06 MB</span></td>
+        <td data-label="Install">Drag a bookmark</td>
+        <td data-label="Network"><strong>Never</strong></td>
+        <td data-label="Remembers">No (session only)</td>
+        <td data-label="Tabbed panes">Yes</td>
+        <td data-label="Workbook write-back">Only <code>full</code></td>
       </tr>
       <tr>
         <td><a href="extension.html">Extension</a></td>
-        <td><span data-size-of="ports/extension/dist" data-size-fallback="1.08 MB">1.08 MB</span></td>
-        <td>Load unpacked</td>
-        <td>Never (after install)</td>
-        <td>Yes</td>
-        <td><strong>No — real tabs instead</strong></td>
-        <td>Yes, when you pick the file</td>
+        <td data-label="Size"><span data-size-of="ports/extension/dist" data-size-fallback="1.08 MB">1.08 MB</span></td>
+        <td data-label="Install">Load unpacked</td>
+        <td data-label="Network">Never</td>
+        <td data-label="Remembers">Yes</td>
+        <td data-label="Tabbed panes"><strong>No — real tabs</strong></td>
+        <td data-label="Workbook write-back">Yes, when you pick the file</td>
       </tr>
     </tbody>
   </table>
@@ -204,33 +223,34 @@
   </p>
 
   <h2>Planned editions</h2>
-  <table>
+  <table class="planned stacked">
+    <colgroup><col class="c-a"><col class="c-b"><col class="c-c"></colgroup>
     <thead><tr><th>Edition</th><th>What it will add</th><th>Status</th></tr></thead>
     <tbody>
       <tr>
         <td><strong>Tauri desktop app</strong></td>
-        <td>The full experience, including the tabbed workspace, with the CORS/<code>X-Frame-Options</code>
-          wall gone — sites that refuse to be framed on the web work inside it — plus true filesystem
-          write-back on every OS.</td>
-        <td>Scaffolded</td>
+        <td data-label="What it will add">The full experience, including the tabbed workspace, with the
+          CORS/<code>X-Frame-Options</code> wall gone — sites that refuse to be framed on the web work
+          inside it — plus true filesystem write-back on every OS.</td>
+        <td data-label="Status"><span class="pill">Scaffolded</span></td>
       </tr>
       <tr>
         <td><strong>CSV-only standalone</strong></td>
-        <td>A one-document build with no binary parser, for environments that cannot ship SheetJS at all.
-          The app-side degradation is already in place; it is a build flag.</td>
-        <td>Planned</td>
+        <td data-label="What it will add">A one-document build with no binary parser, for environments that
+          cannot ship SheetJS at all. The app-side degradation is already in place; it is a build flag.</td>
+        <td data-label="Status"><span class="pill soon">Planned</span></td>
       </tr>
       <tr>
         <td><strong>PDF link lists</strong></td>
-        <td>Extracting URLs from PDFs. Needs a ~1 MB parser and a browser worker, so it is a deliberate
-          decision rather than an oversight.</td>
-        <td>Under review</td>
+        <td data-label="What it will add">Extracting URLs from PDFs. Needs a ~1 MB parser and a browser
+          worker, so it is a deliberate decision rather than an oversight.</td>
+        <td data-label="Status"><span class="pill soon">Under review</span></td>
       </tr>
       <tr>
         <td><strong>Firefox extension</strong></td>
-        <td>The queue in a sidebar. Firefox has no Side Panel API, so this is a different build, not a
-          repackage of the Chrome one.</td>
-        <td>Not started</td>
+        <td data-label="What it will add">The queue in a sidebar. Firefox has no Side Panel API, so this is a
+          different build, not a repackage of the Chrome one.</td>
+        <td data-label="Status"><span class="pill">Not started</span></td>
       </tr>
     </tbody>
   </table>

@@ -24,18 +24,27 @@
 <link rel="stylesheet" href="site.css">
 </head>
 <body>
+
+<nav class="topnav" aria-label="Site">
+  <div class="inner">
+    <a class="brand" href="index.html"><img src="assets/logo-dark.svg" alt="">Turnstone</a>
+    <a class="link" href="index.html">Overview</a>
+    <a class="link" href="versions.html">All versions</a>
+    <a class="link" href="web-app.html">Web app</a>
+    <a class="link" href="standalone.html">Standalone</a>
+    <a class="link" href="bookmarklet.html" aria-current="page">Bookmarklet</a>
+    <a class="link" href="extension.html">Extension</a>
+    <span class="spacer"></span>
+    <a class="go" href="app.html">Launch app →</a>
+  </div>
+</nav>
+
 <div class="wrap">
 
   <header class="top">
     <img src="assets/logo-dark.svg" alt="">
     <h1>Bookmarklet</h1>
   </header>
-
-  <nav class="crumb">
-    <a href="index.html">Overview</a><span class="sep">›</span>
-    <a href="versions.html">All versions</a><span class="sep">›</span>
-    <span class="here">Bookmarklet</span>
-  </nav>
 
   <p class="sub">
     A bookmarklet is a bookmark whose URL is a program. Click it on any page and Turnstone opens
@@ -59,14 +68,14 @@
   <div class="step"><span class="n">4</span><p>Drop a <code>.csv</code> / <code>.xlsx</code> list anywhere on the page, or press <em>Demo list</em> to see it work first. <em>✕ Close</em> in the top bar puts the page back exactly as it was.</p></div>
 
   <div class="card">
-    <p class="tight" id="bm-status" style="color:var(--dim)">Fetching the bookmarklet payloads…</p>
+    <p class="tight dim" id="bm-status">Fetching the bookmarklet payloads…</p>
     <table>
       <thead><tr><th>Drag to your bookmarks bar</th><th>Carries</th><th>Size</th><th>Best for</th></tr></thead>
       <tbody id="bm-rows">
         <tr><td colspan="4">If nothing appears here, open <a href="ports/bookmarklet/dist/install.html">the generated install page</a> instead.</td></tr>
       </tbody>
     </table>
-    <p class="tight" style="color:var(--dim);font-size:13px">
+    <p class="lede">
       Prefer to do it by hand? Each variant is also a plain text file you can copy into a new bookmark's URL field:
       <a href="ports/bookmarklet/dist/turnstone-bookmarklet-csv.txt">csv</a> ·
       <a href="ports/bookmarklet/dist/turnstone-bookmarklet-core.txt">core</a> ·

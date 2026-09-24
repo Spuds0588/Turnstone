@@ -1,5 +1,26 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-24 — A site map in the chrome, and elements stacked instead of crammed
+
+**Request:** add a simple top nav, check the site's alignment — some elements "aren't quite working as intended" — and stack more rather than sitting everything side by side. Every complaint turned out to be real and measurable.
+
+### The top nav
+Every page now opens with one bar: the Turnstone brand, then Overview · All versions · Web app · Standalone · Bookmarklet · Extension, and **Launch app →** pushed to the right. The current page is marked visually *and* with `aria-current="page"`. The bar lives in `site.css`; `index.html` keeps its own copy inline because its `default-src 'none'` policy loads nothing external, which is part of what that page demonstrates. The redundant breadcrumb went away — the nav *is* the trail now. On a phone the bar wraps to two rows: brand on its own line, links beneath, instead of one crowded line.
+
+### What "not quite working" turned out to mean, measured
+- **The sales-page hero was clipping its own text on phones.** The hero is a row flex container, and a flex item refuses to shrink below its min-content width — so at 420px the `.container` was **479px wide in a 406px viewport**: the headline, the eyebrow pill and half of *Try the web app* ran off the right edge, silently hidden by `overflow-x: clip`. Fixed by making the hero a column with `min-width: 0` on its child, and giving the hero the same horizontal padding as every other section (it previously sat flush against the viewport edge while the rest of the page was inset — the alignment mismatch you could feel but not name).
+- **The hero's supporting paragraph was shredding words.** `word-break: break-all` on centred text broke every line mid-syllable ("yo/u want", "installed or f/etched"). Now `overflow-wrap: anywhere` with a 780px measure: breaks only when a word genuinely cannot fit, so the long `app.html?file=…` code sample still wraps and the prose doesn't.
+- **The headline sizing breakpoint missed on its own threshold.** `@media (max-width: 420px)` does not fire *at* 420px, so a 420px screen got the 3.3rem desktop headline. Replaced with `clamp()` — the headline scales continuously and there is no width at which anything jumps.
+- **The versions page dragged sideways.** The seven-column *Side by side* table was 564px of content in a 406px viewport — the entire page scrolled horizontally because of one table. It (and the situation/planned tables) now declares its column widths explicitly under `table-layout: fixed`, and below 760px each row becomes a **card**: the item's name as the card title, every other cell showing its column name as a small caption above its value. Nothing is lost — every number and qualifier is still there, labelled.
+- **The four edition cards were a wall.** Four across a 1000px measure gave each card 228px, wrapping every sentence to three lines of hyphenated fragments. Now two across (470px cards), single column under 640px, with each card's *Details →* link pinned to its foot so the four links line up regardless of text length.
+- **Buttons stack on a phone.** Two half-width buttons with ragged edges became full-width targets under 560px.
+
+One debugging note worth keeping: twice the browser served a **stale cached `site.css`** from the dev server's heuristic caching, which made a correct stylesheet look broken (the new stacking rules absent from the CSSOM, the nav's 22px brand image at its natural 512px). Busting the `href` confirmed the file was right both times. If CSS changes appear to do nothing on `127.0.0.1`, suspect the cache before the code.
+
+One genuine CSS lesson in the stacked tables: the first implementation laid each cell out as a label/value **flex row**, and a cell ending in `core/full` pushed 48px past its own card — flex items don't shrink below min-content, which is exactly the mechanism that broke the hero. The caption-above-value layout cannot overflow, and reads better.
+
+`sw.js` → `v0.9.9`; the five guide pages are precached, so their cached copies update on next visit.
+
 ## 2026-09-24 — The app sets no style attribute, so a strict `style-src` costs nothing
 
 **Request:** none directly — this closes the one limitation the site had been documenting rather than fixing, and it came out of hardening the strict-CSP story the bookmarklet exists for.

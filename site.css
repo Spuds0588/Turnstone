@@ -22,6 +22,8 @@ body {
 }
 a { color: var(--accent); }
 .wrap { max-width: 1000px; margin: 0 auto; padding: 30px 22px 70px; }
+/* Keeps the page's text in the same column as the nav above it on a phone. */
+@media (max-width: 700px) { .wrap { padding: 24px 16px 60px; } }
 header.top { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
 header.top img { width: 40px; height: 40px; }
 h1 { font-size: 27px; margin: 0; letter-spacing: -.4px; }
@@ -31,7 +33,45 @@ h2 .pill { vertical-align: 3px; }
 h3 { font-size: 14.5px; margin: 22px 0 6px; }
 p { color: #cfd6e2; }
 
-/* ---------- Where you are, and how to get anywhere else ---------- */
+/* ---------- The bar at the very top: where you are, how to get anywhere else ------- */
+/* One row of plain links, wrapping to two on a narrow screen. It carries the whole
+   site map, so the pages no longer need a breadcrumb saying the same thing — the
+   current page is marked instead, and marked for screen readers too. */
+nav.topnav {
+  border-bottom: 1px solid var(--line); background: rgba(255,255,255,.02);
+}
+nav.topnav .inner {
+  max-width: 1000px; margin: 0 auto; padding: 12px 22px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 8px;
+}
+nav.topnav .brand {
+  display: inline-flex; align-items: center; gap: 8px; margin-right: 6px;
+  font-weight: 800; color: var(--text); text-decoration: none; letter-spacing: -.2px;
+}
+nav.topnav .brand img { width: 22px; height: 22px; }
+nav.topnav a.link {
+  color: var(--dim); text-decoration: none; font-size: 13px; font-weight: 600;
+  padding: 5px 10px; border-radius: 8px; border: 1px solid transparent;
+}
+nav.topnav a.link:hover { color: #fff; background: rgba(255,255,255,.05); }
+nav.topnav a.link[aria-current="page"] {
+  color: var(--text); background: var(--accent-dim); border-color: rgba(122,162,255,.35);
+}
+nav.topnav .spacer { flex: 1 1 auto; }
+nav.topnav a.go {
+  color: var(--accent); text-decoration: none; font-size: 13px; font-weight: 700;
+  padding: 5px 10px; border-radius: 8px; border: 1px solid transparent; white-space: nowrap;
+}
+nav.topnav a.go:hover { background: var(--accent-dim); border-color: rgba(122,162,255,.35); }
+/* Two rows instead of one crowded line: brand, then the links. */
+@media (max-width: 700px) {
+  nav.topnav .inner { gap: 4px; padding: 10px 16px; }
+  nav.topnav .brand { flex: 1 1 100%; margin-right: 0; }
+  nav.topnav .spacer { display: none; }
+  nav.topnav a.link, nav.topnav a.go { padding: 5px 8px; font-size: 12.5px; }
+}
+
+/* ---------- Where you are, when a page wants the trail as well ---------- */
 nav.crumb {
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
   font-size: 12.5px; color: var(--dim); margin: 0 0 20px;
@@ -50,6 +90,12 @@ nav.crumb .here { color: var(--text); font-weight: 700; }
 .btn.ghost { background: none; color: var(--text); border: 1px solid var(--line); font-weight: 700; }
 .btn:hover { filter: brightness(1.06); }
 .btns { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 4px; }
+/* On a phone two half-width buttons with ragged right edges look like an accident;
+   full-width stacked targets look deliberate and are easier to hit. */
+@media (max-width: 560px) {
+  .btns { flex-direction: column; align-items: stretch; }
+  .btns .btn { text-align: center; }
+}
 
 /* ---------- Pills, cards, grids ---------- */
 .pill {
@@ -65,26 +111,89 @@ nav.crumb .here { color: var(--text); font-weight: 700; }
 }
 .card h3 { margin-top: 0; }
 .card.rec { border-color: rgba(122,162,255,.45); background: linear-gradient(180deg, var(--accent-dim), var(--panel) 60%); }
-.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-.grid.four { grid-template-columns: repeat(4, 1fr); }
+/* Cards are ~460px wide at the widest, never squeezed to a column of hyphenated
+   fragments. `.four` stops at two across on any ordinary screen: four edition cards
+   side by side inside a 1000px measure gave each one 228px, which wrapped every
+   sentence to three lines and read as a wall rather than a choice. */
+.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.grid.three { grid-template-columns: repeat(3, 1fr); }
 .grid.two { grid-template-columns: repeat(2, 1fr); }
-@media (max-width: 940px) { .grid, .grid.four { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px) { .grid, .grid.four, .grid.two { grid-template-columns: 1fr; } }
+.grid.four { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 940px) { .grid, .grid.four, .grid.three { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .grid, .grid.four, .grid.two, .grid.three { grid-template-columns: 1fr; } }
 .grid .card { margin: 0; }
 .edition h3 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .edition .meta { color: var(--dim); font-size: 12.5px; margin: 6px 0 0; }
 .edition .who { font-size: 13.5px; }
+/* The Details link is pinned to the card's foot, so the four cards' links line up
+   even when their text runs to different lengths. */
+.edition { display: flex; flex-direction: column; }
+.edition .more { margin: auto 0 0; padding-top: 12px; font-weight: 600; }
+.edition .more a { text-decoration: none; }
+.edition .more a:hover { text-decoration: underline; }
 
 /* ---------- Tables ---------- */
-table { border-collapse: collapse; width: 100%; margin: 10px 0 4px; font-size: 13.5px; }
-th, td { text-align: left; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0 4px; font-size: 13.5px; table-layout: fixed; }
+th, td { text-align: left; padding: 8px 14px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { color: var(--dim); font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; }
 td code, p code, li code, th code { background: var(--panel-2); border-radius: 4px; padding: 1px 5px; font-size: 12.5px; }
+/* Column widths are declared per table by the page, since "fixed" layout needs to be
+   told what each column is worth — left to itself the browser hands a short "Use"
+   column 240px and wraps the sentence next to it into three lines. */
+table.situation col.w-sit { width: 38%; }
+table.situation col.w-use { width: 24%; }
+table.situation col.w-why { width: 38%; }
+table.spec col.c-ed { width: 15%; }
+table.spec col.c-num { width: 15%; }
+table.spec col.c-ins { width: 15%; }
+table.spec col.c-net { width: 13%; }
+table.spec col.c-rem { width: 14%; }
+table.spec col.c-tab { width: 14%; }
+table.spec col.c-wb { width: 14%; }
+table.planned col.c-a { width: 20%; }
+table.planned col.c-b { width: 64%; }
+table.planned col.c-c { width: 16%; }
+
+/* Wide tables become a stack of cards on a narrow screen instead of dragging the
+   whole page sideways. Each value sits under its own column name, so nothing is
+   ambiguous once the header row is gone — which is the point: seven columns of a
+   comparison table cannot survive a 400px viewport, and a horizontally-scrolling
+   page is worse than a vertical one. */
+@media (max-width: 760px) {
+  table.stacked, table.stacked tbody, table.stacked tr, table.stacked td { display: block; width: auto; }
+  table.stacked { table-layout: auto; }
+  table.stacked colgroup, table.stacked thead { display: none; }
+  table.stacked tr {
+    border: 1px solid var(--line); border-radius: 12px; background: var(--panel);
+    padding: 10px 14px; margin: 0 0 12px;
+  }
+  /* The column name becomes a small caption above its value. The tempting layout —
+     label and value side by side in a flex row — was tried and reverted: the flex
+     items could not shrink below their min-content, so a cell ending in
+     <code>core/full</code> pushed 48px past its own card and dragged the page wide
+     again. A caption above cannot overflow, and reads better besides. */
+  table.stacked td {
+    padding: 7px 0 8px; border-bottom: 1px solid var(--line); text-align: left;
+  }
+  table.stacked td:last-child { border-bottom: 0; padding-bottom: 2px; }
+  table.stacked td::before {
+    content: attr(data-label);
+    display: block; color: var(--dim); font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: .08em; font-weight: 700; margin: 0 0 2px;
+  }
+  /* The row's first cell is the item's name — it is the heading of the card, not a
+     labelled field, so no caption and larger type. */
+  table.stacked td:first-child { font-weight: 800; font-size: 14.5px; padding: 2px 0 6px; }
+  table.stacked td:first-child::before { display: none; }
+}
 
 /* ---------- Lists, notes ---------- */
 ol, ul { padding-left: 22px; }
 li { margin: 5px 0; color: #cfd6e2; }
 p.tight { margin: 4px 0; }
+/* An explanatory line under a heading, quieter than the body text. */
+.dim { color: var(--dim); }
+.lede { color: var(--dim); font-size: 13.5px; margin: 6px 0 0; }
 .note { border-left: 3px solid var(--accent-dark); padding: 2px 0 2px 14px; color: var(--dim); margin: 14px 0; }
 .warn { border-left: 3px solid var(--amber); padding: 2px 0 2px 14px; color: var(--dim); margin: 14px 0; }
 

@@ -108,9 +108,61 @@
   .container { max-width: 1140px; margin: 0 auto; }
   .has-text-centered { text-align: center; }
 
-  .hero { min-height: min(76vh, 720px); display: flex; align-items: center; padding: 3.6rem 0 3.2rem; }
-  .hero h1 { color: #fff; font-weight: 900; font-size: 3.3rem; letter-spacing: -.045em; line-height: 1.05; margin: 1.1rem 0 0; }
-  .hero .subtitle { color: var(--text-dim); font-size: 1.15rem; max-width: 840px; margin: 1rem auto 0; }
+  /* ---------- The bar at the very top ---------- */
+  /* The same nav the guide pages carry, kept in this page's own stylesheet: the
+     sales page runs under `default-src 'none'` and loads nothing at all, which is
+     part of what it demonstrates. */
+  nav.topnav { border-bottom: 1px solid rgba(255,255,255,.09); background: rgba(0,0,0,.32); }
+  nav.topnav .inner {
+    max-width: 1140px; margin: 0 auto; padding: 12px 2rem;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  }
+  nav.topnav .brand {
+    display: inline-flex; align-items: center; gap: 8px; margin-right: 6px;
+    font-weight: 800; color: #fff; text-decoration: none; letter-spacing: -.2px;
+  }
+  nav.topnav .brand img { width: 22px; height: 22px; }
+  nav.topnav a.link {
+    color: var(--text-dim); text-decoration: none; font-size: 13px; font-weight: 600;
+    padding: 5px 10px; border-radius: 8px; border: 1px solid transparent;
+  }
+  nav.topnav a.link:hover { color: #fff; background: rgba(255,255,255,.05); }
+  nav.topnav a.link[aria-current="page"] {
+    color: #fff; background: var(--accent-dim); border-color: var(--accent-border);
+  }
+  nav.topnav .spacer { flex: 1 1 auto; }
+  nav.topnav a.go {
+    color: #aac4ff; text-decoration: none; font-size: 13px; font-weight: 700;
+    padding: 5px 10px; border-radius: 8px; border: 1px solid transparent; white-space: nowrap;
+  }
+  nav.topnav a.go:hover { background: var(--accent-dim); border-color: var(--accent-border); }
+  @media (max-width: 700px) {
+    nav.topnav .inner { padding: 10px 1.1rem; gap: 4px; }
+    nav.topnav .brand { flex: 1 1 100%; margin-right: 0; }
+    nav.topnav .spacer { display: none; }
+    nav.topnav a.link, nav.topnav a.go { padding: 5px 8px; font-size: 12.5px; }
+  }
+
+  /* Column direction, and a child told to fill it: a row flex item refuses to shrink
+     below its min-content width (`min-width: auto`), which pushed this container to
+     479px inside a 406px phone viewport — the headline, the pill and the second button
+     were all clipped off the right edge, hidden by `overflow-x: clip` rather than
+     laid out. The horizontal padding also matches every other section now: the hero
+     used to sit flush against the viewport edge while the rest of the page was inset. */
+  .hero { min-height: min(76vh, 720px); display: flex; flex-direction: column; justify-content: center; padding: 3.6rem 2rem 3.2rem; }
+  .hero > .container { width: 100%; min-width: 0; }
+  /* `clamp` rather than a breakpoint: the headline scales with the viewport, so there
+     is no width at which it suddenly jumps — or, as a `max-width: 420px` query did on
+     a 420px-wide screen, fails to fire on a fraction of a pixel and leaves a desktop
+     headline on a phone. */
+  .hero h1 { color: #fff; font-weight: 900; font-size: clamp(1.95rem, 7.5vw, 3.3rem); letter-spacing: -.045em; line-height: 1.05; margin: 1.1rem 0 0; }
+  .hero .subtitle { color: var(--text-dim); font-size: clamp(1rem, 2.6vw, 1.15rem); max-width: 840px; margin: 1rem auto 0; }
+  /* 6.5rem of section padding is a desktop number too. */
+  @media (max-width: 720px) {
+    .hero { padding: 2.6rem 1.1rem 2.4rem; }
+    .section { padding: 3.8rem 1.1rem; }
+    .section-title { font-size: clamp(1.5rem, 5.5vw, 2rem); }
+  }
   .has-text-ts { color: var(--accent); }
   .eyebrow { display: inline-block; padding: .35rem 1rem; border-radius: 999px; background: var(--accent-dim); border: 1px solid var(--accent-border); color: #aac4ff; font-size: .78rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
 
@@ -126,7 +178,12 @@
   .btn:hover { background: #94b4ff; transform: translateY(-1px); }
   .btn-ghost { background: rgba(255,255,255,.06); color: var(--text-main); border: 1px solid rgba(255,255,255,.14); }
   .btn-ghost:hover { background: rgba(255,255,255,.13); color: #fff; }
-  .deep-link { font-size: .82rem; color: var(--text-dim); margin-top: .9rem; word-break: break-all; }
+  /* Centred body text is fine; centred body text that may break inside any word is
+     not — with `word-break: break-all` every line ended mid-syllable ("yo/u want",
+     "installed or f/eched"), which reads as a rendering fault. `overflow-wrap` breaks
+     only when a word genuinely cannot fit, so the long `app.html?file=…` still wraps
+     and the prose does not. */
+  .deep-link { font-size: .86rem; color: var(--text-dim); margin: 1.2rem auto 0; max-width: 780px; line-height: 1.65; overflow-wrap: anywhere; }
   .deep-link a { color: #aac4ff; text-decoration: none; }
   .deep-link a:hover { text-decoration: underline; }
 
@@ -205,6 +262,20 @@
 </head>
 <body>
 <div class="bg" aria-hidden="true"></div>
+
+<nav class="topnav" aria-label="Site">
+  <div class="inner">
+    <a class="brand" href="index.html"><img src="assets/logo-dark.svg" alt="">Turnstone</a>
+    <a class="link" href="index.html" aria-current="page">Overview</a>
+    <a class="link" href="versions.html">All versions</a>
+    <a class="link" href="web-app.html">Web app</a>
+    <a class="link" href="standalone.html">Standalone</a>
+    <a class="link" href="bookmarklet.html">Bookmarklet</a>
+    <a class="link" href="extension.html">Extension</a>
+    <span class="spacer"></span>
+    <a class="go" href="app.html">Launch app →</a>
+  </div>
+</nav>
 
 <section class="hero">
   <div class="container has-text-centered">
