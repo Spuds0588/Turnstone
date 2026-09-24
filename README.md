@@ -123,25 +123,25 @@ versions.js         #   the script behind it — fetches the bookmarklet payload
 vendor/             # vendored libraries — no CDN at runtime (PapaParse, SheetJS)
 ports/              # other editions of Turnstone (see ports/README.md)
   bookmarklet/      #   built: composes the app in an overlay on any page — no libs, no network
-  extension/        #   Chrome MV3 side panel; no iframes — selecting a card switches the active tab
+  extension/        #   built: Chrome MV3 side panel; no iframes — card selection switches real tabs
   tauri/            #   native desktop shell; full web experience incl. iframes, no CORS wall
 agents.md           # AI-developer rules (mirrors PRD §4)
 PRD-Turnstone.md    # master product document
 todo.md             # task tracker + future-state plans
 history.md          # build log
 testing-notes.md    # test files and the manual production test plan
-ports/README.md     # how the ports relate and what's scaffolded
+ports/README.md     # how the ports relate, how they are built and what each one costs
 ```
 
 ## Roadmap: other versions & ports
 
-The web app is the canonical core; these ports (scaffolded under [`ports/`](ports/README.md)) share its logic rather than forking it:
+The web app is the canonical core; these ports (built under [`ports/`](ports/README.md)) are **generated from it** rather than forking it — each one is a build script that patches `app.html`'s seams and asserts every anchor, so a port cannot silently drift from the app:
 
 - **Bookmarklet — built.** One click on any page composes the whole app there, in a shadow-DOM overlay: parsing, cards, statuses/notes, link modes, exports. **No hosted file, no network and no libraries** — three variants split by parser weight (`csv` ~142 KB, `core` ~152 KB with a dependency-free XLSX reader, `full` ~1.09 MB with vendored PapaParse + SheetJS for workbook writing). Works on strict-CSP pages without injecting a single script into the page, leaves the host page's globals and storage alone, and is session-only by design with **Copy state / Restore state** to carry a queue. Install by dragging from the [**versions & downloads page**](https://spuds0588.github.io/Turnstone/versions.html) (or [`ports/bookmarklet/dist/install.html`](ports/bookmarklet/dist/install.html)); see [`ports/bookmarklet/README.md`](ports/bookmarklet/README.md).
-- **Chrome extension (MV3)** — the queue lives in Chrome's **Side Panel** with no iframe workflow at all: links open as real browser tabs, and **selecting a card switches the active tab** to that page. Statuses/presets persist in `chrome.storage`; exports via `chrome.downloads`; right-click any link to queue it.
+- **Chrome extension (MV3) — built.** The queue lives in Chrome's **Side Panel** with no iframe workflow at all: links open as real browser tabs, and **selecting a card switches to that card's tab** rather than reloading it (a closed tab is forgotten, so the next click opens a fresh one). The toolbar **badge** carries the remaining count, **right-click any link → “Add link to Turnstone”** appends it to the open queue (or starts one, or waits in `chrome.storage` if the panel is shut), exports go through `chrome.downloads`, and queue/presets/open file persist per browser in IndexedDB. `ports/extension/dist/` loads unpacked (Chromium 114+); regenerate with `node ports/extension/build.js`, which fails rather than emit a panel that has drifted from `app.html`. Verified under the extension page CSP with no inline script, and — for the tab/badge/download/context-menu behaviour that only exists inside an extension — against a mock of the extension APIs. See [`ports/extension/README.md`](ports/extension/README.md) and the [versions page](https://spuds0588.github.io/Turnstone/versions.html).
 - **Tauri desktop app** — the **full web experience including the tabbed iframe workspace**, with the CORS / `X-Frame-Options` wall gone: sites that refuse iframing on the web load natively. Silent filesystem write-back on every OS, system tray, auto-update, tiny bundle.
 - **Bundled single-file HTML** — `turnstone-standalone.html` (**beta, built**): one document holding the whole app (shell + vendored libraries + logo art inlined) for `file://` use, USB sticks, internal shares, and machines where nothing can be installed. No server, no CDN, no checkout — since the app already makes zero external requests, this build is genuinely self-contained. Regenerate with `node assets/build-standalone.js`; the script fails loudly if a `vendor/` or `assets/` reference survives. A CSV-only variant (no binary parser) is still to come.
-- Shared prerequisite (planned): extract the DOM-free core — parsing, matrix analysis, presets, persistence — from `app.html` into a `core.js` all ports consume.
+- Shared prerequisite (revised): a DOM-free `core.js` was the original plan — parsing, matrix analysis, presets, persistence extracted from `app.html` for every port to consume. Two ports later, the **generator** approach has won instead: each port's `build.js` extracts and patches `app.html` directly and asserts every anchor, which keeps the port provably in step with the app and costs one script instead of a refactor of the app's core. No `core.js` until a port needs one; the reasoning is in [`ports/README.md`](ports/README.md).
 - Further future state (see [`todo.md`](todo.md)): a **web MCP server** so AI agents can set up the workspace for their users (load the queue, apply presets, pick the open mode) or take over and work it on request — plus embedded **phone / SMS / mail hand-off layers**, native CORS bypass, and Google Drive / OneDrive sync.
 
 ## Docs
@@ -150,4 +150,4 @@ The web app is the canonical core; these ports (scaffolded under [`ports/`](port
 - `todo.md` — task tracker + future-state plans
 - `history.md` — build log (v0.1 MVP → v0.8 vendored dependencies + data-call-out lockdown)
 - `testing-notes.md` — test files and the manual production test plan
-- `ports/README.md` — how the ports relate and what's scaffolded
+- `ports/README.md` — how the ports relate, how each is generated, and how it is verified

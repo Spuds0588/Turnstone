@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Dark-theme variant: the stone keeps a light rim so it reads against near-black
+       surfaces. Same geometry and engraving technique as logo.svg. -->
+  <defs>
+    <radialGradient id="stoneShadeD" cx="0.38" cy="0.32" r="0.85">
+      <stop offset="0" stop-color="#cfcfcf"/>
+      <stop offset="0.72" stop-color="#a8a8a8"/>
+      <stop offset="1" stop-color="#8f8f8f"/>
+    </radialGradient>
+  </defs>
+
+  <circle cx="256" cy="256" r="248" fill="url(#stoneShadeD)"/>
+  <circle cx="256" cy="256" r="248" fill="none" stroke="#5c5f66" stroke-width="7"/>
+
+  <path d="M148 268 L232 352 L368 180" fill="none" stroke="#6f6f6f"
+        stroke-width="52" stroke-linecap="round" stroke-linejoin="round"
+        transform="translate(2 2)"/>
+  <path d="M148 268 L232 352 L368 180" fill="none" stroke="#4a4a4a"
+        stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

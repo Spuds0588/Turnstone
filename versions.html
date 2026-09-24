@@ -131,6 +131,12 @@
       <div class="btns"><a class="btn ghost" href="#bookmarklet">↓ Get the bookmarklet</a></div>
       <p class="tight" style="color:var(--dim);font-size:13px">Three sizes, from ~142 KB with no libraries at all.</p>
     </div>
+    <div class="card">
+      <h3>Keep the queue beside the page</h3>
+      <p class="tight">The Chrome extension. A side panel whose cards drive real browser tabs instead of framing them.</p>
+      <div class="btns"><a class="btn ghost" href="#extension">↓ Install the extension</a></div>
+      <p class="tight" style="color:var(--dim);font-size:13px">Load unpacked · Chrome/Edge 114+ · remembers between panel closes.</p>
+    </div>
   </div>
 
   <!-- ------------------------------------------------ bookmarklet -->
@@ -194,6 +200,51 @@
   <p class="note">The overlay is isolated: the host page's globals, storage and layout are left alone, and closing it removes
     everything it added. Nothing is uploaded and nothing is fetched.</p>
 
+  <!-- ------------------------------------------------ extension -->
+  <h2 id="extension">Chrome extension <span class="pill ok">Available</span></h2>
+  <p>
+    A Manifest V3 extension whose whole UX is Chrome's <strong>side panel</strong>: the same task queue, pinned beside
+    whatever you are reading. There are no iframes in this edition at all — <strong>links open as real browser
+    tabs</strong>, and selecting a card switches the browser to that card's tab (or opens it if it is not open yet).
+    Completing a card auto-advances to the next tab. The toolbar badge carries the number of tasks left, so you can
+    shut the panel and still see where you are, and right-clicking any link adds it to the queue.
+  </p>
+
+  <h3>Install it — load unpacked</h3>
+  <div class="step"><span class="n">1</span><p>Get the folder: clone the repo, or <a href="https://github.com/Spuds0588/Turnstone/archive/refs/heads/main.zip">download it as a ZIP</a> and unzip. The extension is <code>ports/extension/dist</code>.</p></div>
+  <div class="step"><span class="n">2</span><p>Open <code>chrome://extensions</code> and turn on <strong>Developer mode</strong> (top right).</p></div>
+  <div class="step"><span class="n">3</span><p>Click <strong>Load unpacked</strong> and choose the <code>ports/extension/dist</code> folder. Turnstone appears in the toolbar.</p></div>
+  <div class="step"><span class="n">4</span><p>Click the toolbar icon — the queue opens in the side panel, on the drop-zone screen. Or right-click any link on any page and choose <em>Add link to Turnstone</em>.</p></div>
+
+  <div class="card">
+    <p class="tight" id="ext-meta" style="color:var(--dim)">Reading the built manifest…</p>
+    <p class="tight" style="color:var(--dim);font-size:13px">
+      Not on the Chrome Web Store yet, and Chrome only loads extensions unpacked in Developer mode or from the store,
+      so there is no one-click install. Regenerate the folder after any change to the app with
+      <code>node ports/extension/build.js</code>; the build refuses to emit a panel that has drifted from the app.
+    </p>
+  </div>
+
+  <h3>What the extension does and does not do</h3>
+  <p class="tight"><strong>It does:</strong> the same cards, ✓ Complete / ↺ Incomplete, notes, search, sorting, column
+    presets, the same exports, the same file-round-trip resume, and the same auto-open / auto-advance — re-pointed at
+    real tabs. It also <strong>remembers</strong> your queue across panel closes, per browser, which the bookmarklet
+    cannot do.</p>
+  <p class="tight"><strong>It does not:</strong></p>
+  <ul>
+    <li><strong>Frame pages.</strong> A side panel is about 360 px of browser chrome, not a viewport, so this is the one
+      edition with no tabbed workspace. Use the <a href="#web">web app</a> when you want the pages rendered beside the queue.</li>
+    <li><strong>Run in Firefox.</strong> Manifest V3 with the Side Panel API is Chromium-only (Chrome 114+, Edge). Use the
+      <a href="#standalone">standalone build</a> or the <a href="#web">web app</a> there.</li>
+    <li><strong>Bulk-import a whole site.</strong> It queues links one at a time from the queue itself — it does not crawl a
+      page looking for links. Feed it a CSV/XLSX export instead.</li>
+    <li><strong>Write back to a workbook unless it was the one you picked.</strong> Picking a file with the panel's
+      <em>Open file…</em> keeps live write-back, exactly as in the web app; a file dropped in is read once and the panel
+      keeps the edits itself.</li>
+  </ul>
+  <p class="note">The extension asks for five permissions and no host access: <code>sidePanel</code>, <code>tabs</code>,
+    <code>storage</code>, <code>downloads</code> and <code>contextMenus</code>. It cannot read or modify the pages you visit.</p>
+
   <!-- ------------------------------------------------ standalone -->
   <h2 id="standalone">Standalone single-file build <span class="pill ok">Available</span> <span class="pill">Beta</span></h2>
   <p>
@@ -239,12 +290,6 @@
     <thead><tr><th>Edition</th><th>What it will add</th><th>Status</th></tr></thead>
     <tbody>
       <tr>
-        <td><strong>Chrome extension</strong></td>
-        <td>A side-panel queue with no iframes at all: links always open as real tabs, selecting a card switches the
-          browser to that tab. Statuses and presets in <code>chrome.storage</code>.</td>
-        <td>Scaffolded</td>
-      </tr>
-      <tr>
         <td><strong>Tauri desktop app</strong></td>
         <td>The full experience, including the tabbed workspace, with the CORS/<code>X-Frame-Options</code> wall gone —
           sites that refuse to be framed on the web work inside it — plus true filesystem write-back on every OS.</td>
@@ -289,6 +334,12 @@
       <tr><td>Pin it to a desktop or taskbar like an app</td>
           <td>The <a href="#web">web app</a> as a PWA (Chromium, over HTTPS), or the standalone file plus a desktop
               shortcut.</td></tr>
+      <tr><td>Keep the queue open beside the page you are working on</td>
+          <td>The <a href="#extension">Chrome extension</a> — a side panel whose cards open and switch real browser
+              tabs, with the remaining count on the toolbar badge.</td></tr>
+      <tr><td>Have a queue come back by itself after you close it</td>
+          <td>The <a href="#extension">Chrome extension</a> or the <a href="#web">web app</a> — both keep statuses, notes
+              and presets locally. The bookmarklet is memory-only by design.</td></tr>
     </tbody>
   </table>
 
@@ -297,6 +348,7 @@
       <a href="app.html">Launch the app</a>
       <a href="index.html">Overview</a>
       <a href="ports/bookmarklet/README.md">Bookmarklet notes</a>
+      <a href="ports/extension/README.md">Extension notes</a>
       <a href="https://github.com/Spuds0588/Turnstone" target="_blank" rel="noopener">GitHub</a>
       <a href="https://github.com/Spuds0588/Turnstone/blob/main/README.md" target="_blank" rel="noopener">README</a>
     </p>

@@ -27,6 +27,27 @@
     },
   ];
 
+  /* The extension's version is read from the manifest that is actually on disk, so this
+     page cannot advertise a build that is not there. Kept above the bookmarklet early
+     return below, because the two sections are independent. */
+  var extMeta = document.getElementById('ext-meta');
+  if (extMeta) {
+    fetch('ports/extension/dist/manifest.json')
+      .then(function (r) {
+        if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+        return r.json();
+      })
+      .then(function (m) {
+        extMeta.textContent = m.name + ' v' + m.version + ' · Manifest V' + m.manifest_version +
+          ' · needs Chromium ' + m.minimum_chrome_version + '+ · asks for ' + m.permissions.length +
+          ' permissions, no host access: ' + m.permissions.join(', ') + '.';
+      })
+      .catch(function (e) {
+        extMeta.innerHTML = 'Could not read the built manifest (' + e.message + ') — build it with ' +
+          '<code>node ports/extension/build.js</code>.';
+      });
+  }
+
   var rows = document.getElementById('bm-rows');
   var status = document.getElementById('bm-status');
   if (!rows) return;
