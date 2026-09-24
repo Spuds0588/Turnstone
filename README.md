@@ -6,7 +6,7 @@ A zero-server, browser-based workspace that transforms a list of URLs — CSV, T
 
 **▶ Launch the app: <https://spuds0588.github.io/Turnstone/app.html>**
 
-**▶ Every version and download: <https://spuds0588.github.io/Turnstone/versions.html>** — the hosted app, the offline single-file build, and the three bookmarklet variants (drag one onto your bookmarks bar), with each edition's formats, limits, and which one to pick.
+**▶ Not sure which edition you want? <https://spuds0588.github.io/Turnstone/versions.html>** — one screen that maps each situation (locked-down machine, air-gapped network, browser that cannot write to your file, a site you cannot leave, Firefox) to the edition that handles it. The short version: **start with the [web app](https://spuds0588.github.io/Turnstone/web-app.html)**; the other three exist for when it does not fit — the [standalone build](https://spuds0588.github.io/Turnstone/standalone.html) (one file, no network), the [bookmarklet](https://spuds0588.github.io/Turnstone/bookmarklet.html) (no install at all), and the [Chrome extension](https://spuds0588.github.io/Turnstone/extension.html) (a side panel that drives real browser tabs).
 
 **▶ See it work instantly** — this link pre-loads the demo task list straight from this repo via the `?file=` parameter:
 
@@ -77,7 +77,7 @@ Implementation note: the web-app manifest is generated at runtime from icons emb
 
 ## Standalone single-file build (beta)
 
-`turnstone-standalone.html` is the whole app in one ~1.08 MB document — the shell, PapaParse, SheetJS and the logo art, all inlined. Download it, double-click it, done: no server, no checkout, no install, no network. It is the build for **USB sticks, internal shares, and air-gapped or locked-down machines**, and for anyone who would rather keep a single file than trust a URL.
+`turnstone-standalone.html` is the whole app in one ~1.07 MB document — the shell, PapaParse, SheetJS and the logo art, all inlined. Download it, double-click it, done: no server, no checkout, no install, no network. It is the build for **USB sticks, internal shares, and air-gapped or locked-down machines**, and for anyone who would rather keep a single file than trust a URL.
 
 - **Build it:** `node assets/build-standalone.js` (add `--check` to fail when the artifact has gone stale relative to `app.html`, `--out <path>` to write elsewhere).
 - **What it inlines:** both `vendor/` libraries and both logo SVGs. Icons were already data URIs inside `app.html`.
@@ -118,8 +118,14 @@ sample-links.json   #   checking that each importer lands 10 cards with the same
 sample-links.html   #   columns (name/URL/status/notes) and 3 already complete
 sample-links.xml
 turnstone-standalone.html  # BETA single-file build — the whole app in one document (generated)
-versions.html       # versions & downloads page (bookmarklet drag-install links, edition picker)
-versions.js         #   the script behind it — fetches the bookmarklet payloads so links/sizes can't drift
+versions.html       # "which version?" — pick an edition by what you are up against
+web-app.html        # one page per edition, reachable from versions.html:
+standalone.html     #   the offline single-file build
+bookmarklet.html    #   the bookmarklet (three drag-install variants)
+extension.html      #   the Chrome MV3 side panel
+site.css            #   shared chrome for the guide pages (index.html keeps its own: strict CSP)
+site.js             #   fills in real sizes/versions read off the artifacts, so no page can quote a stale number
+bookmarklet.js      #   builds the drag-to-install anchors from ports/bookmarklet/dist/
 vendor/             # vendored libraries — no CDN at runtime (PapaParse, SheetJS)
 ports/              # other editions of Turnstone (see ports/README.md)
   bookmarklet/      #   built: composes the app in an overlay on any page — no libs, no network
@@ -137,7 +143,7 @@ ports/README.md     # how the ports relate, how they are built and what each one
 
 The web app is the canonical core; these ports (built under [`ports/`](ports/README.md)) are **generated from it** rather than forking it — each one is a build script that patches `app.html`'s seams and asserts every anchor, so a port cannot silently drift from the app:
 
-- **Bookmarklet — built.** One click on any page composes the whole app there, in a shadow-DOM overlay: parsing, cards, statuses/notes, link modes, exports. **No hosted file, no network and no libraries** — three variants split by parser weight (`csv` ~142 KB, `core` ~152 KB with a dependency-free XLSX reader, `full` ~1.09 MB with vendored PapaParse + SheetJS for workbook writing). Works on strict-CSP pages without injecting a single script into the page, leaves the host page's globals and storage alone, and is session-only by design with **Copy state / Restore state** to carry a queue. Install by dragging from the [**versions & downloads page**](https://spuds0588.github.io/Turnstone/versions.html) (or [`ports/bookmarklet/dist/install.html`](ports/bookmarklet/dist/install.html)); see [`ports/bookmarklet/README.md`](ports/bookmarklet/README.md).
+- **Bookmarklet — built.** One click on any page composes the whole app there, in a shadow-DOM overlay: parsing, cards, statuses/notes, link modes, exports. **No hosted file, no network and no libraries** — three variants split by parser weight (`csv` ~141 KB, `core` ~151 KB with a dependency-free XLSX reader, `full` ~1.06 MB with vendored PapaParse + SheetJS for workbook writing). Works on strict-CSP pages without injecting a single script into the page, leaves the host page's globals and storage alone, and is session-only by design with **Copy state / Restore state** to carry a queue. Install by dragging from the [**versions & downloads page**](https://spuds0588.github.io/Turnstone/versions.html) (or [`ports/bookmarklet/dist/install.html`](ports/bookmarklet/dist/install.html)); see [`ports/bookmarklet/README.md`](ports/bookmarklet/README.md).
 - **Chrome extension (MV3) — built.** The queue lives in Chrome's **Side Panel** with no iframe workflow at all: links open as real browser tabs, and **selecting a card switches to that card's tab** rather than reloading it (a closed tab is forgotten, so the next click opens a fresh one). The toolbar **badge** carries the remaining count, **right-click any link → “Add link to Turnstone”** appends it to the open queue (or starts one, or waits in `chrome.storage` if the panel is shut), exports go through `chrome.downloads`, and queue/presets/open file persist per browser in IndexedDB. `ports/extension/dist/` loads unpacked (Chromium 114+); regenerate with `node ports/extension/build.js`, which fails rather than emit a panel that has drifted from `app.html`. Verified under the extension page CSP with no inline script, and — for the tab/badge/download/context-menu behaviour that only exists inside an extension — against a mock of the extension APIs. See [`ports/extension/README.md`](ports/extension/README.md) and the [versions page](https://spuds0588.github.io/Turnstone/versions.html).
 - **Tauri desktop app** — the **full web experience including the tabbed iframe workspace**, with the CORS / `X-Frame-Options` wall gone: sites that refuse iframing on the web load natively. Silent filesystem write-back on every OS, system tray, auto-update, tiny bundle.
 - **Bundled single-file HTML** — `turnstone-standalone.html` (**beta, built**): one document holding the whole app (shell + vendored libraries + logo art inlined) for `file://` use, USB sticks, internal shares, and machines where nothing can be installed. No server, no CDN, no checkout — since the app already makes zero external requests, this build is genuinely self-contained. Regenerate with `node assets/build-standalone.js`; the script fails loudly if a `vendor/` or `assets/` reference survives. A CSV-only variant (no binary parser) is still to come.

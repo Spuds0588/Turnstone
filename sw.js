@@ -2,15 +2,22 @@
    Version bump this constant to invalidate all caches on the next load. */
 'use strict';
 
-const VERSION = 'turnstone-v0.9.5';
+const VERSION = 'turnstone-v0.9.6';
 
 /* Same-origin paths are relative to this file (served from the app root). */
 const PRECACHE = [
   './',
   'app.html',
   'index.html',   /* sales page — precached so offline visits land somewhere useful */
-  'versions.html', /* versions & downloads — the bookmarklet installs from here */
-  'versions.js',
+  /* Guide pages: the chooser, one page per edition, and the chrome they share. */
+  'versions.html',
+  'web-app.html',
+  'standalone.html',
+  'bookmarklet.html',
+  'extension.html',
+  'site.css',
+  'site.js',
+  'bookmarklet.js',
   'sample-links.csv',
   'sample-links.tsv',
   'sample-links.json',

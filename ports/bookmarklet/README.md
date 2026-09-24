@@ -40,9 +40,9 @@ fails. Three of those four turned out to be wrong, and the evidence is in this r
 
 | Variant | Payload | Carries | Formats |
 | --- | --- | --- | --- |
-| `csv` | ~142 KB | app + a 2 KB RFC-4180 reader | CSV, TSV, JSON, HTML, XML |
-| `core` | ~152 KB | app + a read-only XLSX reader | the above **+ XLSX / XLS / ODS reading** |
-| `full` | ~1.09 MB | app + vendored PapaParse + SheetJS | every format, plus **XLSX export and write-back** |
+| `csv` | ~141 KB | app + a 2 KB RFC-4180 reader | CSV, TSV, JSON, HTML, XML |
+| `core` | ~151 KB | app + a read-only XLSX reader | the above **+ XLSX / XLS / ODS reading** |
+| `full` | ~1.06 MB | app + vendored PapaParse + SheetJS | every format, plus **XLSX export and write-back** |
 
 The old "< ~8 KB" target is not reachable while keeping the real app: the app shell alone is
 ~139 KB, and the promise was always "the whole Turnstone app, not a cut-down clone". What is

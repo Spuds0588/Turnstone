@@ -354,6 +354,25 @@ const files = {
     '<script src="chrome-mock.js"></script>\n<script src="boot.js"></script>'),
 };
 
+/* `build.json` is what the site pages read for this build's version, size and file
+   count, so no page has to hardcode a number that a rebuild can invalidate. It is
+   computed from the shipped files only — the two test harnesses and this file are
+   not part of the extension Chrome runs, and counting them would overstate it. */
+const HARNESS = ['panel-csp.html', 'panel-test.html', 'chrome-mock.js', 'build.json'];
+const shipped = Object.keys(files).filter((p) => !HARNESS.includes(p));
+const manifest = JSON.parse(files['manifest.json']);
+files['build.json'] = JSON.stringify({
+  name: manifest.name,
+  version: manifest.version,
+  manifestVersion: manifest.manifest_version,
+  minimumChromeVersion: manifest.minimum_chrome_version,
+  permissions: manifest.permissions,
+  files: shipped.length,
+  bytes: shipped.reduce((n, p) => n + bytesOf(files[p]).length, 0),
+  harnessFiles: HARNESS.length - 1,
+  install: 'chrome://extensions → Developer mode → Load unpacked → this folder',
+}, null, 2) + '\n';
+
 /* ------------------------------------------------------------ assert ------ */
 
 if (/<script(?![^>]*src=)/.test(page)) throw new Error('an inline script survived into sidepanel.html');
@@ -372,7 +391,6 @@ if (!js.includes('chrome.downloads.download')) throw new Error('the downloads ex
 if (!css.includes('body.has-file #sidebar')) throw new Error('the panel layout CSS is missing');
 if (!/Real browser tabs/.test(js) || !/Real browser tabs/.test(page)) throw new Error('the tab-only mode was not applied');
 
-const manifest = JSON.parse(files['manifest.json']);
 const needed = [manifest.side_panel.default_path, manifest.background.service_worker,
   manifest.action.default_icon, ...Object.values(manifest.icons)];
 for (const p of needed) if (!files[p]) throw new Error(`the manifest points at an unpackaged file: ${p}`);

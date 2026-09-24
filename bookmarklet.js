@@ -1,11 +1,18 @@
-/* Turnstone — versions & downloads page.
+/* Turnstone — bookmarklet install page.
  *
- * The bookmarklet variants can only be installed by dragging an anchor whose href IS
- * the payload, so the anchors are built here from the real dist/ files rather than
- * hand-copied into the page: the sizes and the links can never drift from the build,
- * and this page stays a few KB instead of inlining ~1.4 MB of script.
+ * A bookmarklet can only be installed by dragging an anchor whose href IS the
+ * payload, so the anchors are built here from the real dist/ files rather than
+ * hand-copied into the page: the links and their sizes can never drift from the
+ * build, and the page stays a few KB instead of inlining ~1.4 MB of script.
+ *
+ * Sizes are reported as UTF-8 bytes, not string length. The payloads carry
+ * non-ASCII (ticks, dashes, and SheetJS's whole codepage table), and character
+ * counting under-reported the `full` variant by ~240 KB — 851 KB instead of the
+ * 1.06 MB the file actually is.
  */
 (function () {
+  'use strict';
+
   var VARIANTS = [
     {
       id: 'csv',
@@ -27,33 +34,10 @@
     },
   ];
 
-  /* The extension's version is read from the manifest that is actually on disk, so this
-     page cannot advertise a build that is not there. Kept above the bookmarklet early
-     return below, because the two sections are independent. */
-  var extMeta = document.getElementById('ext-meta');
-  if (extMeta) {
-    fetch('ports/extension/dist/manifest.json')
-      .then(function (r) {
-        if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
-        return r.json();
-      })
-      .then(function (m) {
-        extMeta.textContent = m.name + ' v' + m.version + ' · Manifest V' + m.manifest_version +
-          ' · needs Chromium ' + m.minimum_chrome_version + '+ · asks for ' + m.permissions.length +
-          ' permissions, no host access: ' + m.permissions.join(', ') + '.';
-      })
-      .catch(function (e) {
-        extMeta.innerHTML = 'Could not read the built manifest (' + e.message + ') — build it with ' +
-          '<code>node ports/extension/build.js</code>.';
-      });
-  }
-
   var rows = document.getElementById('bm-rows');
   var status = document.getElementById('bm-status');
   if (!rows) return;
 
-  /* Built here rather than written into the HTML: the size column comes from the
-     payload itself, so it reports the truth after every rebuild. */
   rows.textContent = '';
   var arrived = 0, failed = 0;
 
@@ -89,16 +73,14 @@
       })
       .then(function (payload) {
         payload = payload.trim();
-        /* UTF-8 byte count, not string length: the payloads carry non-ASCII (ticks,
-           dashes, and SheetJS's codepage table), so `length` under-reports the file
-           size — by ~240 KB on the `full` variant. Bytes match the dist/ file and
-           the sizes quoted in the docs. */
         var kiloBytes = new TextEncoder().encode(payload).length / 1024;
         // A JS-created anchor is just as draggable as a hand-written one.
         link.href = payload;
         link.className = 'install';
         link.title = 'Drag this onto your bookmarks bar';
-        cellSize.textContent = (kiloBytes >= 1024 ? (kiloBytes / 1024).toFixed(2) + ' MB' : kiloBytes.toFixed(0) + ' KB');
+        cellSize.textContent = kiloBytes >= 1024
+          ? (kiloBytes / 1024).toFixed(2) + ' MB'
+          : kiloBytes.toFixed(0) + ' KB';
         arrived++;
         settle();
       })
@@ -114,13 +96,14 @@
   });
 
   function settle() {
+    if (!status) return;
     if (arrived + failed < VARIANTS.length) return;
     if (!failed) {
       status.textContent = 'Ready — drag a link onto your bookmarks bar (step 2 above).';
       return;
     }
     status.innerHTML = 'Could not load ' + failed + ' payload(s) from this page. Open ' +
-      '<a href="ports/bookmarklet/dist/install.html">the bookmarklet install page</a> instead, ' +
+      '<a href="ports/bookmarklet/dist/install.html">the generated install page</a> instead, ' +
       'or build them with <code>node ports/bookmarklet/build.js</code>.';
   }
 })();

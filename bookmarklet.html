@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Same zero-call-out rule as the app: no third-party anything. The only scripts are
+     this repo's own site.js and bookmarklet.js, which fetch this repo's own payloads.
+
+     `script-src` needs 'unsafe-inline' for one specific reason: clicking a
+     javascript: link is a *page* script execution and is CSP-governed, so the
+     bookmarklet links below would be inert on click without it — even though the
+     installed bookmark itself is exempt (the browser treats bookmark activation as
+     its own thing). Dropping a link on the bookmarks bar is unaffected either way;
+     this is only so "click it here to try it" works. Nothing external is permitted:
+     scripts come from this origin, and connect-src stays 'self'. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Turnstone bookmarklet — the whole app on any page, with no libraries</title>
+<meta name="description" content="Install the Turnstone bookmarklet by dragging a link onto your bookmarks bar. It composes the whole app as an overlay on the page you are on: no install, no network, no libraries — in sizes from ~141 KB to 1.06 MB.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://spuds0588.github.io/Turnstone/bookmarklet.html">
+<link rel="icon" type="image/png" href="assets/icon-192.png">
+<meta name="theme-color" content="#0f1115">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <img src="assets/logo-dark.svg" alt="">
+    <h1>Bookmarklet</h1>
+  </header>
+
+  <nav class="crumb">
+    <a href="index.html">Overview</a><span class="sep">›</span>
+    <a href="versions.html">All versions</a><span class="sep">›</span>
+    <span class="here">Bookmarklet</span>
+  </nav>
+
+  <p class="sub">
+    A bookmarklet is a bookmark whose URL is a program. Click it on any page and Turnstone opens
+    <em>there</em> — as an overlay you can close again — instead of in a new tab or a new site. It
+    asks for no install, makes no network requests, and loads no libraries: the parsers travel
+    inside the bookmark itself. That is what makes it the edition to reach for when nothing may be
+    installed and nothing may be fetched.
+  </p>
+
+  <p class="note">
+    <strong>Reaching for this because the web app didn't fit?</strong> Good — that is exactly what it
+    is for. On a normal machine, prefer the <a href="web-app.html">web app</a>: it remembers your
+    queue and writes back to your file. The bookmarklet trades both away for portability and a
+    zero-install footprint.
+  </p>
+
+  <h2>Install it — drag to your bookmarks bar</h2>
+  <div class="step"><span class="n">1</span><p>Show your bookmarks bar if it is hidden: <code>Ctrl+Shift+B</code> (Windows/Linux) or <code>⌘+Shift+B</code> (macOS).</p></div>
+  <div class="step"><span class="n">2</span><p>Drag one of these links onto that bar. The variant you drag decides how much it can carry (table below).</p></div>
+  <div class="step"><span class="n">3</span><p>Open any page — a spreadsheet listing, a docs site, anything — and click the new bookmark. The workspace appears over that page.</p></div>
+  <div class="step"><span class="n">4</span><p>Drop a <code>.csv</code> / <code>.xlsx</code> list anywhere on the page, or press <em>Demo list</em> to see it work first. <em>✕ Close</em> in the top bar puts the page back exactly as it was.</p></div>
+
+  <div class="card">
+    <p class="tight" id="bm-status" style="color:var(--dim)">Fetching the bookmarklet payloads…</p>
+    <table>
+      <thead><tr><th>Drag to your bookmarks bar</th><th>Carries</th><th>Size</th><th>Best for</th></tr></thead>
+      <tbody id="bm-rows">
+        <tr><td colspan="4">If nothing appears here, open <a href="ports/bookmarklet/dist/install.html">the generated install page</a> instead.</td></tr>
+      </tbody>
+    </table>
+    <p class="tight" style="color:var(--dim);font-size:13px">
+      Prefer to do it by hand? Each variant is also a plain text file you can copy into a new bookmark's URL field:
+      <a href="ports/bookmarklet/dist/turnstone-bookmarklet-csv.txt">csv</a> ·
+      <a href="ports/bookmarklet/dist/turnstone-bookmarklet-core.txt">core</a> ·
+      <a href="ports/bookmarklet/dist/turnstone-bookmarklet-full.txt">full</a>.
+      Some browsers trim very long bookmark URLs when pasted by hand — dragging is more reliable.
+    </p>
+  </div>
+
+  <h2>Test it in a minute</h2>
+  <div class="card">
+    <div class="step"><span class="n">1</span><p>Click the bookmarklet on any page. The bar at the top shows the variant, plus <em>Copy state</em>, <em>Restore state</em> and <em>✕ Close</em>.</p></div>
+    <div class="step"><span class="n">2</span><p>Press <em>Demo list</em> — five cards, no file needed — then tick ✓ <em>Complete</em> on one and type a note.</p></div>
+    <div class="step"><span class="n">3</span><p>Drop a real list anywhere on the page. A file with <code>Status</code>/<code>Notes</code> columns comes back with its progress intact (the same round-trip the app does).</p></div>
+    <div class="step"><span class="n">4</span><p>Press <em>Copy state</em>, then <em>✕ Close</em>, then click the bookmarklet again and <em>Restore state</em> — paste, and the queue returns with statuses and notes.</p></div>
+    <div class="step"><span class="n">5</span><p>Export CSV from the ☰ menu to keep the work outside the page.</p></div>
+  </div>
+
+  <h2>What it does do</h2>
+  <p class="tight">
+    Cards, ✓ Complete / ↺ Incomplete, notes, sorting, column presets, search, the same open modes
+    (tabs / browser tab / popup), the same exports, and the same file-round-trip resume — the whole
+    app, not a cut-down clone. It also files itself away cleanly: the overlay is isolated, so the
+    host page's globals, storage and layout are left alone, and closing it removes everything it
+    added. Nothing is uploaded and nothing is fetched.
+  </p>
+
+  <h2>What it does not do <span class="pill">The trade</span></h2>
+  <ul>
+    <li><strong>Keep anything after the tab closes.</strong> A bookmarklet runs on someone else's origin,
+      so storage is memory-only by design — the sidebar chip says <em>“this tab only — export to keep”</em>.
+      Carry a queue with <em>Copy state</em> / <em>Restore state</em>, or export a file. The
+      <a href="web-app.html">web app</a> and the <a href="extension.html">extension</a> are the editions
+      that remember.</li>
+    <li><strong>Write back into a picked file unless you chose the <code>full</code> variant</strong> (that
+      needs SheetJS's writer). <code>csv</code> and <code>core</code> import workbooks one-way and export CSV.</li>
+    <li><strong>Promise pixel-perfect styling on strict-CSP sites.</strong> The overlay needs no CSP
+      exemption to run — scripts, styles and DOM are all constructed by the payload — but a site with a
+      strict <code>style-src</code> drops the app's handful of inline <code>style</code> attributes, so a
+      few dialogs look plainer. Everything still works.</li>
+    <li><strong>Fetch a remote list on a site with a closed <code>connect-src</code>.</strong> Local drops
+      are unaffected; pasting a URL there fails with a fetch/CORS message rather than silently.</li>
+  </ul>
+
+  <h2>Read the build notes</h2>
+  <p class="tight">
+    Why the app is composed in the current page rather than a new tab, how two dependency-free
+    stand-ins replace PapaParse and SheetJS, and what the strict-CSP tests measured: all of it is in
+    <a href="ports/bookmarklet/README.md">ports/bookmarklet/README.md</a>. Regenerate the payloads with
+    <code>node ports/bookmarklet/build.js</code>.
+  </p>
+
+  <footer>
+    <div class="row">
+      <a href="index.html">Overview</a>
+      <a href="versions.html">All versions</a>
+      <a href="web-app.html">Web app</a>
+      <a href="extension.html">Chrome extension</a>
+      <a href="standalone.html">Standalone build</a>
+    </div>
+    <div class="row">
+      <a href="app.html">Launch the app</a>
+      <a href="https://github.com/Spuds0588/Turnstone" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/Spuds0588/Turnstone/blob/main/history.md" target="_blank" rel="noopener">history.md</a>
+    </div>
+    <p>MIT licensed · no telemetry · no backend · nothing uploaded.</p>
+  </footer>
+</div>
+<script src="site.js"></script>
+<script src="bookmarklet.js"></script>
+</body>
+</html>

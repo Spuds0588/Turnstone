@@ -3,360 +3,255 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- Same zero-call-out rule as the app: no third-party anything. The only script is
-     this repo's own versions.js, which fetches this repo's own payloads.
-
-     `script-src` needs 'unsafe-inline' for one specific reason: clicking a
-     javascript: link is a *page* script execution and is CSP-governed, so the
-     bookmarklet links below would be inert on click without it — even though the
-     installed bookmark itself is exempt (the browser treats bookmark activation as
-     its own thing). Dropping a link on the bookmarks bar is unaffected either way;
-     this is only so "click it here to try it" works. Nothing external is permitted:
-     scripts come from this origin, and connect-src stays 'self'. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<!-- Same zero-call-out rule as the app: no third-party anything, and no script at
+     all beyond this repo's own site.js, which only reads sizes and versions off the
+     artifacts so this page cannot quote a number that has gone stale. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
-<title>Turnstone — versions &amp; downloads</title>
-<meta name="description" content="Every Turnstone edition in one place: the hosted web app, the downloadable single-file build, and the installable bookmarklet (drag to your bookmarks bar). What each one supports, what it does not, and which to pick.">
+<title>Which version of Turnstone? — compare every edition</title>
+<meta name="description" content="Four Turnstone editions, one decision: start with the web app, and if your machine will not allow it, the standalone build, the bookmarklet or the Chrome extension each solve a different constraint.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://spuds0588.github.io/Turnstone/versions.html">
 <link rel="icon" type="image/png" href="assets/icon-192.png">
 <meta name="theme-color" content="#0f1115">
-<style>
-  :root {
-    --accent: #7aa2ff;
-    --accent-dark: #5a82e0;
-    --accent-dim: rgba(122, 162, 255, .12);
-    --bg: #0f1115;
-    --panel: #151922;
-    --panel-2: #1b202b;
-    --line: rgba(255, 255, 255, .09);
-    --text: #e7ebf3;
-    --dim: #9aa3b2;
-    --green: #3fb970;
-    --amber: #f5c542;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--bg); color: var(--text);
-    font: 15px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  }
-  a { color: var(--accent); }
-  .wrap { max-width: 1000px; margin: 0 auto; padding: 40px 22px 70px; }
-  header.top { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
-  header.top img { width: 40px; height: 40px; }
-  h1 { font-size: 27px; margin: 0; letter-spacing: -.4px; }
-  .sub { color: var(--dim); margin: 2px 0 30px; max-width: 74ch; }
-  h2 { font-size: 17px; margin: 42px 0 4px; }
-  h2 .pill { vertical-align: 3px; }
-  h3 { font-size: 14.5px; margin: 22px 0 6px; }
-  p { color: #cfd6e2; }
-  p.tight { margin: 4px 0; }
-  .pill {
-    display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase;
-    padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--dim); background: var(--panel-2);
-  }
-  .pill.ok { color: var(--green); border-color: rgba(63,185,112,.45); background: rgba(63,185,112,.1); }
-  .pill.soon { color: var(--amber); border-color: rgba(245,197,66,.4); background: rgba(245,197,66,.08); }
-  .card {
-    background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
-    padding: 20px 22px; margin: 16px 0;
-  }
-  .card h3 { margin-top: 0; }
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
-  table { border-collapse: collapse; width: 100%; margin: 10px 0 4px; font-size: 13.5px; }
-  th, td { text-align: left; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { color: var(--dim); font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; }
-  td code, p code, li code { background: var(--panel-2); border-radius: 4px; padding: 1px 5px; font-size: 12.5px; }
-  .btn {
-    display: inline-block; background: var(--accent); color: #0b1020; font-weight: 800;
-    padding: 10px 18px; border-radius: 9px; text-decoration: none;
-  }
-  .btn.ghost { background: none; color: var(--text); border: 1px solid var(--line); font-weight: 700; }
-  .btn:hover { filter: brightness(1.06); }
-  .btns { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 4px; }
-  .install {
-    display: inline-block; cursor: grab; padding: 9px 15px; border-radius: 10px;
-    border: 1.5px dashed var(--accent-dark); background: var(--accent-dim);
-    color: var(--text); font-weight: 700; text-decoration: none;
-  }
-  .install:active { cursor: grabbing; }
-  .install.pending { color: var(--dim); border-style: solid; cursor: progress; font-weight: 500; }
-  ol, ul { padding-left: 22px; }
-  li { margin: 5px 0; color: #cfd6e2; }
-  .note { border-left: 3px solid var(--accent-dark); padding: 2px 0 2px 14px; color: var(--dim); margin: 14px 0; }
-  .warn { border-left: 3px solid var(--amber); padding: 2px 0 2px 14px; color: var(--dim); margin: 14px 0; }
-  .step { display: flex; gap: 12px; margin: 10px 0; }
-  .step .n {
-    flex: 0 0 24px; height: 24px; border-radius: 999px; background: var(--accent-dim);
-    border: 1px solid var(--accent-dark); color: var(--accent); font-weight: 800; font-size: 12px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .step p { margin: 0; }
-  footer { border-top: 1px solid var(--line); margin-top: 44px; padding-top: 22px; color: var(--dim); font-size: 13px; }
-  footer a { color: var(--dim); margin-right: 14px; }
-  footer a:hover { color: #fff; }
-</style>
+<link rel="stylesheet" href="site.css">
 </head>
 <body>
 <div class="wrap">
 
   <header class="top">
     <img src="assets/logo-dark.svg" alt="">
-    <h1>Versions &amp; downloads</h1>
+    <h1>Which version?</h1>
   </header>
+
+  <nav class="crumb">
+    <a href="index.html">Overview</a><span class="sep">›</span>
+    <span class="here">All versions</span>
+  </nav>
+
   <p class="sub">
-    Turnstone is one app in several shapes. Same workspace, same file handling, same zero-backend rule —
-    they differ in how they run and what they can carry. Pick the row that matches where you are, and if
-    something you need is missing, the <a href="#steer">steering table</a> says which edition covers it.
+    Turnstone is one app with four front doors. They do the same job — turn a link list into a queue you
+    work through — but they run in different places and carry different amounts of machinery. Pick by
+    <em>where you are allowed to run things</em>, not by which one sounds cleverest.
   </p>
 
-  <!-- ------------------------------------------------ pick quickly -->
-  <div class="grid">
-    <div class="card">
-      <h3>Work a list right now</h3>
-      <p class="tight">The hosted web app. Open it, drop your list, done.</p>
-      <div class="btns"><a class="btn" href="app.html">▶ Launch the app</a></div>
-      <p class="tight" style="color:var(--dim);font-size:13px">Every format, silent write-back in Chromium, installable as a PWA, works offline.</p>
-    </div>
-    <div class="card">
-      <h3>Carry it offline</h3>
-      <p class="tight">One HTML file with everything inside it — no server, no network, no checkout.</p>
-      <div class="btns"><a class="btn ghost" href="turnstone-standalone.html" download>⤓ Download standalone (1.09 MB)</a></div>
-      <p class="tight" style="color:var(--dim);font-size:13px">USB sticks, share drives, air-gapped machines. Beta.</p>
-    </div>
-    <div class="card">
-      <h3>Use it inside another page</h3>
-      <p class="tight">The bookmarklet. No install, no network — it composes the workspace over whatever page you are on.</p>
-      <div class="btns"><a class="btn ghost" href="#bookmarklet">↓ Get the bookmarklet</a></div>
-      <p class="tight" style="color:var(--dim);font-size:13px">Three sizes, from ~142 KB with no libraries at all.</p>
-    </div>
-    <div class="card">
-      <h3>Keep the queue beside the page</h3>
-      <p class="tight">The Chrome extension. A side panel whose cards drive real browser tabs instead of framing them.</p>
-      <div class="btns"><a class="btn ghost" href="#extension">↓ Install the extension</a></div>
-      <p class="tight" style="color:var(--dim);font-size:13px">Load unpacked · Chrome/Edge 114+ · remembers between panel closes.</p>
-    </div>
-  </div>
-
-  <!-- ------------------------------------------------ bookmarklet -->
-  <h2 id="bookmarklet">Bookmarklet <span class="pill ok">Available</span></h2>
-  <p>
-    A bookmarklet is a bookmark whose URL is a program. Click it on any page and Turnstone opens
-    <em>there</em> — as an overlay you can close again — instead of in a new tab or a new site. It asks for no
-    install, makes no network requests, and loads no libraries: the parsers travel inside the bookmark itself.
-    That is what makes it the edition to reach for on locked-down, air-gapped or strict-CSP machines.
-  </p>
-
-  <h3>Install it — drag to your bookmarks bar</h3>
-  <div class="step"><span class="n">1</span><p>Show your bookmarks bar if it is hidden: <code>Ctrl+Shift+B</code> (Windows/Linux) or <code>⌘+Shift+B</code> (macOS).</p></div>
-  <div class="step"><span class="n">2</span><p>Drag one of these links onto that bar. The variant you drag decides how much it can carry (table below).</p></div>
-  <div class="step"><span class="n">3</span><p>Open any page — a spreadsheet listing, a docs site, anything — and click the new bookmark. The workspace appears over that page.</p></div>
-  <div class="step"><span class="n">4</span><p>Drop a <code>.csv</code> / <code>.xlsx</code> list anywhere on the page, or press <em>Demo list</em> to see it work first. <em>✕ Close</em> in the top bar puts the page back exactly as it was.</p></div>
-
-  <div class="card" id="bookmarklet-links">
-    <p class="tight" id="bm-status" style="color:var(--dim)">Fetching the bookmarklet payloads…</p>
-    <table>
-      <thead><tr><th>Drag to your bookmarks bar</th><th>Carries</th><th>Size</th><th>Best for</th></tr></thead>
-      <tbody id="bm-rows">
-        <tr><td colspan="4">If nothing appears here, open <a href="ports/bookmarklet/dist/install.html">the bookmarklet install page</a> instead.</td></tr>
-      </tbody>
-    </table>
-    <p class="tight" style="color:var(--dim);font-size:13px">
-      Prefer to do it by hand? Each variant is also a plain text file you can copy into a new bookmark's URL field:
-      <a href="ports/bookmarklet/dist/turnstone-bookmarklet-csv.txt">csv</a> ·
-      <a href="ports/bookmarklet/dist/turnstone-bookmarklet-core.txt">core</a> ·
-      <a href="ports/bookmarklet/dist/turnstone-bookmarklet-full.txt">full</a>.
-      Some browsers trim very long bookmark URLs when pasted by hand — dragging is more reliable.
+  <!-- ------------------------------------------------ the recommendation -->
+  <div class="card rec">
+    <h3>Start with the <a href="web-app.html">web app</a> <span class="pill rec">Recommended</span></h3>
+    <p class="tight">
+      For almost everyone: open a page, drop your file, work. It is the full experience, it remembers your
+      progress between visits, and in Chromium it saves straight back into your spreadsheet with no save
+      button. If you can install a browser app, install it and skip the rest.
     </p>
-  </div>
-
-  <h3>Test it in a minute</h3>
-  <div class="card">
-    <div class="step"><span class="n">1</span><p>Click the bookmarklet on any page. The bar at the top shows the variant, plus <em>Copy state</em>, <em>Restore state</em> and <em>✕ Close</em>.</p></div>
-    <div class="step"><span class="n">2</span><p>Press <em>Demo list</em> — five cards, no file needed — then tick ✓ <em>Complete</em> on one and type a note.</p></div>
-    <div class="step"><span class="n">3</span><p>Drop a real list anywhere on the page. A file with <code>Status</code>/<code>Notes</code> columns comes back with its progress intact (the same round-trip the app does).</p></div>
-    <div class="step"><span class="n">4</span><p>Press <em>Copy state</em>, then <em>✕ Close</em>, then click the bookmarklet again and <em>Restore state</em> — paste, and the queue returns with statuses and notes.</p></div>
-    <div class="step"><span class="n">5</span><p>Export CSV from the ☰ menu to keep the work outside the page.</p></div>
-  </div>
-
-  <h3>What the bookmarklet does and does not do</h3>
-  <p class="tight"><strong>It does:</strong> cards, ✓ Complete / ↺ Incomplete, notes, sorting, column presets, search,
-    the same open modes (tabs / browser tab / popup), the same exports, the same file-round-trip resume — the whole
-    app, not a cut-down clone.</p>
-  <p class="tight"><strong>It does not:</strong></p>
-  <ul>
-    <li><strong>Keep anything after the tab closes.</strong> A bookmarklet runs on someone else's origin, so storage is
-      memory-only by design — the sidebar chip says <em>“this tab only — export to keep”</em>. Carry a queue with
-      <em>Copy state</em>/<em>Restore state</em>, or export a file. The hosted app is the edition that remembers.</li>
-    <li><strong>Write back into a picked file unless you chose the <code>full</code> variant</strong> (that needs SheetJS's
-      writer). <code>csv</code> and <code>core</code> import workbooks one-way and export CSV.</li>
-    <li><strong>Promise pixel-perfect styling on strict-CSP sites.</strong> The overlay needs no CSP exemption to run —
-      scripts, styles and DOM are all constructed by the payload — but a site with a strict <code>style-src</code> drops
-      the app's handful of inline <code>style</code> attributes, so a few dialogs look plainer. Everything still works.</li>
-    <li><strong>Fetch a remote list on a site with a closed <code>connect-src</code>.</strong> Local drops are unaffected;
-      pasting a URL there fails with a fetch/CORS message rather than silently.</li>
-  </ul>
-  <p class="note">The overlay is isolated: the host page's globals, storage and layout are left alone, and closing it removes
-    everything it added. Nothing is uploaded and nothing is fetched.</p>
-
-  <!-- ------------------------------------------------ extension -->
-  <h2 id="extension">Chrome extension <span class="pill ok">Available</span></h2>
-  <p>
-    A Manifest V3 extension whose whole UX is Chrome's <strong>side panel</strong>: the same task queue, pinned beside
-    whatever you are reading. There are no iframes in this edition at all — <strong>links open as real browser
-    tabs</strong>, and selecting a card switches the browser to that card's tab (or opens it if it is not open yet).
-    Completing a card auto-advances to the next tab. The toolbar badge carries the number of tasks left, so you can
-    shut the panel and still see where you are, and right-clicking any link adds it to the queue.
-  </p>
-
-  <h3>Install it — load unpacked</h3>
-  <div class="step"><span class="n">1</span><p>Get the folder: clone the repo, or <a href="https://github.com/Spuds0588/Turnstone/archive/refs/heads/main.zip">download it as a ZIP</a> and unzip. The extension is <code>ports/extension/dist</code>.</p></div>
-  <div class="step"><span class="n">2</span><p>Open <code>chrome://extensions</code> and turn on <strong>Developer mode</strong> (top right).</p></div>
-  <div class="step"><span class="n">3</span><p>Click <strong>Load unpacked</strong> and choose the <code>ports/extension/dist</code> folder. Turnstone appears in the toolbar.</p></div>
-  <div class="step"><span class="n">4</span><p>Click the toolbar icon — the queue opens in the side panel, on the drop-zone screen. Or right-click any link on any page and choose <em>Add link to Turnstone</em>.</p></div>
-
-  <div class="card">
-    <p class="tight" id="ext-meta" style="color:var(--dim)">Reading the built manifest…</p>
-    <p class="tight" style="color:var(--dim);font-size:13px">
-      Not on the Chrome Web Store yet, and Chrome only loads extensions unpacked in Developer mode or from the store,
-      so there is no one-click install. Regenerate the folder after any change to the app with
-      <code>node ports/extension/build.js</code>; the build refuses to emit a panel that has drifted from the app.
+    <p class="tight">
+      <strong>The other three exist for when that does not fit</strong> — a machine where nothing may be
+      installed, a network with no route out, a browser that cannot write to your file, a site you are not
+      allowed to leave. That is the entire reason the list below is longer than one.
     </p>
+    <div class="btns">
+      <a class="btn" href="web-app.html">Open the web app →</a>
+      <a class="btn ghost" href="app.html?file=https%3A%2F%2Fspuds0588.github.io%2FTurnstone%2Fsample-links.csv">See it with a sample queue</a>
+    </div>
   </div>
 
-  <h3>What the extension does and does not do</h3>
-  <p class="tight"><strong>It does:</strong> the same cards, ✓ Complete / ↺ Incomplete, notes, search, sorting, column
-    presets, the same exports, the same file-round-trip resume, and the same auto-open / auto-advance — re-pointed at
-    real tabs. It also <strong>remembers</strong> your queue across panel closes, per browser, which the bookmarklet
-    cannot do.</p>
-  <p class="tight"><strong>It does not:</strong></p>
-  <ul>
-    <li><strong>Frame pages.</strong> A side panel is about 360 px of browser chrome, not a viewport, so this is the one
-      edition with no tabbed workspace. Use the <a href="#web">web app</a> when you want the pages rendered beside the queue.</li>
-    <li><strong>Run in Firefox.</strong> Manifest V3 with the Side Panel API is Chromium-only (Chrome 114+, Edge). Use the
-      <a href="#standalone">standalone build</a> or the <a href="#web">web app</a> there.</li>
-    <li><strong>Bulk-import a whole site.</strong> It queues links one at a time from the queue itself — it does not crawl a
-      page looking for links. Feed it a CSV/XLSX export instead.</li>
-    <li><strong>Write back to a workbook unless it was the one you picked.</strong> Picking a file with the panel's
-      <em>Open file…</em> keeps live write-back, exactly as in the web app; a file dropped in is read once and the panel
-      keeps the edits itself.</li>
-  </ul>
-  <p class="note">The extension asks for five permissions and no host access: <code>sidePanel</code>, <code>tabs</code>,
-    <code>storage</code>, <code>downloads</code> and <code>contextMenus</code>. It cannot read or modify the pages you visit.</p>
-
-  <!-- ------------------------------------------------ standalone -->
-  <h2 id="standalone">Standalone single-file build <span class="pill ok">Available</span> <span class="pill">Beta</span></h2>
-  <p>
-    <code>turnstone-standalone.html</code> is the whole app in one document — shell, PapaParse, SheetJS and the artwork
-    inlined. Download it, double-click it, work. Nothing to install, nothing to serve, no network.
+  <!-- ------------------------------------------------ pick by constraint -->
+  <h2>Pick by what you are up against</h2>
+  <p class="tight" style="color:var(--dim)">
+    Find your situation in the left column; the right column is the edition that handles it. Where two are
+    listed, the first is the easier one to live with.
   </p>
-  <div class="btns">
-    <a class="btn" href="turnstone-standalone.html" download>⤓ Download turnstone-standalone.html</a>
-    <a class="btn ghost" href="turnstone-standalone.html">▶ Open it instead</a>
+  <table>
+    <thead><tr><th>Your situation</th><th>Use</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>A normal desktop or laptop, an ordinary browser, and you just want to get through the list</td>
+        <td><a href="web-app.html">Web app</a></td>
+        <td>Most capability, least setup. Remembered state and silent write-back.</td>
+      </tr>
+      <tr>
+        <td>You want it to look and behave like an installed program, and work offline</td>
+        <td><a href="web-app.html">Web app, installed as a PWA</a></td>
+        <td>Its own window, its own icon, offline from the cache after the first visit.</td>
+      </tr>
+      <tr>
+        <td>Nothing may be installed <em>and</em> nothing may be fetched — air-gapped, locked-down, or a
+            shared machine</td>
+        <td><a href="standalone.html">Standalone build</a></td>
+        <td>One HTML file, no server, no network, no admin rights. Full app inside it.</td>
+      </tr>
+      <tr>
+        <td>You cannot leave the page you are on, or the browser is stripped of extensions</td>
+        <td><a href="bookmarklet.html">Bookmarklet</a> (<code>core</code>)</td>
+        <td>A bookmark, not an install. The app is composed as an overlay on the page you are already on.</td>
+      </tr>
+      <tr>
+        <td>The site blocks framing, and you want the queue visible next to it anyway</td>
+        <td><a href="extension.html">Chrome extension</a></td>
+        <td>No iframes at all: links open as real tabs and the panel drives them.</td>
+      </tr>
+      <tr>
+        <td>Firefox or Safari</td>
+        <td><a href="web-app.html">Web app</a>, or the <a href="standalone.html">standalone build</a></td>
+        <td>The extension needs Chromium's Side Panel API. Everything else is browser-agnostic.</td>
+      </tr>
+      <tr>
+        <td>You need it to survive closing the window and coming back tomorrow</td>
+        <td><a href="web-app.html">Web app</a> or the <a href="extension.html">extension</a></td>
+        <td>Both keep statuses, notes and presets locally. The bookmarklet is memory-only by design.</td>
+      </tr>
+      <tr>
+        <td>Your list is a real spreadsheet (<code>.xlsx</code>, <code>.xls</code>, <code>.ods</code>)</td>
+        <td><a href="web-app.html">Web app</a>, the <a href="standalone.html">standalone build</a>, or
+            bookmarklet <code>core</code>/<code>full</code></td>
+        <td>Only the bookmarklet's <code>csv</code> variant cannot open a workbook — and it says so.</td>
+      </tr>
+      <tr>
+        <td>The file is enormous, or you only need the links</td>
+        <td><a href="bookmarklet.html">Bookmarklet</a> <code>csv</code></td>
+        <td>About <span data-size-of="ports/bookmarklet/dist/turnstone-bookmarklet-csv.txt" data-size-fallback="141 KB">141 KB</span> with no libraries at all. Nothing gets parsed that you did not need.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ------------------------------------------------ the four editions -->
+  <h2>The four editions</h2>
+  <div class="grid four">
+
+    <div class="card edition">
+      <h3>Web app <span class="pill rec">Start here</span></h3>
+      <p class="tight who">The full experience, hosted. Split-pane workspace, every input format, silent write-back to your file in Chromium, installable as a PWA, and it remembers your queue.</p>
+      <p class="meta">Needs: a normal browser. Nothing to install.</p>
+      <p class="tight" style="margin-top:10px"><a href="web-app.html">Details →</a></p>
+    </div>
+
+    <div class="card edition">
+      <h3>Standalone <span class="pill ok">Available</span></h3>
+      <p class="tight who">The same app as one HTML file — parsers and artwork inlined. Copy it anywhere and double-click; no server, no network, no install.</p>
+      <p class="meta">Needs: a browser, and permission to run a local file. <span data-size-of="turnstone-standalone.html" data-size-fallback="1.07 MB">1.07 MB</span>.</p>
+      <p class="tight" style="margin-top:10px"><a href="standalone.html">Details →</a></p>
+    </div>
+
+    <div class="card edition">
+      <h3>Bookmarklet <span class="pill ok">Available</span></h3>
+      <p class="tight who">A bookmark that opens the whole app as an overlay on whatever page you are on. No install, no network, no libraries — three sizes from <span data-size-of="ports/bookmarklet/dist/turnstone-bookmarklet-csv.txt" data-size-fallback="141 KB">141 KB</span>.</p>
+      <p class="meta">Needs: dragging a link to your bookmarks bar. Memory-only between tabs.</p>
+      <p class="tight" style="margin-top:10px"><a href="bookmarklet.html">Details →</a></p>
+    </div>
+
+    <div class="card edition">
+      <h3>Chrome extension <span class="pill ok">Available</span></h3>
+      <p class="tight who">A side panel beside any page, with no iframes: links open as real browser tabs and selecting a card switches to that card's tab. Badge counts down what is left.</p>
+      <p class="meta">Needs: Chromium 114+, loaded unpacked. <span data-version-of="ports/extension/dist/build.json" data-version-fallback="v0.1.0">v0.1.0</span>.</p>
+      <p class="tight" style="margin-top:10px"><a href="extension.html">Details →</a></p>
+    </div>
+
   </div>
-  <p class="tight" style="color:var(--dim);font-size:13px">
-    Built for <strong>USB sticks, internal shares, and air-gapped or locked-down machines</strong>. Regenerate it with
-    <code>node assets/build-standalone.js</code>.
-  </p>
-  <ul>
-    <li><strong>Everything works except what a <code>file://</code> page cannot do:</strong> local files, every format,
-      cards, link modes, exports and the file round-trip all behave exactly as in the hosted app.</li>
-    <li><strong>No PWA install prompt</strong> (there is no <code>sw.js</code> beside a copied file — offline already works,
-      because everything is local), and remote <code>?file=</code> URLs are unreliable from <code>file://</code>: a browser
-      rule, not a Turnstone one.</li>
-    <li><strong>Planned:</strong> a CSV-only variant (no binary parser at all) for environments that cannot ship SheetJS.
-      The app-side degradation logic is already in place — it is a build flag.</li>
-  </ul>
 
-  <!-- ------------------------------------------------ web app -->
-  <h2 id="web">Hosted web app <span class="pill ok">Available</span></h2>
-  <p>
-    The canonical edition, and the one to use if you want persistence and write-back:
-    <a href="app.html">spuds0588.github.io/Turnstone/app.html</a>.
-  </p>
-  <ul>
-    <li><strong>All input formats:</strong> CSV, TSV, XLSX/XLS/XLSM/XLSB/ODS, JSON, HTML tables, XML feeds — PDF is
-      detected and refused with a reason rather than mangled.</li>
-    <li><strong>Silent write-back</strong> to CSV/TSV/XLSX in Chromium (File System Access API); elsewhere exports plus
-      browser-storage snapshots.</li>
-    <li><strong>Installable as a PWA</strong>, and works offline from the service-worker cache.</li>
-    <li><strong>Remembers:</strong> recent files, statuses, notes, column presets, open mode, theme.</li>
-  </ul>
+  <!-- ------------------------------------------------ side by side -->
+  <h2>Side by side</h2>
+  <table>
+    <thead>
+      <tr><th>Edition</th><th>Size</th><th>Install</th><th>Network</th><th>Remembers</th><th>Tabbed workspace</th><th>Workbook write-back</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a href="web-app.html">Web app</a></td>
+        <td>0 — hosted</td>
+        <td>None (or PWA)</td>
+        <td>First visit</td>
+        <td>Yes</td>
+        <td><strong>Yes</strong></td>
+        <td>Yes (Chromium)</td>
+      </tr>
+      <tr>
+        <td><a href="standalone.html">Standalone</a></td>
+        <td><span data-size-of="turnstone-standalone.html" data-size-fallback="1.07 MB">1.07 MB</span></td>
+        <td>Copy a file</td>
+        <td><strong>Never</strong></td>
+        <td>Yes</td>
+        <td><strong>Yes</strong></td>
+        <td>Where File System Access exists</td>
+      </tr>
+      <tr>
+        <td><a href="bookmarklet.html">Bookmarklet</a></td>
+        <td><span data-size-of="ports/bookmarklet/dist/turnstone-bookmarklet-csv.txt" data-size-fallback="141 KB">141 KB</span>–<span data-size-of="ports/bookmarklet/dist/turnstone-bookmarklet-full.txt" data-size-fallback="1.06 MB">1.06 MB</span></td>
+        <td>Drag a bookmark</td>
+        <td><strong>Never</strong></td>
+        <td>No — Copy/Restore state</td>
+        <td>Yes</td>
+        <td>Only the <code>full</code> variant</td>
+      </tr>
+      <tr>
+        <td><a href="extension.html">Extension</a></td>
+        <td><span data-total-of="ports/extension/dist/build.json" data-total-fallback="1.08 MB">1.08 MB</span></td>
+        <td>Load unpacked</td>
+        <td>Never (after install)</td>
+        <td>Yes</td>
+        <td><strong>No — real tabs instead</strong></td>
+        <td>Yes, when you pick the file</td>
+      </tr>
+    </tbody>
+  </table>
 
-  <!-- ------------------------------------------------ future -->
-  <h2 id="future">Planned editions <span class="pill soon">Not built yet</span></h2>
+  <!-- ------------------------------------------------ not for this list -->
+  <h2>Not for any of them <span class="pill soon">Honest gaps</span></h2>
+  <p class="tight">
+    Some things none of the four will do, so that you do not go looking: there is no PDF table parser
+    (export to CSV/XLSX first), no Markdown or Word document reading, no Google Drive or OneDrive sync, no
+    crawling a page for links, and no server-side anything. Where a gap is a plan rather than a decision,
+    it is written down in
+    <a href="https://github.com/Spuds0588/Turnstone/blob/main/todo.md" target="_blank" rel="noopener">todo.md</a>.
+  </p>
+
+  <h2>Planned editions</h2>
   <table>
     <thead><tr><th>Edition</th><th>What it will add</th><th>Status</th></tr></thead>
     <tbody>
       <tr>
         <td><strong>Tauri desktop app</strong></td>
-        <td>The full experience, including the tabbed workspace, with the CORS/<code>X-Frame-Options</code> wall gone —
-          sites that refuse to be framed on the web work inside it — plus true filesystem write-back on every OS.</td>
+        <td>The full experience, including the tabbed workspace, with the CORS/<code>X-Frame-Options</code>
+          wall gone — sites that refuse to be framed on the web work inside it — plus true filesystem
+          write-back on every OS.</td>
         <td>Scaffolded</td>
       </tr>
       <tr>
         <td><strong>CSV-only standalone</strong></td>
-        <td>A one-document build with no binary parser, for environments that cannot ship SheetJS at all.</td>
+        <td>A one-document build with no binary parser, for environments that cannot ship SheetJS at all.
+          The app-side degradation is already in place; it is a build flag.</td>
         <td>Planned</td>
       </tr>
       <tr>
         <td><strong>PDF link lists</strong></td>
-        <td>Extracting URLs from PDFs. Needs a ~1 MB parser and a browser worker, so it is a deliberate decision
-          rather than an oversight.</td>
+        <td>Extracting URLs from PDFs. Needs a ~1 MB parser and a browser worker, so it is a deliberate
+          decision rather than an oversight.</td>
         <td>Under review</td>
+      </tr>
+      <tr>
+        <td><strong>Firefox extension</strong></td>
+        <td>The queue in a sidebar. Firefox has no Side Panel API, so this is a different build, not a
+          repackage of the Chrome one.</td>
+        <td>Not started</td>
       </tr>
     </tbody>
   </table>
 
-  <!-- ------------------------------------------------ steering -->
-  <h2 id="steer">If what you need isn't supported, go here</h2>
-  <table>
-    <thead><tr><th>You want to…</th><th>Use</th></tr></thead>
-    <tbody>
-      <tr><td>Open a <code>.xlsx</code>, <code>.xls</code>, <code>.xlsb</code> or <code>.ods</code> file</td>
-          <td>The <a href="#web">web app</a>, the <a href="#standalone">standalone build</a>, or the bookmarklet's
-              <code>core</code>/<code>full</code> variants. The bookmarklet's <code>csv</code> variant refuses workbooks
-              and says so.</td></tr>
-      <tr><td>Save <em>back into</em> a spreadsheet from a bookmarklet</td>
-          <td>The <code>full</code> bookmarklet variant (it carries SheetJS's writer), or the web app — which writes back
-              silently in Chromium.</td></tr>
-      <tr><td>Keep a queue between sessions</td>
-          <td>The <a href="#web">web app</a> (storage + write-back), or <em>Copy state</em>/<em>Restore state</em> in the
-              bookmarklet, or Export CSV/XLSX from any edition.</td></tr>
-      <tr><td>Work completely offline, with no host and no network</td>
-          <td>The <a href="#standalone">standalone build</a>.</td></tr>
-      <tr><td>Run it on a machine where nothing may be installed and nothing may be fetched</td>
-          <td>The bookmarklet's <code>csv</code> (~142 KB, no libraries) or <code>core</code> (~152 KB) variant.</td></tr>
-      <tr><td>Use a format nothing supports yet (PDF tables, Markdown lists, Word docs)</td>
-          <td>Export to CSV/XLSX first — every edition reads those. The roadmap is in
-              <a href="https://github.com/Spuds0588/Turnstone/blob/main/todo.md" target="_blank" rel="noopener">todo.md</a>.</td></tr>
-      <tr><td>Pin it to a desktop or taskbar like an app</td>
-          <td>The <a href="#web">web app</a> as a PWA (Chromium, over HTTPS), or the standalone file plus a desktop
-              shortcut.</td></tr>
-      <tr><td>Keep the queue open beside the page you are working on</td>
-          <td>The <a href="#extension">Chrome extension</a> — a side panel whose cards open and switch real browser
-              tabs, with the remaining count on the toolbar badge.</td></tr>
-      <tr><td>Have a queue come back by itself after you close it</td>
-          <td>The <a href="#extension">Chrome extension</a> or the <a href="#web">web app</a> — both keep statuses, notes
-              and presets locally. The bookmarklet is memory-only by design.</td></tr>
-    </tbody>
-  </table>
-
   <footer>
-    <p>
-      <a href="app.html">Launch the app</a>
+    <div class="row">
       <a href="index.html">Overview</a>
-      <a href="ports/bookmarklet/README.md">Bookmarklet notes</a>
-      <a href="ports/extension/README.md">Extension notes</a>
+      <a href="web-app.html">Web app</a>
+      <a href="standalone.html">Standalone build</a>
+      <a href="bookmarklet.html">Bookmarklet</a>
+      <a href="extension.html">Chrome extension</a>
+    </div>
+    <div class="row">
+      <a href="app.html">Launch the app</a>
       <a href="https://github.com/Spuds0588/Turnstone" target="_blank" rel="noopener">GitHub</a>
       <a href="https://github.com/Spuds0588/Turnstone/blob/main/README.md" target="_blank" rel="noopener">README</a>
-    </p>
-    <p>MIT licensed · no telemetry · no backend · nothing uploaded. See
       <a href="https://github.com/Spuds0588/Turnstone/blob/main/history.md" target="_blank" rel="noopener">history.md</a>
-      for what changed when.</p>
+    </div>
+    <p>MIT licensed · no telemetry · no backend · nothing uploaded.</p>
   </footer>
 </div>
-<script src="versions.js"></script>
+<script src="site.js"></script>
 </body>
 </html>

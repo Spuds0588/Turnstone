@@ -1,0 +1,17 @@
+{
+  "name": "Turnstone",
+  "version": "0.1.0",
+  "manifestVersion": 3,
+  "minimumChromeVersion": "114",
+  "permissions": [
+    "sidePanel",
+    "tabs",
+    "storage",
+    "downloads",
+    "contextMenus"
+  ],
+  "files": 13,
+  "bytes": 1129788,
+  "harnessFiles": 3,
+  "install": "chrome://extensions → Developer mode → Load unpacked → this folder"
+}

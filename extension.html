@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Turnstone Chrome extension — the queue beside any page, driving real tabs</title>
+<meta name="description" content="A Manifest V3 side panel for the Turnstone queue: links open as real browser tabs, selecting a card switches to that card's tab, the toolbar badge counts what is left, and the queue persists between panel closes.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://spuds0588.github.io/Turnstone/extension.html">
+<link rel="icon" type="image/png" href="assets/icon-192.png">
+<meta name="theme-color" content="#0f1115">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <img src="assets/logo-dark.svg" alt="">
+    <h1>Chrome extension <span class="pill ok">Available</span></h1>
+  </header>
+
+  <nav class="crumb">
+    <a href="index.html">Overview</a><span class="sep">›</span>
+    <a href="versions.html">All versions</a><span class="sep">›</span>
+    <span class="here">Chrome extension</span>
+  </nav>
+
+  <p class="sub">
+    A Manifest V3 extension whose whole UX is Chrome's <strong>side panel</strong>: the same task queue,
+    pinned beside whatever you are reading. There are no iframes in this edition at all — links open as
+    <strong>real browser tabs</strong>, and selecting a card switches the browser to that card's tab. The
+    queue drives the browser instead of hosting it.
+  </p>
+
+  <h2>Who it is for</h2>
+  <ul>
+    <li><strong>Anyone who works through links while reading something else.</strong> The panel stays beside
+      the page, and the badge keeps counting down with the panel shut.</li>
+    <li><strong>Anyone who hates losing a tab.</strong> Clicking a card twice never opens a second copy of
+      the same page — it switches back to the tab the row already owns.</li>
+    <li><strong>People on sites that refuse to be framed.</strong> This is the edition with no framing at all,
+      so <code>X-Frame-Options</code> is beside the point.</li>
+    <li><strong>Anyone who wants the queue to outlive a closed panel</strong> — statuses, notes, presets and
+      the open file persist per browser, which the <a href="bookmarklet.html">bookmarklet</a> cannot do by
+      design.</li>
+  </ul>
+
+  <h2>What it does</h2>
+  <ul>
+    <li><strong>Links become real browser tabs</strong>, and the panel remembers which tab belongs to which
+      row. Completing a card auto-advances to the next tab.</li>
+    <li><strong>The toolbar badge shows tasks left</strong>, so the count is visible without the panel.</li>
+    <li><strong>Right-click → “Add link to Turnstone”</strong> on any link, on any page. It appends to the open
+      queue, starts one if there is none, or waits for the panel to next open if it was shut.</li>
+    <li><strong>The same sidebar the web app has:</strong> cards, ✓ Complete / ↺ Incomplete, notes, search,
+      sorting, column presets, exports, and the file-round-trip resume.</li>
+    <li><strong>Real write-back when you pick a file</strong> (Chromium), same as the web app — and exports
+      land in your Downloads folder through the browser's own download API.</li>
+  </ul>
+
+  <h2>What it does not do</h2>
+  <ul>
+    <li><strong>Frame pages.</strong> A side panel is about 360 px of browser chrome, not a viewport, so this is
+      the one edition with no tabbed workspace. When you want the pages themselves rendered beside the queue,
+      use the <a href="web-app.html">web app</a>.</li>
+    <li><strong>Run in Firefox or Safari.</strong> Manifest V3 with the Side Panel API is Chromium-only
+      (Chrome 114+, Edge). Use the <a href="standalone.html">standalone build</a> or the
+      <a href="web-app.html">web app</a> there.</li>
+    <li><strong>Install in one click.</strong> It is not on the Chrome Web Store yet, and Chrome only loads
+      extensions unpacked in Developer mode or from the store.</li>
+    <li><strong>Bulk-import a whole site.</strong> It queues links one at a time, as you right-click them. It
+      does not crawl a page looking for links — feed it a CSV/XLSX export instead.</li>
+  </ul>
+
+  <h2>Install it — load unpacked</h2>
+  <div class="step"><span class="n">1</span><p>Get the folder: clone the repo, or <a href="https://github.com/Spuds0588/Turnstone/archive/refs/heads/main.zip">download it as a ZIP</a> and unzip. The extension is <code>ports/extension/dist</code>.</p></div>
+  <div class="step"><span class="n">2</span><p>Open <code>chrome://extensions</code> and turn on <strong>Developer mode</strong> (top right).</p></div>
+  <div class="step"><span class="n">3</span><p>Click <strong>Load unpacked</strong> and choose the <code>ports/extension/dist</code> folder. Turnstone appears in the toolbar.</p></div>
+  <div class="step"><span class="n">4</span><p>Click the toolbar icon — the queue opens in the side panel, on the drop-zone screen. Or right-click any link on any page and choose <em>Add link to Turnstone</em>.</p></div>
+
+  <div class="card">
+    <p class="tight">
+      Build: <strong><span data-version-of="ports/extension/dist/build.json" data-version-fallback="v0.1.0">v0.1.0</span></strong>
+      · Manifest V3 · needs Chromium 114+ · <span data-count-of="ports/extension/dist/build.json" data-count-fallback="13">13</span> files of
+      its own, <span data-total-of="ports/extension/dist/build.json" data-total-fallback="1.08 MB">1.08 MB</span> installed.
+    </p>
+    <p class="tight" style="color:var(--dim);font-size:13px">
+      Regenerate the folder after any change to the app with <code>node ports/extension/build.js</code>. The
+      build refuses to emit a panel that has drifted from <code>app.html</code>: it patches the app's own
+      stylesheet, markup and script and asserts every anchor, so a change upstream fails the build instead of
+      shipping a broken side panel.
+    </p>
+  </div>
+
+  <h2>Permissions</h2>
+  <p class="tight">
+    It asks for five and no host access: <code>sidePanel</code>, <code>tabs</code>, <code>storage</code>,
+    <code>downloads</code> and <code>contextMenus</code>. It cannot read or modify the pages you visit — the
+    context-menu item is the only way it touches one, and then only to take the link you right-clicked.
+  </p>
+
+  <h2>Read the build notes</h2>
+  <p class="tight">
+    Why one click switches tabs instead of opening another, how the tab/badge/context-menu behaviour is tested
+    outside <code>chrome://extensions</code>, and what the extension page CSP required: see
+    <a href="ports/extension/README.md">ports/extension/README.md</a>.
+  </p>
+
+  <footer>
+    <div class="row">
+      <a href="index.html">Overview</a>
+      <a href="versions.html">All versions</a>
+      <a href="web-app.html">Web app</a>
+      <a href="standalone.html">Standalone build</a>
+      <a href="bookmarklet.html">Bookmarklet</a>
+    </div>
+    <div class="row">
+      <a href="app.html">Launch the app</a>
+      <a href="https://github.com/Spuds0588/Turnstone" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/Spuds0588/Turnstone/blob/main/history.md" target="_blank" rel="noopener">history.md</a>
+    </div>
+    <p>MIT licensed · no telemetry · no backend · nothing uploaded.</p>
+  </footer>
+</div>
+<script src="site.js"></script>
+</body>
+</html>

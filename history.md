@@ -1,5 +1,32 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-24 — One page per edition, and a ways page that answers the first question
+
+**Request:** the versions page had grown into five product pages wearing one hat. Split it: home → versions → the edition you need, with a page for each one. And stop leading the hero with "try the web app" — lead with "find your version", because a first-time visitor does not yet know which edition is for them. Recommend the web/PWA first, and offer the others for locked-down environments.
+
+### The structure
+`versions.html` is now a **chooser**, not an encyclopedia. It opens with the recommendation — *start with the web app* — and then a single table that maps a **situation** (nothing may be installed; nothing may be fetched; a browser that will not write to your file; a site that blocks framing; Firefox; a `.xlsx`; a very large file) to the edition that handles it, with the reason. The full detail for each edition moved off the page and onto its own:
+
+| | |
+|---|---|
+| `web-app.html` | what it does, what it will not do, how to install it as a PWA — marked **Start here** |
+| `standalone.html` | the offline single-file build, and exactly which browser rules still apply from `file://` |
+| `bookmarklet.html` | install by dragging, a five-step test, the three variants, and the limits |
+| `extension.html` | the side panel, its permissions, and load-unpacked steps |
+
+Every page carries the same breadcrumb (**Overview › All versions › this edition**) and the same footer, so the path is walkable in both directions, and `versions.html` keeps the side-by-side comparison, the honest gaps, and the planned editions.
+
+### The hero, and what replaced it
+`index.html` led with "▶ Launch the app" — a call to action that only makes sense once you already know the app is what you want. It now leads with **Find your version → `versions.html`**, with *Try the web app* beside it and the sample-queue link folded into the supporting sentence, which is where the recommendation actually lives: *nine times out of ten you want the web app; the other three exist for the times it does not fit*. The footer and the roadmap answer say the same thing in the same order, and the framing question now points at the extension (which never frames a page) before mentioning the desktop build.
+
+### Two things the split forced, both improvements
+- **Shared chrome, but not shared with the sales page.** A new `site.css` holds the guide pages' tokens, cards, tables, pills and steps, replacing four copies of the same stylesheet. `index.html` deliberately keeps its own: it runs under `default-src 'none'` and loading nothing external *is* part of what it demonstrates. The split also **loosened one CSP**: `versions.html` no longer needs `'unsafe-inline'` in `script-src`, because the clickable `javascript:` links moved to `bookmarklet.html` — which still needs it, and still documents why.
+- **No page quotes a size it cannot prove.** `site.js` (plus `bookmarklet.js` for the drag anchors) fills every number from the artifact: a **HEAD request's `Content-Length`** for sizes — `Content-Length` is a CORS-safelisted header, so it is readable same-origin without downloading a 1.07 MB file — and `build.json` for the extension's version, file count and installed size. The HTML carries the current value as fallback text, so the pages still read correctly with JavaScript off; the script only ever corrects it.
+
+That immediately caught two stale claims: the standalone is **1.07 MB**, not the 1.09 MB the old page said, and the bookmarklet payloads are **141 KB / 151 KB / 1.06 MB** rather than 142/152/1.09 — they shrank when the PWA-removal patch in the previous commit started removing the whole block instead of stopping early. Sizes in this log's earlier entries are the values measured *then*, which is why they differ.
+
+`versions.js` is gone (its two jobs are `site.js` and `bookmarklet.js`); the extension build now also emits `dist/build.json`; `sw.js` precaches the five guide pages and their two scripts/sheet (`v0.9.6`).
+
 ## 2026-09-24 — Chrome extension: the queue drives the browser instead of hosting it
 
 **Request:** push the repo, then start the next port — the Chrome extension.

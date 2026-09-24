@@ -220,12 +220,16 @@
     </h2>
 
     <div class="buttons">
-      <a class="btn" href="app.html">▶ Launch the app</a>
-      <a class="btn btn-ghost" href="app.html?file=https%3A%2F%2Fspuds0588.github.io%2FTurnstone%2Fsample-links.csv">See it with a sample file</a>
+      <a class="btn" href="versions.html">Find your version</a>
+      <a class="btn btn-ghost" href="app.html">▶ Try the web app</a>
     </div>
     <p class="deep-link">
-      That second button opens the app with a pre-loaded queue via its deep-link parameter —
-      any spreadsheet on the web works the same way:
+      Turnstone ships in four editions, and nine times out of ten you want the web app — it remembers your
+      progress and writes straight back to your file. The other three exist for the times it does not fit:
+      a machine where nothing may be installed or fetched, a browser that will not write to your file, a site
+      you cannot leave. <a href="versions.html">The versions page</a> sorts that out in one screen. Prefer to
+      see it working first? <a href="app.html?file=https%3A%2F%2Fspuds0588.github.io%2FTurnstone%2Fsample-links.csv">Open
+the app with a sample queue</a> — any spreadsheet on the web works the same way via
       <a href="app.html?file=https%3A%2F%2Fspuds0588.github.io%2FTurnstone%2Fsample-links.csv"><code>app.html?file=…</code></a>
     </p>
 
@@ -375,15 +379,20 @@
         <summary>Some sites refuse to load in the tabbed pane. Why?</summary>
         <p>A few sites send headers that forbid being framed by any web app — that's a browser
            security rule, not a Turnstone limitation. For those, switch the open mode to
-           <em>new browser tab</em> or <em>popup window</em> in the ☰ menu; the native desktop
-           version on the roadmap removes the restriction entirely.</p>
+           <em>new browser tab</em> or <em>popup window</em> in the ☰ menu, or use the
+           <a href="extension.html">Chrome extension</a>, which never frames a page at all: it opens
+           links as real tabs and switches between them as you pick cards. The native desktop version on
+           the roadmap removes the restriction entirely.</p>
       </details>
       <details>
         <summary>What's on the roadmap?</summary>
-        <p>The <strong>bookmarklet</strong> is already here — it runs the whole workspace over any page with no libraries and
-           no network, and a <strong>standalone single-file build</strong> runs it offline from a USB stick. A
-           browser-extension side panel and a native desktop edition are next. Each version, what it supports and what it
-           does not is laid out on the <a href="versions.html">versions &amp; downloads</a> page.</p>
+        <p>Four editions are already here: the <a href="web-app.html">web app</a> (start there), a
+           <a href="standalone.html">standalone single-file build</a> for machines where nothing may be
+           installed or fetched, a <a href="bookmarklet.html">bookmarklet</a> that runs the whole workspace
+           over any page with no libraries and no network, and a
+           <a href="extension.html">Chrome extension</a> whose side panel drives real browser tabs. A native
+           desktop edition and a Firefox sidebar are next. Each one, what it supports and what it does not,
+           is laid out on the <a href="versions.html">versions page</a>.</p>
       </details>
     </div>
   </div>
@@ -392,10 +401,18 @@
 <footer>
   <div class="container has-text-centered">
     <div class="buttons" style="margin-bottom:2.6rem">
-      <a class="btn" href="app.html">▶ Launch the app</a>
+      <a class="btn" href="versions.html">Find your version</a>
+      <a class="btn btn-ghost" href="app.html">▶ Try the web app</a>
       <a class="btn btn-ghost" href="https://github.com/Spuds0588/Turnstone" target="_blank" rel="noopener">GitHub</a>
     </div>
     <p class="mb-4" style="color:var(--text-dim)">◆ Built by <a href="https://github.com/Spuds0588" target="_blank" rel="noopener" style="color:var(--text-main)">Spuds0588</a> — MIT licensed, no telemetry, no backend.</p>
+    <div class="links" style="margin-bottom:.6rem">
+      <a href="web-app.html">Web app</a>
+      <a href="standalone.html">Standalone build</a>
+      <a href="bookmarklet.html">Bookmarklet</a>
+      <a href="extension.html">Chrome extension</a>
+      <a href="versions.html">Compare all four</a>
+    </div>
     <div class="links" style="margin-bottom:1.6rem">
       <a href="app.html">Launch app</a>
       <a href="versions.html">Versions &amp; downloads</a>

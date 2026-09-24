@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Turnstone web app (PWA) — the recommended edition</title>
+<meta name="description" content="The hosted Turnstone web app, installable as a PWA: every input format, silent write-back to your file in Chromium, offline from the service-worker cache, and it remembers your queue between sessions. Start here.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://spuds0588.github.io/Turnstone/web-app.html">
+<link rel="icon" type="image/png" href="assets/icon-192.png">
+<meta name="theme-color" content="#0f1115">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <img src="assets/logo-dark.svg" alt="">
+    <h1>Web app <span class="pill rec">Start here</span></h1>
+  </header>
+
+  <nav class="crumb">
+    <a href="index.html">Overview</a><span class="sep">›</span>
+    <a href="versions.html">All versions</a><span class="sep">›</span>
+    <span class="here">Web app</span>
+  </nav>
+
+  <p class="sub">
+    The canonical edition, and the one to try first. It is the full experience — the only one with
+    the split-pane layout where the links themselves render beside the queue — and it is the only one
+    that both remembers your progress and writes it silently back into your file.
+  </p>
+
+  <div class="btns">
+    <a class="btn" href="app.html">▶ Launch the web app</a>
+    <a class="btn ghost" href="app.html?file=https%3A%2F%2Fspuds0588.github.io%2FTurnstone%2Fsample-links.csv">See it with a sample queue</a>
+  </div>
+
+  <h2>Who it is for</h2>
+  <ul>
+    <li><strong>Almost everyone, almost always.</strong> A normal desktop or laptop, a browser that is not
+      locked down, and a link list you own — this is the edition that does the most with the least effort.</li>
+    <li><strong>Anyone who wants their progress to exist tomorrow.</strong> Statuses, notes, recent files,
+      column presets, open mode and theme all persist locally between visits.</li>
+    <li><strong>Anyone whose list arrives as a real spreadsheet.</strong> It takes CSV, TSV,
+      XLSX/XLS/XLSM/XLSB/ODS, JSON, HTML tables and XML feeds, and it writes back to CSV, TSV and XLSX.</li>
+    <li><strong>Chromium users who want write-back with no save button.</strong> Once you have picked a
+      file, edits are written straight into it as you work.</li>
+  </ul>
+
+  <h2>What it does</h2>
+  <ul>
+    <li><strong>Every input format:</strong> CSV, TSV, XLSX/XLS/XLSM/XLSB/ODS, JSON, HTML tables and XML
+      feeds. A PDF is detected and refused with the reason rather than mangled.</li>
+    <li><strong>Silent write-back</strong> to CSV/TSV/XLSX in Chromium (File System Access API). Elsewhere:
+      exports plus a browser-storage snapshot, so nothing is lost.</li>
+    <li><strong>Installable as a PWA</strong>, and it works offline from the service-worker cache after the
+      first visit.</li>
+    <li><strong>Remembers:</strong> recent files, statuses, notes, column presets, open mode and theme.</li>
+    <li><strong>Round-trips an exported queue:</strong> re-import a file Turnstone wrote and the notes and
+      completed states come back, so a queue can be worked in two sittings or handed to someone else.</li>
+  </ul>
+
+  <h2>What it does not do</h2>
+  <ul>
+    <li><strong>Reach a site that refuses to be framed.</strong> A page sending <code>X-Frame-Options</code>
+      or a restrictive <code>frame-ancestors</code> cannot render in the workspace. Turnstone detects it and
+      says so; use <em>New browser tab</em> mode for those links, or the
+      <a href="extension.html">extension</a>, which never frames anything.</li>
+    <li><strong>Load a list from a server without CORS.</strong> <code>?file=</code> needs the host to send
+      CORS headers. Local files and drops are unaffected.</li>
+    <li><strong>Work with no network at all on first visit.</strong> After that the cache covers it — or use
+      the <a href="standalone.html">standalone build</a>, which never needs a network in the first place.</li>
+    <li><strong>Write back on a browser without the File System Access API.</strong> Firefox and Safari get
+      the app's export path instead of live write-back — everything else works the same.</li>
+  </ul>
+
+  <h2>Install it as an app</h2>
+  <div class="step"><span class="n">1</span><p>Open <a href="app.html">the web app</a> in Chrome, Edge or another
+    Chromium browser.</p></div>
+  <div class="step"><span class="n">2</span><p>Use the install icon in the address bar, or <strong>☰ → Install
+    app</strong>. It appears in the ☰ menu only once the browser has offered it.</p></div>
+  <div class="step"><span class="n">3</span><p>Launch it from your apps menu like any other application. It opens
+    in its own window and works offline.</p></div>
+  <p class="tight" style="color:var(--dim);font-size:13px">
+    On a machine where nothing may be installed, this step is the one to skip — take the
+    <a href="standalone.html">standalone build</a> or the <a href="bookmarklet.html">bookmarklet</a> instead.
+  </p>
+
+  <footer>
+    <div class="row">
+      <a href="index.html">Overview</a>
+      <a href="versions.html">All versions</a>
+      <a href="standalone.html">Standalone build</a>
+      <a href="bookmarklet.html">Bookmarklet</a>
+      <a href="extension.html">Chrome extension</a>
+    </div>
+    <div class="row">
+      <a href="app.html">Launch the app</a>
+      <a href="https://github.com/Spuds0588/Turnstone" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/Spuds0588/Turnstone/blob/main/history.md" target="_blank" rel="noopener">history.md</a>
+    </div>
+    <p>MIT licensed · no telemetry · no backend · nothing uploaded.</p>
+  </footer>
+</div>
+<script src="site.js"></script>
+</body>
+</html>
