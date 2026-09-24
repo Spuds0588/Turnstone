@@ -29,6 +29,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const { recordSizes } = require(path.join(__dirname, '..', '..', 'assets', 'sizes.js'));
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const HERE = path.resolve(__dirname);
@@ -419,6 +420,14 @@ for (const [p, content] of Object.entries(files)) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, content);
 }
+
+/* One registry entry for the whole build, measured over the shipped files — the same
+   set build.json counts, so a page can say "13 files, x MB" and both numbers refer to
+   the same thing. The test harnesses are not part of the extension Chrome runs. */
+recordSizes({
+  [path.relative(ROOT, DIST).split(path.sep).join('/')]:
+    shipped.reduce((n, p) => n + bytesOf(files[p]).length, 0),
+});
 
 console.log(`Turnstone extension → ${path.relative(ROOT, DIST)}/`);
 console.log(`  generated from app.html @ ${sha}${dirty}`);

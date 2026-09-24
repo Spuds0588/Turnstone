@@ -9,9 +9,13 @@
  *   <span data-size-of="turnstone-standalone.html" data-size-fallback="1.09 MB">1.09 MB</span>
  *   <span data-version-of="ports/extension/dist/build.json">v0.1.0</span>
  *
- * Sizes come from a HEAD request: Content-Length is a CORS-safelisted response
- * header, so it is readable same-origin without downloading the file — which matters
- * when the file in question is a 1.1 MB single-page build.
+ * Sizes come from `assets/sizes.json`, which each build script writes as it produces
+ * its artifact. The tempting alternative — a HEAD request's Content-Length — is
+ * wrong on any CDN that content-encodes: GitHub Pages gzips these files and reports
+ * the compressed length, which read the bookmarklet's 141 KB core payload as 42 KB.
+ * A script cannot ask for identity encoding either, since `Accept-Encoding` is a
+ * forbidden header name in fetch, and downloading each file to measure it would cost
+ * ~2.3 MB on a page whose whole job is to help someone decide.
  */
 (function () {
   'use strict';
@@ -30,15 +34,28 @@
     if (f) el.textContent = f;
   }
 
+  /* One fetch for every size on the page, shared by however many spans want one. */
+  var sizesRequest = null;
+  function sizes() {
+    if (!sizesRequest) {
+      sizesRequest = fetch('assets/sizes.json')
+        .then(function (r) {
+          if (!r.ok) throw new Error(r.status);
+          return r.json();
+        })
+        .catch(function () { return null; });
+    }
+    return sizesRequest;
+  }
+
   each('[data-size-of]', function (el) {
-    fetch(el.getAttribute('data-size-of'), { method: 'HEAD' })
-      .then(function (r) {
-        if (!r.ok) throw new Error(r.status);
-        var len = r.headers.get('content-length');
-        if (!len) throw new Error('no content-length');
-        return Number(len);
+    var key = el.getAttribute('data-size-of');
+    sizes()
+      .then(function (map) {
+        var n = map && map[key];
+        if (!n) throw new Error('not recorded');
+        el.textContent = format(n) || el.textContent;
       })
-      .then(function (n) { el.textContent = format(n) || el.textContent; })
       .catch(function () { fallback(el, 'data-size-fallback'); });
   });
 
@@ -63,12 +80,4 @@
       .catch(function () { fallback(el, 'data-count-fallback'); });
   });
 
-  /* A build's installed size is a number inside its build.json, not the size of the
-     JSON — reading it with data-size-of would report a few hundred bytes. */
-  each('[data-total-of]', function (el) {
-    fetch(el.getAttribute('data-total-of'))
-      .then(function (r) { return r.json(); })
-      .then(function (m) { el.textContent = format(m.bytes) || 'unknown'; })
-      .catch(function () { fallback(el, 'data-total-fallback'); });
-  });
 })();

@@ -2,7 +2,7 @@
    Version bump this constant to invalidate all caches on the next load. */
 'use strict';
 
-const VERSION = 'turnstone-v0.9.6';
+const VERSION = 'turnstone-v0.9.7';
 
 /* Same-origin paths are relative to this file (served from the app root). */
 const PRECACHE = [
@@ -18,6 +18,7 @@ const PRECACHE = [
   'site.css',
   'site.js',
   'bookmarklet.js',
+  'assets/sizes.json',  /* recorded artifact sizes — keeps the guide pages honest offline too */
   'sample-links.csv',
   'sample-links.tsv',
   'sample-links.json',

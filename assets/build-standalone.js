@@ -26,6 +26,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const { recordSizes } = require('./sizes');
 
 const ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
@@ -97,8 +98,10 @@ html = mustReplace(html, '\n</style>', `
 const sha = git('rev-parse --short HEAD', 'unknown');
 // Tracked modifications only, and never the artifact itself: a rebuild always
 // rewrites this file, so counting it would brand every build as dirty.
+/* Both the artifact and the size registry are outputs of this script, so neither may
+   count as "the tree is dirty" — the registry is rewritten by every build. */
 const relOut = path.relative(ROOT, OUT).split(path.sep).join('/');
-const dirty = git(`diff --quiet HEAD -- . ":!${relOut}"`, 'dirty') === 'dirty' ? ' + uncommitted changes' : '';
+const dirty = git(`diff --quiet HEAD -- . ":!${relOut}" ":!assets/sizes.json"`, 'dirty') === 'dirty' ? ' + uncommitted changes' : '';
 const stamp = [
   '<!--',
   '  Turnstone — standalone BETA build.',
@@ -142,5 +145,7 @@ if (CHECK) {
 }
 
 fs.writeFileSync(OUT, html);
+/* Record the size so the site pages quote the file that was just built. */
+recordSizes({ [relOut]: Buffer.byteLength(html) });
 console.log(report);
 console.log(`\nwrote ${path.relative(ROOT, OUT)}`);

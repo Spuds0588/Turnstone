@@ -32,6 +32,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const { recordSizes } = require(path.join(__dirname, '..', '..', 'assets', 'sizes.js'));
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const HERE = path.resolve(__dirname);
@@ -350,6 +351,12 @@ for (const name of targets) {
   const file = path.join(DIST, `turnstone-bookmarklet-${name}.txt`);
   fs.writeFileSync(file, built[name].oneLiner);
 }
+
+/* Record the payload sizes so the site pages quote the build that exists. */
+recordSizes(Object.fromEntries(targets.map((name) => [
+  path.relative(ROOT, path.join(DIST, `turnstone-bookmarklet-${name}.txt`)).split(path.sep).join('/'),
+  Buffer.byteLength(built[name].oneLiner),
+])));
 
 /* The strict-CSP harness needs the payload as a real same-origin script file: a
    page with `script-src 'self'` refuses inline scripts AND in-page javascript:
