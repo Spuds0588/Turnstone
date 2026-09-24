@@ -35,7 +35,8 @@ Anything that reduces to a table of rows works — the format is detected from t
 
 | Method | How |
 | --- | --- |
-| **Local file** | **Open file…** — Chromium users get silent write-back via the File System Access API; elsewhere it falls back to `<input type=file>` + browser-storage snapshots. |
+| **Drop a file** | Drag it onto the app — the whole window is the target, not just the dashed zone — and it is read and parsed there. Dropping also works with a queue already open, and the browser can never navigate away to a dropped file. |
+| **Pick a file** | Click the drop zone (or **☰ → Open file…**). Chromium users get silent write-back via the File System Access API; elsewhere it falls back to `<input type=file>` + browser-storage snapshots. A dropped file normally falls back to browser storage, since a drop carries only a read handle — use the picker when you want live write-back. |
 | **Remote URL** | Paste any public link-list URL in the welcome panel (host must allow CORS). GitHub `raw.` links work great. |
 | **`?file=` deep link** | `app.html?file=<encoded url>` (alias: `?url=`). Format is detected from the file's content, not just the extension. Add `&open=1` to auto-open the first task in a workspace tab. The example links above use this repo's own `sample-links.csv` / `sample-links.xlsx` as the remote source. |
 | **Recent files** | The welcome panel lists your 5 most recent files — remote URLs re-fetch with one click. |

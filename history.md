@@ -39,8 +39,17 @@ CSV, TSV and XLSX write silently back into the original file (TSV keeps its tab 
 
 Verified by serving a directory containing **only** the standalone file: the app booted with no external requests, no console errors, and the inlined SheetJS parsed `sample-links.xlsx` into the same 10 cards / 7 visible / 3 complete as the hosted app. Opening it is covered by docs; the File System Access API, clipboard and PWA code paths all degrade to their documented fallbacks on `file://`. The CSV-only variant remains open (it needs genuine degradation logic, not a missing script tag).
 
+### Streamlined start experience (drag area + click to choose)
+The welcome panel now leads with a **drop zone** instead of a `Choose file…` button: a dashed target reading "Drop a file here, or click to choose", listing the supported formats and stating that parsing happens on-device. It carries `role="button"` + `tabindex`, so Enter/Space open the picker too. Everything else moved behind it in order of likelihood — paste a link-list URL, then one compact "try it with sample data" row (the two test-data paragraphs collapsed into a single line).
+
+The drop handlers sit on `document` rather than on the zone, for two reasons: a file dropped anywhere loads, and — the more important one — a drop outside the zone can no longer make the browser navigate away from the app to the dropped file. Every handler gates on `dataTransfer.types.includes('Files')`, so the settings panel's column-reorder drag keeps working untouched.
+
+Dropped files and write-back: Chromium exposes a `getAsFileSystemHandle()` per dropped item, so the code resolves one and uses it only when it is *already* writable — deliberately no permission dialog on drop. Otherwise the load lands in fallback mode with the usual browser-storage persistence, export and `beforeunload` guard, and the reason is logged.
+
+Verified with synthetic `DragEvent`s in the browser: a `text/plain` drag is neither prevented nor highlighted, a `Files` drag is prevented and highlights the zone, a dropped `.tsv` produced 2 cards (1 complete, round-tripped from its Status column) and hid the welcome panel, a dropped `.json` replaced the open queue with correct columns and notes, and click + Enter both reach `openLocalFile()`. `sw.js` → `v0.9.1`.
+
 ### Sales page
-`index.html`'s copy, FAQ answers and JSON-LD feature list said "CSV or XLSX" and now name the wider set; the claim about dragging a file onto the app was left intact but **is still not implemented** (flagged in the format work above) — the code has no `drop` handler outside the settings panel's column reordering.
+`index.html`'s copy, FAQ answers and JSON-LD feature list said "CSV or XLSX" and now name the wider set; the long-standing claim that you can drag a file onto the app was left intact at the time (flagged as unimplemented) and is **now true** — see the streamlined start experience below.
 
 ## 2026-09-24 — v0.8.0: vendored dependencies + zero data call-outs, sales-page hero fix
 
