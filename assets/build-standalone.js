@@ -95,9 +95,10 @@ html = mustReplace(html, '\n</style>', `
 
 /* Build stamp, right after the doctype. */
 const sha = git('rev-parse --short HEAD', 'unknown');
-// Tracked modifications only: untracked files (the artifact itself, editor state)
-// must not brand every build as dirty.
-const dirty = git('diff --quiet HEAD', 'dirty') === 'dirty' ? ' + uncommitted changes' : '';
+// Tracked modifications only, and never the artifact itself: a rebuild always
+// rewrites this file, so counting it would brand every build as dirty.
+const relOut = path.relative(ROOT, OUT).split(path.sep).join('/');
+const dirty = git(`diff --quiet HEAD -- . ":!${relOut}"`, 'dirty') === 'dirty' ? ' + uncommitted changes' : '';
 const stamp = [
   '<!--',
   '  Turnstone — standalone BETA build.',
