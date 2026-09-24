@@ -8,7 +8,7 @@ Status legend: `[ ]` todo · `[x]` done · `[~]` partially done / deferred
 - [x] `sw.js` → `v0.8.0`: precaches `vendor/` instead of the CDN URLs; CDN cache-first branch deleted.
 - [x] Regression-tested under the policy: CSV + XLSX parsing from the vendored libs, iframe mode, CSV blob download + XLSX write, PWA manifest blob, session persistence, legacy `?file=` redirect — zero CSP violations anywhere.
 - [x] Sales page hero fix: logo no longer flush/clipped at the top edge (`.hero` padding), duplicate mini-logo removed from the eyebrow, headline shortened to "Your spreadsheet, now a modern workspace."
-- [ ] Verify vendored + CSP build live on Pages.
+- [x] Verified live on Pages (commit `03d5ff8`): `vendor/papaparse.min.js` (19,469 b) + `vendor/xlsx.full.min.js` (951,904 b) serve 200, served `app.html` has the CSP meta, both `vendor/` script tags, a `referrer` meta and **zero CDN references**, `sw.js` reports `turnstone-v0.8.0`, and the live app parses the sample CSV into 7 visible cards. Prod iframe mode re-tested end-to-end: picker → card click → `tab-1: Demo Domain → https://example.com/` returned `200 (Document)` with **no CSP violation**, so the lockdown leaves iframe workspace mode intact.
 - [x] `vendor/README.md`: upstream versions, sha256 integrity hashes, and the exact re-download/upgrade procedure (bump the SW version + re-run the same-origin network check after any change).
 
 ## v0.7 Sales page + ports scaffolding
