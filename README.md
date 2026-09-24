@@ -1,6 +1,6 @@
 # Turnstone
 
-A zero-server, browser-based workspace that transforms a CSV/XLSX list of URLs into a modern task queue: open each link in tabbed panes, track status and notes per task, and write everything back to the file — all client-side, no backend, no signup.
+A zero-server, browser-based workspace that transforms a list of URLs — CSV, TSV, XLSX, JSON, HTML tables, XML feeds — into a modern task queue: open each link in tabbed panes, track status and notes per task, and write everything back to the file — all client-side, no backend, no signup.
 
 **▶ Sales page & screenshots: <https://spuds0588.github.io/Turnstone/>**
 
@@ -14,17 +14,32 @@ Prefer to watch a task open itself? Same file as XLSX with `&open=1`, which auto
 
 > <https://spuds0588.github.io/Turnstone/app.html?url=https%3A%2F%2Fspuds0588.github.io%2FTurnstone%2Fsample-links.xlsx&open=1>
 
-**Single file:** the entire app lives in `app.html` (plus PapaParse + SheetJS from CDN). The repo root is deployed via GitHub Pages straight from `main`; the root page is the product sales page, and `app.html` is the application.
+**Single file:** the entire app lives in `app.html` (with PapaParse + SheetJS vendored under `vendor/` — no CDN at runtime). The repo root is deployed via GitHub Pages straight from `main`; the root page is the product sales page, and `app.html` is the application.
+
+## Supported input formats
+
+Anything that reduces to a table of rows works — the format is detected from the file's own content first (magic bytes, then sniffing), and the extension / `Content-Type` only break ties.
+
+| Format | Extensions | Notes |
+| --- | --- | --- |
+| **Delimited text** | `.csv` `.txt` `.tsv` `.tab` | Comma, tab, semicolon, or pipe — the delimiter is auto-detected, so European `;` exports and Excel "Unicode Text" both just work. A plain one-URL-per-line `.txt` is a one-column list. |
+| **Excel / ODF workbooks** | `.xlsx` `.xlsm` `.xls` `.xlsb` `.ods` | Read via SheetJS. Multi-sheet workbooks ask which worksheet holds the list. |
+| **JSON** | `.json` `.jsonl` `.ndjson` | Arrays of objects (keys become columns), arrays of arrays, a wrapping object like `{"items":[…]}` (unwrapped automatically), an object map, or one object per line (JSON Lines). |
+| **HTML tables** | `.html` `.htm` | Picks the largest `<table>` on the page and honours `rowspan`/`colspan`. Parsed in an inert document — no scripts run, nothing is fetched. A *local* pick with no table falls back to harvesting its `<a href>` links (saved bookmarks pages). |
+| **XML** | `.xml` `.rss` `.atom` `.opml` | Finds the repeated record element (`<item>`, `<entry>`, `<url>`, `<outline>`, …) and turns each into a row — RSS/Atom feeds, sitemaps and OPML subscription lists become link queues. Element names become columns; url-ish attributes (`href`, `xmlUrl`) are picked up. |
+| **PDF** | `.pdf` | *Not supported yet* — detected and reported with a clear message rather than silently mangled. Export the list to CSV/XLSX first. |
+
+**Write-back is format-aware.** CSV, TSV and XLSX save silently back into the original file (Chromium, File System Access API). JSON, HTML, XML, PDF, and the legacy/macro/ODF workbooks are **one-way imports**: their edits live in browser storage until you Export CSV/XLSX. That's deliberate — rewriting a `.xls`/`.xlsm` container with XLSX bytes would drop macros and mislabel the file, and a JSON/HTML/XML source can't round-trip status and notes without changing its shape.
 
 ## Loading a list
 
 | Method | How |
 | --- | --- |
-| **Local file** | **Open File…** — Chromium users get silent write-back via the File System Access API; elsewhere it falls back to `<input type=file>` + browser-storage snapshots. |
-| **Remote URL** | Paste any public CSV/XLSX URL in the welcome panel (host must allow CORS). GitHub `raw.` links work great. |
-| **`?file=` deep link** | `app.html?file=<encoded url>` (alias: `?url=`). Format is detected from content (ZIP magic bytes), not just the extension. Add `&open=1` to auto-open the first task in a workspace tab. The example links above use this repo's own `sample-links.csv` / `sample-links.xlsx` as the remote source. |
+| **Local file** | **Open file…** — Chromium users get silent write-back via the File System Access API; elsewhere it falls back to `<input type=file>` + browser-storage snapshots. |
+| **Remote URL** | Paste any public link-list URL in the welcome panel (host must allow CORS). GitHub `raw.` links work great. |
+| **`?file=` deep link** | `app.html?file=<encoded url>` (alias: `?url=`). Format is detected from the file's content, not just the extension. Add `&open=1` to auto-open the first task in a workspace tab. The example links above use this repo's own `sample-links.csv` / `sample-links.xlsx` as the remote source. |
 | **Recent files** | The welcome panel lists your 5 most recent files — remote URLs re-fetch with one click. |
-| **Demo / test data** | **Load demo list**, or the bundled `sample-links.csv` / `sample-links.xlsx` via the test buttons. |
+| **Demo / test data** | **Load demo list**, or the bundled `sample-links.*` fixtures via the test buttons and the deep links. |
 
 The 🔗 **Link** menu item copies a shareable `?file=` deep link that reopens the exact same dataset — statuses ride along via browser storage on the same machine.
 
@@ -37,7 +52,7 @@ The 🔗 **Link** menu item copies a shareable `?file=` deep link that reopens t
 - **Right sidebar** — searchable task cards with notes and per-card ↗ escape hatches. The ☰ menu (top of the sidebar) holds everything else: open/close, share link, open mode, automation, columns & presets, exports, install, and theme.
 - **Copy buttons** — every value (name, URL, notes, and each extra column) has a ⧉ button sitting right after the text; hover a card to reveal them (always visible on touch screens).
 - **Cards stay compact** — beyond the fixed name/URL/status/notes, only the **first 3 data columns** show by default; expanding reveals the rest.
-- **Column presets (⚙ Columns)** — reorder (drag), show/hide, and **save the layout as a preset keyed to the file's header**. Any CSV/XLSX loaded later whose header matches that exact column order (case/whitespace-insensitive) **auto-applies the preset** — order and hidden columns included.
+- **Column presets (⚙ Columns)** — reorder (drag), show/hide, and **save the layout as a preset keyed to the file's header**. Any list loaded later whose header matches that exact column order (case/whitespace-insensitive) **auto-applies the preset** — order and hidden columns included.
 - **Saving** — Chromium: silent write-back to the picked file. Everywhere else: automatic IndexedDB snapshots + Export CSV/XLSX, and a `beforeunload` guard when there are unexported changes. Files that already carry `Status`/`Notes` columns reopen with their progress intact.
 
 ## Theming
@@ -55,6 +70,17 @@ Visit the live site in Chrome/Edge (or any Chromium browser) and use **☰ → �
 No app store, no backend, no build step — installing just pins the same single-file app to your machine. (Installability and offline mode require HTTPS or localhost, i.e. the live site or a local server; opening `app.html` straight from disk skips the service worker gracefully.)
 
 Implementation note: the web-app manifest is generated at runtime from icons embedded in `app.html` as data URIs, so the PWA adds only one real file to the repo — `sw.js`.
+
+## Standalone single-file build (beta)
+
+`turnstone-standalone.html` is the whole app in one ~1.08 MB document — the shell, PapaParse, SheetJS and the logo art, all inlined. Download it, double-click it, done: no server, no checkout, no install, no network. It is the build for **USB sticks, internal shares, and air-gapped or locked-down machines**, and for anyone who would rather keep a single file than trust a URL.
+
+- **Build it:** `node assets/build-standalone.js` (add `--check` to fail when the artifact has gone stale relative to `app.html`, `--out <path>` to write elsewhere).
+- **What it inlines:** both `vendor/` libraries and both logo SVGs. Icons were already data URIs inside `app.html`.
+- **Mislabelled builds cannot ship:** the script asserts that no `assets/` or `vendor/` reference survives *and* that `Papa.parse`, `sheet_to_json` and the inlined SVG data URIs are actually present.
+- **Provenance** (build time + source commit) is stamped into a comment at the top of the file.
+- **Beta caveats:** service-worker registration is switched off (there is no `sw.js` beside a copied file, and offline already works because everything is local), so there is no PWA install prompt. Remote `?file=` URLs are unreliable from `file://` origins — that path is CORS-constrained by the browser, not by Turnstone — while **local files, all input formats, cards, link modes, exports and browser-storage persistence work exactly as in the hosted app**. Windows to open a picked file depend on the File System Access API; where it is unavailable the app falls back to `<input type=file>` and browser storage. A **CSV-only variant** (no binary parser, for environments that cannot ship SheetJS at all) is not built yet — it needs real degradation logic, not just an omitted script tag.
+- **Serve it if you like:** it also works unchanged from any plain web server or GitHub Pages, e.g. <https://spuds0588.github.io/Turnstone/turnstone-standalone.html>.
 
 ## Hardened deployment: zero data call-outs
 
@@ -79,9 +105,15 @@ assets/             # logo system — SVG source of truth + generated PNG icons
   logo.svg          #   master: circular grey stone, engraved dark checkmark
   logo-light.svg    #   light-theme variant / logo-dark.svg: dark-theme variant
   build-icons.js    #   regenerates all PNGs from the master (node assets/build-icons.js)
+  build-standalone.js  #  regenerates turnstone-standalone.html (node assets/build-standalone.js)
 icon-192/512.png    # PWA icons (generated — do not hand-edit)
 sample-links.csv    # demo queue (CSV) used by the deep-link examples
-sample-links.xlsx   # demo queue (XLSX, multi-sheet)
+sample-links.xlsx   # demo queue (XLSX)
+sample-links.tsv    # the same queue in every other supported shape — handy for
+sample-links.json   #   checking that each importer lands 10 cards with the same
+sample-links.html   #   columns (name/URL/status/notes) and 3 already complete
+sample-links.xml
+turnstone-standalone.html  # BETA single-file build — the whole app in one document (generated)
 vendor/             # vendored libraries — no CDN at runtime (PapaParse, SheetJS)
 ports/              # future editions of Turnstone (see ports/README.md)
   bookmarklet/      #   composes the app live in a new tab; CSV-only fallback if CDNs are blocked
@@ -102,7 +134,7 @@ The web app is the canonical core; these ports (scaffolded under [`ports/`](port
 - **Bookmarklet** — composes the whole Turnstone app live in a new tab from a paste-safe (<~8 KB) payload: parsing, cards, link modes, exports, and write-back where the browser allows. Session-only memory by design, and a **CSV-only fallback mode** with a built-in parser when SheetJS can't load — locked-down, no-external-scripts environments are a first-class case, with the UI clearly noting the degraded mode.
 - **Chrome extension (MV3)** — the queue lives in Chrome's **Side Panel** with no iframe workflow at all: links open as real browser tabs, and **selecting a card switches the active tab** to that page. Statuses/presets persist in `chrome.storage`; exports via `chrome.downloads`; right-click any link to queue it.
 - **Tauri desktop app** — the **full web experience including the tabbed iframe workspace**, with the CORS / `X-Frame-Options` wall gone: sites that refuse iframing on the web load natively. Silent filesystem write-back on every OS, system tray, auto-update, tiny bundle.
-- **Bundled single-file HTML** — `turnstone-standalone.html`: one document holding the whole app (shell + vendored libraries + icons inlined) for `file://` use, USB sticks, internal shares, and machines where nothing can be installed. No server, no CDN, no checkout — since the app already makes zero external requests, this build is genuinely self-contained. A CSV-only variant covers environments that can't ship the binary parser at all.
+- **Bundled single-file HTML** — `turnstone-standalone.html` (**beta, built**): one document holding the whole app (shell + vendored libraries + logo art inlined) for `file://` use, USB sticks, internal shares, and machines where nothing can be installed. No server, no CDN, no checkout — since the app already makes zero external requests, this build is genuinely self-contained. Regenerate with `node assets/build-standalone.js`; the script fails loudly if a `vendor/` or `assets/` reference survives. A CSV-only variant (no binary parser) is still to come.
 - Shared prerequisite (planned): extract the DOM-free core — parsing, matrix analysis, presets, persistence — from `app.html` into a `core.js` all ports consume.
 - Further future state (see [`todo.md`](todo.md)): a **web MCP server** so AI agents can set up the workspace for their users (load the queue, apply presets, pick the open mode) or take over and work it on request — plus embedded **phone / SMS / mail hand-off layers**, native CORS bypass, and Google Drive / OneDrive sync.
 

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Turnstone sample link list (HTML table)</title>
+</head>
+<body>
+  <!-- A nav list sits ABOVE the table on purpose: the importer must pick the
+       table and ignore these navigation links. -->
+  <nav>
+    <a href="https://example.com/nav-1">Home</a>
+    <a href="https://example.com/nav-2">About</a>
+    <a href="https://example.com/nav-3">Contact</a>
+  </nav>
+
+  <h1>Q3 link audit</h1>
+  <table>
+    <thead>
+      <tr><th>Name</th><th>URL</th><th>Status</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Apple Newsroom</td><td><a href="https://www.apple.com/newsroom/">https://www.apple.com/newsroom/</a></td><td>incomplete</td><td>Q3 earnings page</td></tr>
+      <tr><td>BBC Homepage</td><td><a href="https://www.bbc.com/">https://www.bbc.com/</a></td><td>complete</td><td></td></tr>
+      <tr><td>Changelog Nightly</td><td><a href="https://changelog.com/nightly">https://changelog.com/nightly</a></td><td>incomplete</td><td>Skip the archive pages</td></tr>
+      <tr><td>Comma, Inc. Blog</td><td><a href="https://example.com/comma-blog">https://example.com/comma-blog</a></td><td>complete</td><td>Note with, commas, and "quotes"</td></tr>
+      <tr><td>Demo Domain</td><td><a href="https://example.com/">https://example.com/</a></td><td>incomplete</td><td></td></tr>
+      <tr><td>GitHub Trending</td><td><a href="https://github.com/trending">https://github.com/trending</a></td><td>incomplete</td><td>Check weekly</td></tr>
+      <tr><td>Hacker News</td><td><a href="https://news.ycombinator.com/">https://news.ycombinator.com/</a></td><td>complete</td><td>Blocked in iframes — use ↗</td></tr>
+      <tr><td>Sheets Example</td><td><a href="https://example.com/sheet-demo">https://example.com/sheet-demo</a></td><td>incomplete</td><td></td></tr>
+      <tr><td>Turnstone Repo</td><td><a href="https://github.com/">https://github.com/</a></td><td>incomplete</td><td></td></tr>
+      <tr><td>Wikipedia Portal</td><td><a href="https://www.wikipedia.org/">https://www.wikipedia.org/</a></td><td>incomplete</td><td></td></tr>
+    </tbody>
+  </table>
+</body>
+</html>

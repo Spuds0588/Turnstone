@@ -8,7 +8,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; font-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; manifest-src 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Turnstone — Turn any link spreadsheet into a streamlined workspace</title>
-<meta name="description" content="Load a CSV or XLSX of links and work through it in a modern split-pane workspace: task cards, statuses, notes, tabbed browsing, and auto-save — with zero backend, zero signup, and zero cost.">
+<meta name="description" content="Load a list of links — CSV, TSV, XLSX, JSON, HTML or XML — and work through it in a modern split-pane workspace: task cards, statuses, notes, tabbed browsing, and auto-save — with zero backend, zero signup, and zero cost.">
 <meta name="robots" content="index, follow">
 <meta name="keywords" content="link queue manager, CSV task tracker, XLSX link list, spreadsheet workflow, client-side spreadsheet app, tabbed browsing workspace, URL list processor, bulk link opener">
 <link rel="canonical" href="https://spuds0588.github.io/Turnstone/">
@@ -29,9 +29,9 @@
   "applicationCategory": "BrowserApplication",
   "operatingSystem": "Any (web browser)",
   "url": "https://spuds0588.github.io/Turnstone/",
-  "description": "Turnstone turns CSV or XLSX link lists into a streamlined task-card workspace: track statuses, write notes, browse links in tabbed panes, and save progress back to your file. Runs entirely client-side with no backend or signup.",
+  "description": "Turnstone turns spreadsheet, CSV, JSON, HTML or XML link lists into a streamlined task-card workspace: track statuses, write notes, browse links in tabbed panes, and save progress back to your file. Runs entirely client-side with no backend or signup.",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "featureList": "CSV and XLSX loading, task cards, status tracking, notes, tabbed iframe browsing, open-in-tab/window modes, auto-save write-back, offline PWA install, sorting and presets, completed-queue filtering",
+  "featureList": "CSV, TSV, XLSX, JSON, HTML and XML link-list loading, task cards, status tracking, notes, tabbed iframe browsing, open-in-tab/window modes, auto-save write-back, offline PWA install, sorting and presets, completed-queue filtering",
   "author": { "@type": "Person", "name": "Spuds0588", "url": "https://github.com/Spuds0588" }
 }
 </script>
@@ -47,8 +47,7 @@
     },
     {
       "@type": "Question",
-      "name": "What file formats does Turnstone support?",
-      "acceptedAnswer": { "@type": "Answer", "text": "CSV and XLSX spreadsheets. Any column named URL or Link is treated as the link to open; other columns are carried onto each task card, and statuses or notes you enter are saved back to the file." }
+      "name": "What file formats does Turnstone support?",        "acceptedAnswer": { "@type": "Answer", "text": "CSV, TSV and XLSX files, JSON arrays, HTML tables and XML feeds like RSS, Atom, sitemaps and OPML. Any column named URL or Link is treated as the link to open; other columns are carried onto each task card, and statuses or notes you enter are saved back to the file." }
     },
     {
       "@type": "Question",
@@ -63,7 +62,7 @@
     {
       "@type": "Question",
       "name": "How do I load my spreadsheet into Turnstone?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Drag the file onto the app, pick it with the file picker, or give Turnstone a URL to a CSV or XLSX on the web — deep links like ?file= load a spreadsheet automatically." }
+      "acceptedAnswer": { "@type": "Answer", "text": "Drag the file onto the app, pick it with the file picker, or give Turnstone a URL to a link list on the web — deep links like ?file= load a spreadsheet automatically." }
     }
   ]
 }
@@ -208,7 +207,7 @@
     <span class="eyebrow">Free &amp; open source · zero backend</span>
     <h1>Your spreadsheet,<br><span class="has-text-ts">now a modern workspace.</span></h1>
     <h2 class="subtitle">
-      Turnstone loads the CSV or XLSX you already keep — prospects, listings, docs to review,
+      Turnstone loads the link list you already keep — spreadsheet, CSV, JSON or HTML — prospects, listings, docs to review,
       outreach to send — and turns it into a modern split-pane workspace: task cards with statuses
       and notes on one side, the links themselves in a tabbed pane on the other. Progress saves
       straight back to your file. It runs entirely in your browser, so there's no backend to buy,
@@ -273,7 +272,7 @@
         <div class="feature-icon">🧩</div>
         <h3>Keep the file, lose the grind</h3>
         <p>No migration, no import wizard. Your columns become card fields, your tabs become a
-           queue, and every status flip or note you type is saved back into the same CSV or XLSX
+           queue, and every status flip or note you type is saved back into the same CSV or spreadsheet
            you started with.</p>
       </div>
       <div class="box">
@@ -309,7 +308,7 @@
       <div class="step">
         <span class="step-num">1</span>
         <h3>Open your file</h3>
-        <p>Drag a CSV or XLSX straight onto the app, or pick it from disk. Chromium browsers get
+        <p>Drag a CSV, TSV, XLSX, JSON, HTML or XML list straight onto the app, or pick it from disk. Chromium browsers get
            silent auto-save write-back to the original file.</p>
       </div>
       <div class="step">
@@ -344,7 +343,7 @@
       </details>
       <details>
         <summary>What file formats does it support?</summary>
-        <p>CSV and XLSX. Any column named <code>URL</code> or <code>Link</code> is treated as the
+        <p>CSV, TSV, XLSX, JSON, HTML tables and XML feeds. Any column named <code>URL</code> or <code>Link</code> is treated as the
            link to open; every other column is carried onto the card. Statuses and notes you enter
            are saved back into the file (or exported if your browser can't write back).</p>
       </details>

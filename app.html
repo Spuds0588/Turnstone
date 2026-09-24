@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Turnstone — URL List Processor</title>
-<meta name="description" content="Zero-server workspace for CSV/XLSX link lists: tabbed browsing, status tracking, and write-back — all client-side.">
+<meta name="description" content="Zero-server workspace for link lists (CSV, TSV, XLSX, XLS, ODS, JSON, HTML, XML): tabbed browsing, status tracking, and write-back — all client-side.">
 <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#f4f6fa" media="(prefers-color-scheme: light)">
 <!-- Data-call-out lockdown: scripts/styles/images/workers only from this origin (plus
@@ -347,7 +347,7 @@
 </head>
 <body>
 
-<input type="file" id="file-input" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+<input type="file" id="file-input" accept=".csv,.tsv,.tab,.txt,.xlsx,.xls,.ods,.json,.jsonl,.ndjson,.html,.htm,.xml,.rss,.atom,.opml,text/csv,text/tab-separated-values,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.oasis.opendocument.spreadsheet,text/html,application/xml,text/xml" hidden>
 
 <main id="app">
   <!-- LEFT: tabbed iframe workspace (one of several open modes) -->
@@ -358,16 +358,16 @@
         <div class="box">
           <h1><span class="logo"><img class="dark" src="assets/logo-dark.svg" alt=""><img class="light" src="assets/logo-light.svg" alt=""></span> Turnstone</h1>
           <p class="tagline">Your list, worked through.</p>
-          <p>Load a local CSV/XLSX of URLs. Track status &amp; notes, open links the way you like — tabs, browser tabs, or popup windows — and auto-save back to the file (Chromium) or browser storage.</p>
+          <p>Load a local CSV, TSV, XLSX/XLS/ODS, JSON, or HTML/XML list of URLs. Track status &amp; notes, open links the way you like — tabs, browser tabs, or popup windows — and auto-save back to the file (Chromium) or browser storage.</p>
           <div class="row">
-            <button class="btn primary" id="btn-open-2">Choose CSV / XLSX…</button>
+            <button class="btn primary" id="btn-open-2">Choose a file…</button>
             <button class="btn" id="btn-demo">Load demo list</button>
           </div>
           <div class="row">
             <input type="text" id="url-input" placeholder="https://example.com/tasks.csv" spellcheck="false">
             <button class="btn" id="btn-load-url">Load</button>
           </div>
-          <p style="font-size:11px; color:var(--muted); margin:0 0 10px">Any public CSV/XLSX URL works (host must allow CORS). Deep-link support: <code>?file=&lt;url&gt;</code> or <code>?url=&lt;url&gt;</code>; add <code>&amp;open=1</code> to auto-open the first task.</p>
+          <p style="font-size:11px; color:var(--muted); margin:0 0 10px">Any public link-list URL works (host must allow CORS). Deep-link support: <code>?file=&lt;url&gt;</code> or <code>?url=&lt;url&gt;</code>; add <code>&amp;open=1</code> to auto-open the first task.</p>
           <div class="row">
             <button class="btn" id="btn-test-csv" title="Load the bundled sample dataset">Load test CSV</button>
             <button class="btn" id="btn-test-xlsx" title="Load the bundled sample dataset (as a mock XLSX parse)">Load test XLSX</button>
@@ -424,7 +424,7 @@
         <button id="sort-dir" title="Toggle ascending / descending">↓</button>
       </div>
     </div>
-    <div id="cards"><div class="empty">No file loaded yet.<br>Open a CSV/XLSX to populate task cards.</div></div>
+    <div id="cards"><div class="empty">No file loaded yet.<br>Open a link list to populate task cards.</div></div>
     <div id="sidebar-footer"><span id="count-total">0 tasks</span><span id="count-done" class="done">0 done</span><span id="count-left">0 left</span></div>
   </aside>
 </main>
@@ -437,7 +437,7 @@
     </div>
     <p class="hint">Drag to reorder · untick to hide. URL, name, status and notes are fixed card features. Changes apply live.</p>
     <div id="settings-cols"></div>
-    <p class="hint">Save the layout as a preset — any CSV/XLSX whose header row matches this exact column order loads with it pre-applied.</p>
+    <p class="hint">Save the layout as a preset — any link list whose header row matches this exact column order loads with it pre-applied.</p>
     <div class="srow">
       <input type="text" id="preset-name" placeholder="Preset name (e.g. Client audit)" maxlength="40">
       <button class="btn primary" id="btn-preset-save">Save preset</button>
@@ -537,7 +537,7 @@ async function idbGetAll(store) {
 /* --------------------------------- State --------------------------------- */
 const state = {
   name: null,          // file name or URL label
-  ext: 'csv',          // 'csv' | 'xlsx'
+  ext: 'csv',          // format id: csv | tsv | xlsx | xls | ods | json | html | xml
   mode: null,          // 'fs' (File System Access) | 'fallback' | 'remote' | 'demo'
   fileHandle: null,    // FileSystemFileHandle (Chromium only)
   sheetName: 'Sheet1',
@@ -617,26 +617,359 @@ async function copyText(text, label = 'text') {
 }
 
 /* ------------------------------ Parsing core ------------------------------ */
-const HEADER_URL_RE = /^(url|link|href|website|web site|site|address)\b/i;
+/* Every supported input — CSV, TSV, XLSX/XLS/ODS, JSON, HTML tables, XML —
+   collapses into ONE shape: a 2D array of strings. Everything downstream
+   (analyzeMatrix → loadMatrix → renderCards) is format-agnostic, so adding a
+   format means one detector entry plus one parser that returns rows. */
+
+const HEADER_URL_RE = /^(url|link|href|website|web site|site|address|loc|permalink)\b/i;
 const HEADER_NAME_RE = /^(name|title|task|label|page|description)\b/i;
 const URL_VALUE_RE = /^https?:\/\//i;
 
-function parseCsvText(text) {
-  log(`Parsing CSV text (${text.length} chars) with PapaParse`);
-  const result = Papa.parse(text.trim(), { skipEmptyLines: 'greedy' });
-  if (result.errors.length) warn('PapaParse reported errors:', result.errors.slice(0, 3));
-  return result.data.map(row => row.map(c => String(c ?? '')));
+/* `writable` = we can rebuild the file byte-for-byte in its own format, so edits
+   save silently in place. Everything else is a one-way import: its edits live in
+   browser storage until the user exports CSV/XLSX. XLS/XLSM/XLSB/ODS are read-only
+   on purpose — writing XLSX bytes under a .xls/.xlsm name would drop macros and
+   mislabel the file. */
+const FORMAT_INFO = {
+  csv:  { label: 'CSV',        writable: true  },
+  tsv:  { label: 'TSV',        writable: true  },
+  xlsx: { label: 'XLSX',       writable: true  },
+  xls:  { label: 'XLS',        writable: false },
+  xlsm: { label: 'XLSM',       writable: false },
+  xlsb: { label: 'XLSB',       writable: false },
+  ods:  { label: 'ODS',        writable: false },
+  json: { label: 'JSON',       writable: false },
+  html: { label: 'HTML table', writable: false },
+  xml:  { label: 'XML',        writable: false },
+  pdf:  { label: 'PDF',        writable: false },
+};
+const formatLabel = (f) => (FORMAT_INFO[f] || {}).label || String(f || '').toUpperCase();
+/** Formats whose matrix can be written back into the source file in place. */
+const isWritable = (f) => !!(FORMAT_INFO[f] && FORMAT_INFO[f].writable);
+/** Everything SheetJS opens as a workbook container. */
+const isWorkbookFormat = (f) => f === 'xlsx' || f === 'xls' || f === 'xlsm' || f === 'xlsb' || f === 'ods';
+
+/* Extension → format. Explicit aliases only; content sniffing outranks them. */
+const EXT_FORMAT = {
+  csv: 'csv', txt: 'csv', tsv: 'tsv', tab: 'tsv',
+  xlsx: 'xlsx', xlsm: 'xlsm', xlsb: 'xlsb', xls: 'xls', ods: 'ods',
+  json: 'json', jsonl: 'json', ndjson: 'json',
+  html: 'html', htm: 'html', xml: 'xml', rss: 'xml', atom: 'xml', opml: 'xml',
+  pdf: 'pdf',
+};
+const CT_FORMAT = [
+  [/spreadsheetml|ms-excel|excel/, 'xlsx'],
+  [/opendocument\.spreadsheet/, 'ods'],
+  [/json/, 'json'],
+  [/html/, 'html'],
+  [/xml/, 'xml'],
+  [/tab-separated/, 'tsv'],
+  [/csv|comma-separated/, 'csv'],
+  [/pdf/, 'pdf'],
+];
+
+const MAGIC = {
+  pdf: [0x25, 0x50, 0x44, 0x46], // %PDF
+  ole: [0xd0, 0xcf, 0x11, 0xe0], // OLE2 container — legacy .xls
+  zip: [0x50, 0x4b, 0x03, 0x04], // PK\x03\x04 — xlsx / xlsm / xlsb / ods
+};
+function hasMagic(buf, bytes) {
+  return buf.byteLength >= bytes.length && bytes.every((b, i) => new DataView(buf).getUint8(i) === b);
+}
+function bufHead(buf, n = 2048) {
+  return new TextDecoder('utf-8').decode(buf.slice(0, Math.min(n, buf.byteLength))).replace(/^\uFEFF/, '');
 }
 
-function parseXlsxBuf(buf, sheetPick) {
-  log(`Parsing XLSX binary (${buf.byteLength} bytes) with SheetJS${sheetPick ? `, sheet "${sheetPick}"` : ''}`);
+/** Content sniffing for text formats — the strongest signal we have. */
+function sniffTextFormat(head) {
+  const h = head.trimStart().toLowerCase();
+  if (!h) return null;
+  if (h[0] === '[' || h[0] === '{') return 'json';
+  if (h.startsWith('<!doctype html') || h.startsWith('<html')) return 'html';
+  if (h.startsWith('<?xml')) return 'xml';
+  if (h.startsWith('<!--')) return /<!doctype html|<html|<table/.test(h) ? 'html' : 'xml';
+  if (h[0] === '<') return /<table\b|<tr\b|<td\b/.test(h) ? 'html' : 'xml';
+  return null; // delimiter choice is PapaParse's job, not ours
+}
+
+/** Split an extension + Content-Type into soft hints used only when content is inconclusive. */
+function formatHints(name, contentType) {
+  const m = String(name || '').match(/\.([a-z0-9]{1,5})(?:$|[?#])/i);
+  const ext = m ? m[1].toLowerCase() : null;
+  const ct = String(contentType || '').toLowerCase();
+  const hit = CT_FORMAT.find(([re]) => re.test(ct));
+  return { ext, extFormat: (ext && EXT_FORMAT[ext]) || null, ctFormat: hit ? hit[1] : null, contentType: ct };
+}
+
+/** Decide the format of a buffer. Precedence: magic bytes → content → hints. */
+function detectFormat(buf, name, contentType) {
+  const hint = formatHints(name, contentType);
+  let format, why;
+  if (hasMagic(buf, MAGIC.pdf)) { format = 'pdf'; why = 'magic %PDF'; }
+  else if (hasMagic(buf, MAGIC.ole)) { format = 'xls'; why = 'magic OLE2 (legacy Excel)'; }
+  else if (hasMagic(buf, MAGIC.zip)) {
+    // xlsx / xlsm / xlsb / ods all share the ZIP magic — the extension says which.
+    format = isWorkbookFormat(hint.extFormat) ? hint.extFormat : 'xlsx';
+    why = `magic PK\\x03\\x04 (ZIP container → ${format})`;
+  } else {
+    const sniffed = sniffTextFormat(bufHead(buf));
+    if (sniffed) { format = sniffed; why = 'content sniff'; }
+    else if (hint.extFormat) { format = hint.extFormat; why = `extension .${hint.ext}`; }
+    else if (hint.ctFormat) { format = hint.ctFormat; why = `content-type "${hint.contentType}"`; }
+    else { format = 'csv'; why = 'assumed delimited text'; }
+  }
+  log(`Format detection: ${why} → ${format} (ext=${hint.ext || 'none'}, content-type="${hint.contentType || 'none'}")`);
+  return { format, ...hint };
+}
+
+/* ---- Parser: delimited text (CSV, TSV, semicolon/pipe) ---- */
+function parseDelimitedText(text, format) {
+  const t = String(text).replace(/^\uFEFF/, '').trim();
+  const res = Papa.parse(t, { skipEmptyLines: 'greedy', delimiter: format === 'tsv' ? '\t' : '' });
+  if (res.errors.length) warn('PapaParse reported errors:', res.errors.slice(0, 3));
+  const delim = (res.meta && res.meta.delimiter) || ',';
+  const rows = res.data.map(r => (Array.isArray(r) ? r : [r]).map(c => String(c ?? '')));
+  log(`Parsed ${formatLabel(format)} text (${text.length} chars) with PapaParse — delimiter ${JSON.stringify(delim)}, ${rows.length} rows`);
+  return rows;
+}
+
+/* ---- Parser: workbooks (XLSX / XLS / ODS / XLSB) via SheetJS ---- */
+function parseWorkbook(buf, sheetPick) {
+  log(`Parsing workbook (${buf.byteLength} bytes) with SheetJS${sheetPick ? `, sheet "${sheetPick}"` : ''}`);
   const wb = XLSX.read(buf, { type: 'array' });
   const name = sheetPick && wb.SheetNames.includes(sheetPick) ? sheetPick : wb.SheetNames[0];
   const ws = wb.Sheets[name];
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' })
     .map(row => row.map(c => String(c ?? '')));
-  log(`XLSX parsed: sheet "${name}", ${rows.length} rows`);
+  log(`Workbook parsed: ${wb.SheetNames.length} sheet(s), loaded "${name}" — ${rows.length} rows`);
   return { rows, sheetName: name };
+}
+
+/* ---- Parser: JSON (array of objects, array of arrays, wrapped array, NDJSON) ---- */
+function jsonScalar(v) {
+  if (v === null || v === undefined) return '';
+  return typeof v === 'object' ? JSON.stringify(v) : String(v);
+}
+
+/** Array of objects → header row (union of keys, first-seen order) + data rows. */
+function jsonObjectsToMatrix(objs) {
+  const keys = [], seen = new Set();
+  for (const o of objs) {
+    if (!o || typeof o !== 'object' || Array.isArray(o)) continue;
+    for (const k of Object.keys(o)) if (!seen.has(k)) { seen.add(k); keys.push(k); }
+  }
+  if (!keys.length) return null;
+  return [keys, ...objs.map(o => keys.map(k => jsonScalar(o && typeof o === 'object' ? o[k] : '')))];
+}
+
+/** First array nested anywhere inside an object, e.g. {items:[…]} or {data:{rows:[…]}}. */
+function findJsonArray(value, depth = 0) {
+  if (depth > 4 || !value || typeof value !== 'object' || Array.isArray(value)) return null;
+  for (const v of Object.values(value)) if (Array.isArray(v) && v.length) return v;
+  for (const v of Object.values(value)) {
+    const hit = findJsonArray(v, depth + 1);
+    if (hit) return hit;
+  }
+  return null;
+}
+
+function jsonToMatrix(value) {
+  let v = value;
+  if (!Array.isArray(v)) {
+    if (v && typeof v === 'object') {
+      const inner = findJsonArray(v);
+      if (inner) { log('JSON: unwrapped a single nested array (e.g. {items:[…]})'); v = inner; }
+      else {
+        const vals = Object.values(v);
+        if (vals.length && vals.every(x => x && typeof x === 'object' && !Array.isArray(x))) {
+          log(`JSON: an object map with ${vals.length} entries → records, keys kept as _key`);
+          return jsonObjectsToMatrix(Object.entries(v).map(([k, o]) => ({ _key: k, ...o })));
+        }
+        log('JSON: a single object → one record');
+        return jsonObjectsToMatrix([v]);
+      }
+    } else {
+      return [['Value'], [jsonScalar(v)]];
+    }
+  }
+  if (!v.length) return [];
+  if (v.every(Array.isArray)) {
+    log(`JSON: array of ${v.length} arrays → rows verbatim`);
+    return v.map(r => r.map(jsonScalar));
+  }
+  if (v.every(x => x && typeof x === 'object' && !Array.isArray(x))) {
+    const m = jsonObjectsToMatrix(v);
+    if (m) { log(`JSON: array of ${v.length} objects → ${m[0].length} columns`); return m; }
+  }
+  log(`JSON: array of ${v.length} scalars → single Value column`);
+  return [['Value'], ...v.map(x => [jsonScalar(x)])];
+}
+
+function parseJsonText(text) {
+  let parsed;
+  try {
+    parsed = JSON.parse(String(text).replace(/^\uFEFF/, ''));
+  } catch (e) {
+    // JSON Lines / NDJSON: one object per line is a very common export shape.
+    const lines = String(text).trim().split(/\r?\n/).filter(l => l.trim());
+    const objs = lines.length > 1 && lines.every(l => /^\s*[\[{]/.test(l))
+      ? lines.map(l => { try { return JSON.parse(l); } catch { return null; } })
+      : [];
+    if (!objs.length || !objs.every(Boolean)) throw new Error(`invalid JSON (${e.message})`);
+    log(`JSON.parse failed — recovered as NDJSON (${objs.length} lines)`);
+    return jsonToMatrix(objs);
+  }
+  const rows = jsonToMatrix(parsed);
+  log(`JSON parsed: ${rows.length} rows × ${rows.reduce((m, r) => Math.max(m, r.length), 0)} cols`);
+  return rows;
+}
+
+/* ---- Parser: HTML tables (and, for local picks, plain link lists) ---- */
+/** Rows of a <table> → rectangular grid, honouring rowspan/colspan. */
+function tableToMatrix(table) {
+  const own = (el) => el.closest('table') === table; // ignore nested tables
+  const trs = [...table.querySelectorAll('tr')].filter(own);
+  const grid = [];
+  trs.forEach((tr, r) => {
+    grid[r] = grid[r] || [];
+    let col = 0;
+    for (const cell of [...tr.querySelectorAll('th, td')].filter(own)) {
+      while (grid[r][col] !== undefined) col++;
+      const cs = Math.max(1, parseInt(cell.getAttribute('colspan') || '1', 10) || 1);
+      const rs = Math.max(1, parseInt(cell.getAttribute('rowspan') || '1', 10) || 1);
+      const text = cell.textContent.replace(/\s+/g, ' ').trim();
+      for (let dr = 0; dr < rs; dr++) {
+        grid[r + dr] = grid[r + dr] || [];
+        for (let dc = 0; dc < cs; dc++) {
+          if (grid[r + dr][col + dc] === undefined) grid[r + dr][col + dc] = dr === 0 && dc === 0 ? text : '';
+        }
+      }
+      col += cs;
+    }
+  });
+  return grid
+    .filter(row => row && row.some(c => c !== undefined && c !== ''))
+    .map(row => { const out = []; for (let i = 0; i < row.length; i++) out[i] = String(row[i] ?? ''); return out; });
+}
+
+function parseHtmlText(text, { allowLinkFallback = true } = {}) {
+  // parseFromString yields an inert document: no scripts run, no images fetch.
+  const doc = new DOMParser().parseFromString(String(text), 'text/html');
+  // Only consider top-level tables; a nested table is almost always layout filler.
+  const tables = [...doc.querySelectorAll('table')].filter(t => !(t.parentElement && t.parentElement.closest('table')));
+  let best = null, bestScore = 0;
+  for (const t of tables) {
+    const m = tableToMatrix(t);
+    const score = m.length * m.reduce((w, r) => Math.max(w, r.length), 0);
+    if (score > bestScore) { bestScore = score; best = m; }
+  }
+  if (best && best.length >= 2) {
+    log(`HTML parsed: picked the largest of ${tables.length} table(s) — ${best.length} rows × ${best.reduce((w, r) => Math.max(w, r.length), 0)} cols`);
+    return best;
+  }
+  if (!allowLinkFallback) throw new Error('that URL returned a web page with no data table in it');
+  // Saved bookmarks pages and link round-ups are lists, not tables.
+  const seen = new Set(), links = [];
+  for (const a of doc.querySelectorAll('a[href]')) {
+    const href = a.getAttribute('href') || '';
+    if (!/^https?:\/\//i.test(href) || seen.has(href)) continue;
+    seen.add(href);
+    links.push([a.textContent.replace(/\s+/g, ' ').trim() || href, href]);
+  }
+  if (links.length) {
+    log(`HTML parsed: no usable table — harvested ${links.length} http(s) link(s) from <a href>`);
+    return [['Name', 'URL'], ...links];
+  }
+  throw new Error('no <table> rows and no http(s) links found');
+}
+
+/* ---- Parser: XML (RSS/Atom feeds, sitemaps, OPML, generic record lists) ---- */
+const XML_RECORD_TAGS = /^(item|entry|record|row|link|url|post|article|result|job|task|page|doc|node|member|place|event|product|book)$/i;
+
+/** The element name that most looks like a repeated record in this document.
+    Record containers (elements that hold fields) beat leaf elements — otherwise an
+    RSS feed would tabulate its <link> elements instead of its <item> elements. */
+function pickXmlRecordTag(doc) {
+  const seen = new Map(); // tagName → { count, containers }
+  for (const el of doc.querySelectorAll('*')) {
+    const n = el.tagName;
+    const rec = seen.get(n) || { count: 0, containers: 0 };
+    rec.count++;
+    if (el.children.length) rec.containers++;
+    seen.set(n, rec);
+  }
+  const repeated = [...seen.entries()]
+    .filter(([n, r]) => r.count >= 2 && !/^(html|head|body|script|style)$/i.test(n))
+    .map(([n, r]) => ({ tag: n, ...r, known: XML_RECORD_TAGS.test(n) }));
+  if (!repeated.length) return null;
+  const rank = (a, b) => (b.known - a.known) || (b.count - a.count);
+  const containers = repeated.filter(r => r.containers === r.count).sort(rank);
+  if (containers.length) return containers[0].tag;
+  return repeated.sort(rank)[0].tag;
+}
+
+/** Text of a leaf element — falling back to its url-ish attribute (Atom <link href>). */
+function xmlLeafValue(el) {
+  const text = el.textContent.replace(/\s+/g, ' ').trim();
+  if (text) return text;
+  for (const a of ['href', 'url', 'src', 'loc']) {
+    const v = el.getAttribute && el.getAttribute(a);
+    if (v) return v;
+  }
+  return [...(el.attributes || [])].map(a => a.value).join(' ');
+}
+
+function xmlElementToRecord(el) {
+  const rec = {};
+  // Attributes first so href/url land in an early column.
+  for (const attr of el.attributes || []) rec[attr.name] = attr.value;
+  const kids = [...el.children];
+  if (!kids.length && !Object.keys(rec).length) rec.value = xmlLeafValue(el);
+  for (const k of kids) {
+    const val = k.children.length ? JSON.stringify(xmlToPlain(k)) : xmlLeafValue(k);
+    rec[k.tagName] = rec[k.tagName] === undefined ? val : `${rec[k.tagName]}; ${val}`;
+  }
+  return rec;
+}
+function xmlToPlain(el) {
+  const o = {};
+  for (const attr of el.attributes || []) o[attr.name] = attr.value;
+  const kids = [...el.children];
+  if (!kids.length) o.value = xmlLeafValue(el);
+  for (const k of kids) o[k.tagName] = k.children.length ? xmlToPlain(k) : xmlLeafValue(k);
+  return o;
+}
+
+function parseXmlText(text) {
+  const doc = new DOMParser().parseFromString(String(text), 'application/xml');
+  if (doc.querySelector('parsererror')) throw new Error('XML is not well-formed');
+  const tag = pickXmlRecordTag(doc);
+  if (!tag) throw new Error('no repeated record elements to turn into rows');
+  const els = [...doc.querySelectorAll(tag)];
+  log(`XML parsed: ${els.length} <${tag}> record element(s)`);
+  const recs = els.map(xmlElementToRecord);
+  const keys = [];
+  for (const r of recs) for (const k of Object.keys(r)) if (!keys.includes(k)) keys.push(k);
+  return [keys, ...recs.map(r => keys.map(k => jsonScalar(r[k])))];
+}
+
+/** Detect + parse any supported buffer into a matrix. Throws a friendly error for the rest. */
+async function parseDetected(buf, det, sheetPick, htmlOpts) {
+  const format = det.format;
+  if (format === 'pdf') {
+    throw new Error('PDF is not supported yet — export the list to CSV/XLSX first');
+  }
+  if (isWorkbookFormat(format)) {
+    const { rows, sheetName } = parseWorkbook(buf, sheetPick);
+    return { rows, sheetName, format };
+  }
+  const text = new TextDecoder('utf-8').decode(buf);
+  const rows = format === 'json' ? parseJsonText(text)
+    : format === 'html' ? parseHtmlText(text, htmlOpts)
+    : format === 'xml' ? parseXmlText(text)
+    : parseDelimitedText(text, format);
+  return { rows, sheetName: null, format };
 }
 
 /** Detect header row + column roles from a 2D matrix. */
@@ -929,21 +1262,22 @@ function resetColLayout() {
 /** Read a File/Blob (picked locally) and load it. */
 async function loadFromFileObject(file, handle) {
   state.sourceUrl = null; // local picks are not shareable via ?file=
-  const ext = /\.xlsx$/i.test(file.name) ? 'xlsx' : 'csv';
-  log(`Reading picked file "${file.name}" (${file.size} bytes, ext=${ext}, fsHandle=${!!handle})`);
+  log(`Reading picked file "${file.name}" (${file.size} bytes, type="${file.type || 'unknown'}", fsHandle=${!!handle})`);
   try {
-    let matrix, sheetName;
-    if (ext === 'xlsx') {
-      const buf = await file.arrayBuffer();
-      ({ rows: matrix, sheetName } = parseXlsxBuf(buf));
-    } else {
-      matrix = parseCsvText(await file.text());
-    }
+    const buf = await file.arrayBuffer();
+    const det = detectFormat(buf, file.name, file.type);
+    const { rows: matrix, sheetName } = await parseDetected(buf, det, null, { allowLinkFallback: true });
     if (!matrix.length) { toast('File appears to be empty', 'error'); warn('Empty file:', file.name); return; }
-    state.sourceUrl = null; // local picks aren't shareable via ?file=
-    loadMatrix(matrix, { name: file.name, ext, mode: handle ? 'fs' : 'fallback', handle, sheetName, status: meta?.status, notes: meta?.notes });
-    await rememberFile(handle ? { key: 'active', kind: 'fs', name: file.name, ts: Date.now(), handle }
-                              : { key: 'active', kind: 'fallback', name: file.name, ts: Date.now(), handle: null });
+    // Only formats we can rebuild get silent write-back; the rest import one-way.
+    const writable = isWritable(det.format);
+    if (!writable) {
+      log(`"${det.format}" is import-only — write-back disabled, edits persist to browser storage`);
+      toast(`${formatLabel(det.format)} imports as a one-way conversion — your edits save to browser storage. Use Export to keep them.`, 'success');
+    }
+    const keep = writable && !!handle;
+    loadMatrix(matrix, { name: file.name, ext: det.format, mode: keep ? 'fs' : 'fallback', handle: keep ? handle : null, sheetName });
+    await rememberFile(keep ? { key: 'active', kind: 'fs', name: file.name, ts: Date.now(), handle }
+                            : { key: 'active', kind: 'fallback', name: file.name, ts: Date.now(), handle: null });
     scheduleSave(0); // persist a session snapshot right away (fallback modes)
   } catch (e) {
     err('Failed to load file', file.name, e);
@@ -963,8 +1297,17 @@ async function readSessionMetaFor(name) {
 /* --------------------------- File acquisition ---------------------------- */
 const FS_PICK_OPTS = {
   types: [{
-    description: 'CSV or XLSX file',
-    accept: { 'text/csv': ['.csv'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] },
+    description: 'Link list (CSV, TSV, XLSX, XLS, ODS, JSON, HTML, XML)',
+    accept: {
+      'text/csv': ['.csv', '.tsv', '.tab', '.txt'],
+      'text/plain': ['.csv', '.tsv', '.txt'],
+      'application/json': ['.json', '.jsonl', '.ndjson'],
+      'text/html': ['.html', '.htm'],
+      'application/xml': ['.xml', '.rss', '.atom', '.opml'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx', '.xlsm'],
+      'application/vnd.ms-excel': ['.xls', '.xlsb'],
+      'application/vnd.oasis.opendocument.spreadsheet': ['.ods'],
+    },
   }],
   excludeAcceptAllOption: false,
   multiple: false,
@@ -990,10 +1333,6 @@ async function openLocalFile() {
 }
 
 /** Load a remote file from ?file=/?url= param or the welcome-panel input. */
-const XLSX_MAGIC = [0x50, 0x4b, 0x03, 0x04]; // ZIP 'PK\x03\x04' — every modern .xlsx
-function looksLikeXlsxBuf(buf) {
-  return buf.byteLength >= 4 && XLSX_MAGIC.every((b, i) => new DataView(buf).getUint8(i) === b);
-}
 
 async function loadFromUrl(fileUrl) {
   fileUrl = String(fileUrl || '').trim();
@@ -1023,45 +1362,39 @@ async function loadFromUrl(fileUrl) {
     const buf = await res.arrayBuffer();
     log(`Fetched ${buf.byteLength} bytes (content-type: ${res.headers.get('content-type') || 'unknown'})`);
 
-    // Format detection: content first (magic bytes), URL extension, then Content-Type. Never trust extension alone.
-    const ct = (res.headers.get('content-type') || '').toLowerCase();
-    const extHint = /\.xlsx$/i.test(parsed.pathname) ? 'xlsx' : /\.(csv|txt)$/i.test(parsed.pathname) ? 'csv' : null;
-    const isXlsx = looksLikeXlsxBuf(buf) || (!extHint && /spreadsheetml|excel|msexcel/i.test(ct));
-    const ext = isXlsx ? 'xlsx' : 'csv';
-    log(`Format detection: magic=${looksLikeXlsxBuf(buf)}, extHint=${extHint}, content-type="${ct}" → ${ext}`);
+    // Format detection: magic bytes first, then content sniffing, then URL extension and Content-Type.
+    const det = detectFormat(buf, parsed.pathname, res.headers.get('content-type'));
 
-    // Guard: some hosts serve an HTML error page with HTTP 200 — fail loudly instead of parsing garbage.
-    if (!isXlsx) {
-      const headText = new TextDecoder('utf-8').decode(buf.slice(0, 512)).trimStart().toLowerCase();
-      if (headText.startsWith('<!doctype html') || headText.startsWith('<html')) {
-        throw new Error('URL returned a web page, not a CSV/XLSX file');
-      }
+    // Guard: many hosts serve an HTML error/landing page with HTTP 200. Remote HTML is
+    // only believed when it really carries a table — never its navigation link list.
+    if (det.format === 'html' && det.ext !== 'html' && det.ext !== 'htm') {
+      throw new Error(det.ext
+        ? `that URL returned a web page, not a ${det.ext.toUpperCase()} file`
+        : 'that URL returned a web page — paste a direct link to a data file instead');
     }
 
-    let matrix, sheetName;
-    if (ext === 'xlsx') {
-      ({ rows: matrix, sheetName } = parseXlsxBuf(buf));
-      if (wbHasMultipleSheets(buf)) {
-        const pick = await pickSheetName(buf, sheetName);
-        if (pick === null) { log('User cancelled sheet picker — load aborted'); return; }
-        ({ rows: matrix, sheetName } = parseXlsxBuf(buf, pick));
-      }
-    } else {
-      matrix = parseCsvText(new TextDecoder('utf-8').decode(buf));
+    let { rows: matrix, sheetName } = await parseDetected(buf, det, null, { allowLinkFallback: false });
+    if (isWorkbookFormat(det.format) && wbHasMultipleSheets(buf)) {
+      const pick = await pickSheetName(buf, sheetName);
+      if (pick === null) { log('User cancelled sheet picker — load aborted'); return; }
+      ({ rows: matrix, sheetName } = await parseDetected(buf, det, pick));
     }
     if (!matrix.length) { toast('Remote file appears to be empty', 'error'); return; }
 
     // If this URL was worked on before in fallback mode, restore its statuses/notes (round-trip for remote files).
     const meta = await readSessionMetaFor(fileUrl);
-    loadMatrix(matrix, { name: parsed.pathname.split('/').pop() || parsed.host, ext, mode: 'remote', sheetName, sourceUrl: fileUrl, status: meta?.status, notes: meta?.notes });
+    loadMatrix(matrix, { name: parsed.pathname.split('/').pop() || parsed.host, ext: det.format, mode: 'remote', sheetName, sourceUrl: fileUrl, status: meta?.status, notes: meta?.notes });
     await rememberFile({ key: 'active', kind: 'url', name: state.name, ts: Date.now(), handle: null, url: fileUrl });
     scheduleSave(0);
   } catch (e) {
     err('Remote file load failed', e);
-    const hint = /Failed to fetch|NetworkError|load failed/i.test(String(e.message))
-      ? 'The host may block cross-origin reads (CORS) — or the URL is unreachable.'
-      : '';
-    toast(`Fetch failed: ${e.message}. ${hint}`, 'error');
+    // Only network problems get the fetch/CORS framing; parse and format errors
+    // (unsupported format, HTML error page, malformed XML) speak for themselves.
+    if (/Failed to fetch|NetworkError|load failed/i.test(String(e.message))) {
+      toast(`Fetch failed: ${e.message}. The host may block cross-origin reads (CORS) — or the URL is unreachable.`, 'error');
+    } else {
+      toast(String(e.message), 'error');
+    }
   } finally {
     els.btnLoadUrl.disabled = false;
   }
@@ -1315,7 +1648,7 @@ function renderCards() {
   }
 
   els.cards.innerHTML = '';
-  if (!visible) els.cards.innerHTML = `<div class="empty">${total ? 'No tasks match your filters.' : 'No file loaded yet.<br>Open a CSV/XLSX to populate task cards.'}</div>`;
+  if (!visible) els.cards.innerHTML = `<div class="empty">${total ? 'No tasks match your filters.' : 'No file loaded yet.<br>Open a link list to populate task cards.'}</div>`;
   else els.cards.appendChild(frag);
 
   const done = state.status.filter(s => s === 'complete').length;
@@ -1484,7 +1817,7 @@ async function saveNow() {
   const t0 = performance.now();
   log(`saveNow: mode=${state.mode}, dirty=${state.isDirty}`);
   try {
-    if (state.mode === 'fs' && state.fileHandle) {
+    if (state.mode === 'fs' && state.fileHandle && isWritable(state.ext)) {
       const perm = await state.fileHandle.queryPermission({ mode: 'readwrite' });
       if (perm !== 'granted') {
         warn('Write permission lost — cannot silently save. Data kept in memory.');
@@ -1542,12 +1875,13 @@ async function writeBackToFile() {
   const matrix = buildExportMatrix();
   const writable = await state.fileHandle.createWritable();
   try {
-    if (state.ext === 'xlsx') {
+    if (isWorkbookFormat(state.ext)) {
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(matrix), sanitizeSheetName(state.sheetName));
       await writable.write(XLSX.write(wb, { type: 'array', bookType: 'xlsx' }));
     } else {
-      await writable.write(Papa.unparse(matrix));
+      // Delimited text keeps its own delimiter so a TSV source stays a TSV.
+      await writable.write(Papa.unparse(matrix, { delimiter: state.ext === 'tsv' ? '\t' : ',' }));
     }
   } finally {
     await writable.close();
@@ -1576,7 +1910,7 @@ async function persistSessionSnapshot() {
 /* PRD Task 4.3: export via Blob download (always available). */
 function exportFile(kind) {
   const matrix = buildExportMatrix();
-  const base = (state.name || 'turnstone').replace(/\.(csv|xlsx)$/i, '');
+  const base = (state.name || 'turnstone').replace(/\.[a-z0-9]+$/i, '');
   const a = document.createElement('a');
   if (kind === 'xlsx') {
     const wb = XLSX.utils.book_new();
@@ -1620,7 +1954,7 @@ const ICON_512_PNG = (() => {                                       // lazily fe
     const manifest = {
       name: 'Turnstone — URL List Processor',
       short_name: 'Turnstone',
-      description: 'Zero-server workspace for CSV/XLSX link lists: tabbed browsing, status tracking, and write-back — all client-side.',
+      description: 'Zero-server workspace for link lists (CSV, TSV, XLSX, JSON, HTML, XML): tabbed browsing, status tracking, and write-back — all client-side.',
       start_url: location.pathname,   /* app.html — deep links keep working from the installed app */
       scope: './',
       display: 'standalone',
@@ -1638,15 +1972,18 @@ const ICON_512_PNG = (() => {                                       // lazily fe
   } catch (e) { warn('Manifest build failed (PWA features limited)', e); }
 })();
 
-/* Service worker: offline shell. Skipped on plain file:// (nothing to serve). */
-if (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+/* Service worker: offline shell. Skipped on plain file:// (nothing to serve), and
+   skipped in the standalone single-file build, where there is no sw.js to load.
+   assets/build-standalone.js flips STANDALONE_BUILD to true. */
+const STANDALONE_BUILD = false;
+if (!STANDALONE_BUILD && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
       .then((reg) => log(`Service worker registered (scope: ${reg.scope})`))
       .catch((e) => warn('Service worker registration failed (offline mode unavailable)', e));
   }
 } else {
-  log(`Service worker skipped on ${location.protocol} origin`);
+  log(STANDALONE_BUILD ? 'Service worker skipped (standalone single-file build)' : `Service worker skipped on ${location.protocol} origin`);
 }
 
 /* Install button: only shown when the browser fires beforeinstallprompt. */
@@ -1682,7 +2019,7 @@ Wikipedia,https://en.wikipedia.org/wiki/Main_Page,`;
 
 function loadDemo() {
   log('Loading demo dataset');
-  const matrix = parseCsvText(DEMO_CSV);
+  const matrix = parseDelimitedText(DEMO_CSV, 'csv');
   loadMatrix(matrix, { name: 'demo-links.csv', ext: 'csv', mode: 'demo', sourceUrl: null });
   scheduleSave(0);
 }
@@ -1837,7 +2174,7 @@ function loadTestFile(ext) {
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(td.data), 'Links');
       const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
-      const parsed = parseXlsxBuf(buf instanceof ArrayBuffer ? buf : buf.buffer);
+      const parsed = parseWorkbook(buf instanceof ArrayBuffer ? buf : buf.buffer);
       loadMatrix(parsed.rows, { name: 'sample-links.xlsx', ext: 'xlsx', mode: 'remote', sheetName: parsed.sheetName, sourceUrl: null });
       return;
 
@@ -1975,7 +2312,7 @@ function closeCurrentFile() {
   els.sortCol.value = '';
   updateChrome(); renderCards();
   els.welcome.hidden = false; els.welcome.style.display = '';
-  els.cards.innerHTML = '<div class="empty">No file loaded yet.<br>Open a CSV/XLSX to populate task cards.</div>';
+  els.cards.innerHTML = '<div class="empty">No file loaded yet.<br>Open a link list to populate task cards.</div>';
   toast('File closed — pick or paste another when ready');
 }
 

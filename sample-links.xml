@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A feed-shaped link list: the importer should tabulate the repeated <item>
+     elements (title/link/notes) into one row each. -->
+<rss version="2.0">
+  <channel>
+    <title>Turnstone sample link list (RSS)</title>
+    <link>https://spuds0588.github.io/Turnstone/</link>
+    <description>Ten pages to work through.</description>
+    <item>
+      <title>Apple Newsroom</title>
+      <link>https://www.apple.com/newsroom/</link>
+      <notes>Q3 earnings page</notes>
+    </item>
+    <item>
+      <title>BBC Homepage</title>
+      <link>https://www.bbc.com/</link>
+      <notes></notes>
+    </item>
+    <item>
+      <title>Changelog Nightly</title>
+      <link>https://changelog.com/nightly</link>
+      <notes>Skip the archive pages</notes>
+    </item>
+    <item>
+      <title>Comma, Inc. Blog</title>
+      <link>https://example.com/comma-blog</link>
+      <notes>Note with, commas, and "quotes"</notes>
+    </item>
+    <item>
+      <title>Demo Domain</title>
+      <link>https://example.com/</link>
+      <notes></notes>
+    </item>
+    <item>
+      <title>GitHub Trending</title>
+      <link>https://github.com/trending</link>
+      <notes>Check weekly</notes>
+    </item>
+    <item>
+      <title>Hacker News</title>
+      <link>https://news.ycombinator.com/</link>
+      <notes>Blocked in iframes — use ↗</notes>
+    </item>
+    <item>
+      <title>Sheets Example</title>
+      <link>https://example.com/sheet-demo</link>
+      <notes></notes>
+    </item>
+    <item>
+      <title>Turnstone Repo</title>
+      <link>https://github.com/</link>
+      <notes></notes>
+    </item>
+    <item>
+      <title>Wikipedia Portal</title>
+      <link>https://www.wikipedia.org/</link>
+      <notes></notes>
+    </item>
+  </channel>
+</rss>

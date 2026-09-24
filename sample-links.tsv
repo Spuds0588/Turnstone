@@ -1,0 +1,11 @@
+Name	URL	Status	Notes
+Apple Newsroom	https://www.apple.com/newsroom/	incomplete	Q3 earnings page
+BBC Homepage	https://www.bbc.com/	complete	
+Changelog Nightly	https://changelog.com/nightly	incomplete	Skip the archive pages
+Comma, Inc. Blog	https://example.com/comma-blog	complete	Note with, commas, and "quotes"
+Demo Domain	https://example.com/	incomplete	
+GitHub Trending	https://github.com/trending	incomplete	Check weekly
+Hacker News	https://news.ycombinator.com/	complete	Blocked in iframes — use ↗
+Sheets Example	https://example.com/sheet-demo	incomplete	
+Turnstone Repo	https://github.com/	incomplete	
+Wikipedia Portal	https://www.wikipedia.org/	incomplete	

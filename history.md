@@ -1,5 +1,47 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-24 — v0.9.0: more input formats (TSV, JSON, HTML tables, XML, spreadsheets)
+
+**Request:** add more input-format support — TSV, JSON arrays, HTML tables, XML maybe, "potentially PDFs with tables or lists" — and call out other common formats people get work in with.
+
+### The design bet: one matrix, many formats
+Every supported input now collapses into the same value the CSV path always produced — a 2D array of strings. So the pipeline below the parse stage (`analyzeMatrix` → `loadMatrix` → `renderCards` → write-back) is untouched and format-agnostic, and adding a format is one `FORMAT_INFO` row plus one parser that returns rows.
+
+New pieces in `app.html`: `FORMAT_INFO` (label + `writable` per format), `detectFormat()` (precedence: **magic bytes → content sniff → extension → Content-Type**, with the reason logged), and `parseDetected()` (dispatch). `loadFromFileObject` and `loadFromUrl` both now run through them, which also removed the duplicated parse branch the two loaders used to keep.
+
+### Formats added
+- **Delimited text** — one parser for CSV/TSV/semicolon/pipe, with PapaParse auto-detecting the delimiter (European `;` exports, Excel "Unicode Text"). A one-URL-per-line `.txt` becomes a one-column list.
+- **JSON** — array of objects (union of keys → columns), array of arrays, a wrapping object like `{"items":[…]}` unwrapped automatically, an object map (keys kept as `_key`), and NDJSON/JSON Lines recovery when `JSON.parse` fails.
+- **HTML tables** — the largest top-level `<table>` wins, `rowspan`/`colspan` expanded into a real grid, nested layout tables ignored. Parsed with `DOMParser` into an **inert** document, so page scripts never run and nothing is fetched. A *local* pick with no table falls back to its `<a href>` list (saved bookmarks pages); remote URLs do not, which is what keeps a 200-HTML error page from being silently imported.
+- **XML** — finds the repeated record element and maps child elements *and* attributes to columns: RSS/Atom feeds, sitemaps, OPML subscription lists and generic `<record>` lists all become link queues. The picker is container-aware, which matters — in an RSS feed `<link>` occurs more often than `<item>`, and a naive count would tabulate the wrong element.
+- **Excel/ODF workbooks** — SheetJS's own type detection now covers `.xls` (OLE2 magic), `.xlsm`, `.xlsb` and `.ods` beside `.xlsx`, at no extra dependency cost.
+- **PDF** — detected via `%PDF` magic and refused with a clear message instead of being mangled. See the deferred note in `todo.md`.
+
+### Write-back became format-aware
+CSV, TSV and XLSX write silently back into the original file (TSV keeps its tab delimiter; the export filename strip now handles any extension). **Everything else is a one-way import**: the file handle is dropped, the load lands in fallback mode, and a toast says edits live in browser storage until exported. Two reasons, both correctness: rewriting a `.xls`/`.xlsm` container with XLSX bytes would drop macros and mislabel the file, and a JSON/HTML/XML source can't absorb Status/Notes columns without changing its shape.
+
+### Files
+- `app.html` — format layer, parsers, both loaders, format-aware write-back, and widened UI copy (`accept=`, `FS_PICK_OPTS`, welcome panel "Choose file…", empty states, PWA description).
+- `sample-links.tsv` / `.json` / `.html` / `.xml` — new fixtures mirroring the CSV exactly, so every importer can be checked against the same target: 10 cards, 4 columns, 7 visible / 3 complete. The HTML fixture deliberately carries a nav link list above the table, and the XML one is feed-shaped.
+- `sw.js` → `v0.9.0` (precaches the new fixtures).
+- `README.md` — new "Supported input formats" section with the write-back rule spelled out; repo-layout tree updated (and the stale "plus PapaParse + SheetJS from CDN" line fixed).
+
+### Verification (all in-browser against a local server)
+- All four text fixtures via `?file=`: one correct `Format detection:` line each, then `urlCol=1, nameCol=0, statusCol=2, notesCol=3` → 10 cards / 7 visible / 3 complete — identical to the CSV.
+- CSV and XLSX regressions pass unchanged.
+- Workbook sweep: real xlsx/ods/BIFF8-xls/xlsb/xlsm files generated and read back through the detector — correct format, 3 rows, correct sample row, only xlsx `writable`.
+- Parser sweep: JSON in five shapes, XML in four (including Atom `href` attributes and OPML), HTML with `rowspan`, nested tables and a link-only page, semicolon CSV, one-URL-per-line text, malformed JSON/XML, and the strict no-table error.
+- Local-pick paths exercised through real `File` objects: correct `ext`, fallback mode, handle dropped for import-only formats, status/notes seeded from the file's own columns.
+- `.fods` dropped from the extension map after SheetJS's flat-ODS reader threw `'table:table-cell' is not a valid selector` in browsers.
+
+### Standalone single-file build, shipped as a beta
+`assets/build-standalone.js` turns `app.html` into `turnstone-standalone.html` (~1.08 MB): the app shell, PapaParse, SheetJS and both logo SVGs in one document for `file://`, USB sticks, internal shares and air-gapped machines. Because the app already makes zero third-party requests, "building" is purely inlining — and the script treats that as a contract: it fails loudly if a `vendor/` or `assets/` reference would survive, and asserts the inlined library entry points really are present. It also flips a single-line `STANDALONE_BUILD` flag that suppresses service-worker registration, so a copied file doesn't 404 against a `sw.js` that was never next to it. A visible `beta · standalone` chip and a build stamp (timestamp + commit sha) ride along in the artifact.
+
+Verified by serving a directory containing **only** the standalone file: the app booted with no external requests, no console errors, and the inlined SheetJS parsed `sample-links.xlsx` into the same 10 cards / 7 visible / 3 complete as the hosted app. Opening it is covered by docs; the File System Access API, clipboard and PWA code paths all degrade to their documented fallbacks on `file://`. The CSV-only variant remains open (it needs genuine degradation logic, not a missing script tag).
+
+### Sales page
+`index.html`'s copy, FAQ answers and JSON-LD feature list said "CSV or XLSX" and now name the wider set; the claim about dragging a file onto the app was left intact but **is still not implemented** (flagged in the format work above) — the code has no `drop` handler outside the settings panel's column reordering.
+
 ## 2026-09-24 — v0.8.0: vendored dependencies + zero data call-outs, sales-page hero fix
 
 **Requests:** (1) vendor SheetJS and any other dependencies so nothing loads from a CDN — the tool must work in highly secure environments; (2) then add headers that prevent data call-outs, as long as that doesn't break iframe mode; (3) fix the sales-page logo placement and shorten the hero heading; (4) add bundled single-file `.html` builds for `file://` / internal hosting to the roadmap.

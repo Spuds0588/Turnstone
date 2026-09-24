@@ -1,0 +1,12 @@
+[
+  { "name": "Apple Newsroom",   "url": "https://www.apple.com/newsroom/",     "status": "incomplete", "notes": "Q3 earnings page" },
+  { "name": "BBC Homepage",     "url": "https://www.bbc.com/",                "status": "complete",   "notes": "" },
+  { "name": "Changelog Nightly", "url": "https://changelog.com/nightly",      "status": "incomplete", "notes": "Skip the archive pages" },
+  { "name": "Comma, Inc. Blog", "url": "https://example.com/comma-blog",      "status": "complete",   "notes": "Note with, commas, and \"quotes\"" },
+  { "name": "Demo Domain",      "url": "https://example.com/",                "status": "incomplete", "notes": "" },
+  { "name": "GitHub Trending",  "url": "https://github.com/trending",         "status": "incomplete", "notes": "Check weekly" },
+  { "name": "Hacker News",      "url": "https://news.ycombinator.com/",       "status": "complete",   "notes": "Blocked in iframes — use ↗" },
+  { "name": "Sheets Example",   "url": "https://example.com/sheet-demo",      "status": "incomplete", "notes": "" },
+  { "name": "Turnstone Repo",   "url": "https://github.com/",                 "status": "incomplete", "notes": "" },
+  { "name": "Wikipedia Portal", "url": "https://www.wikipedia.org/",          "status": "incomplete", "notes": "" }
+]
