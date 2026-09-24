@@ -1,5 +1,40 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-24 — Bookmarklet: the whole app on any page, with no libraries and no network
+
+**Request:** "begin work on the bookmarklet version of the app, maintaining as much functionality as we can, while having no dependencies. If we can vendor any libraries or support in while still working, we can pursue that. And if we need to split it into multiple versions to support different file types because of the parsers lengths, I am open to that."
+
+That request deliberately unlocked three of the scaffold's locked decisions (CDN injection, a ~8 KB budget, a single payload), so the first job was to find out which parts of the original design were actually buildable.
+
+### The finding that shaped everything: a composed document inherits the page's CSP
+The scaffold had the bookmarklet **compose the app in a new tab** and inject SheetJS from a CDN. Probing that on a page declaring `script-src 'self'` showed both halves were impossible there: injecting an inline `<script>` into the page **and** into a same-origin `about:blank` iframe each produced *"Refused to execute inline script because it violates the following Content Security Policy directive: script-src 'self'"*. Documents created under the page's origin inherit its policy container — `about:blank`, `srcdoc`, `blob:`, same-origin `document.write`. And a CDN `<script src>` is exactly what `script-src` is there to stop.
+
+The way out is that a **bookmarklet's own code is exempt from page CSP** (it is why bookmarklets still work on GitHub). So the payload composes the app **in the current page**: a shadow host covering the viewport, the app's stylesheet adopted as a **constructed stylesheet** (which `style-src` does not govern, unlike an injected `<style>`), the app's markup inside the shadow root, and every element lookup scoped there. Nothing is injected into the page, so no CSP exemption is needed for anything except the payload itself.
+
+### No dependencies, and no cut-down app
+Two stand-ins implement exactly the API surface `app.html` consumes, so the app is untouched below the seams:
+- **`src/papa-shim.js`** (~2 KB) — an RFC-4180 reader/writer with delimiter sniffing, quoted fields, doubled quotes, embedded newlines and BOM handling.
+- **`src/xlsx-shim.js`** — a **read-only XLSX reader with no library behind it**: it walks the ZIP central directory, inflates members with the browser's own `DecompressionStream('deflate-raw')` and reads the workbook/sharedStrings/worksheet XML with `DOMParser`. `.xls`/`.xlsb`/`.ods` get a readable refusal.
+
+Variants then differ only in parser weight: `csv` ~142 KB (no libraries), `core` ~152 KB (+ the XLSX reader), `full` ~1.09 MB (vendored PapaParse + SheetJS — every format, plus XLSX export and write-back). The old "~8 KB" target could only have been met by shipping a different, smaller app; "the whole app" was always the promise, so the budget is met by splitting instead.
+
+### Host-page safety, deliberately engineered
+- **Globals:** the vendored UMDs are evaluated against shadow objects (`Object.create(window)`, with `define`/`module`/`exports` shadowed so they take the browser branch), and the payload's own scope is an IIFE. Verified with the page's *own* `window.XLSX`/`window.Papa` stubbed to fakes: both survived untouched (`read()` still returned the page's value) while Turnstone parsed a real workbook with its own copies.
+- **Storage:** `indexedDB` is shadowed by an in-memory stand-in, so the app's snapshot code works for the tab's lifetime and the user's queue never lands in the host site's database. `localStorage` stays real for theme/open-mode/presets (namespaced keys), and the UI now *says* what it is: the chip reads *"this tab only — export to keep"*.
+- **Left-over behaviour:** the `beforeunload` guard and the PWA install/manifest blocks are removed in this build (an unsaved-changes dialog on someone else's page is not ours to raise), the drag handlers attach to the overlay rather than `document` so they die with it, and the host page's own `?file=` query is ignored.
+- **Bar:** a 26px strip with the variant label and **Copy state / Restore state** — the locked-scope way to carry a queue across sessions, implemented as a JSON snapshot that restores through the same `loadMatrix` round-trip path the app uses for re-imported files (statuses *and* notes verified restored, `['carried note','second note']` with `[true,false]`).
+
+### App-side capability flags (shared with the unbuilt standalone CSV-only variant)
+`app.html` gained `HAS_XLSX` / `HAS_XLSX_WRITE` (reading and *rebuilding* a workbook are separate capabilities: without a writer, XLSX export hides itself and workbooks become one-way imports via `canWrite()`), `SESSION_ONLY` (storage wording), and visible degradation: a welcome-panel notice, a trimmed format list, the Test-XLSX button hidden, and an actionable refusal if a workbook is dropped on a build that cannot read it. This is exactly the "real degradation logic, not just an omitted script tag" that the standalone CSV-only variant was blocked on; only its build flag is left.
+
+### Verification
+`core`, exercised through the harness from the real `javascript:` payload: demo list → 5 cards; ✓ Complete → `5 tasks | 1 done | 4 left`; note typed; CSV drop → 10 tasks / 3 done / 7 left with the round-trip resume toast; menu and settings overlays render **inside** the shadow root (nothing leaks into the page body); Copy state → *"Copied 10 cards as JSON (1.2 KB)"*; Restore state rejects junk and restores a snapshot with statuses and notes intact; ✕ Close removes the host and leaves the page as found. `csv` degrades exactly as specified (visible *"CSV-only build"*, workbook drop refused with a reason, CSV still whole). `full` parses **and exports** the XLSX fixture with `window.XLSX`/`window.Papa`/`window.cptable` undefined throughout. And under `script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'`, injecting the payload as a same-origin script (no exemption) mounted the overlay — 2 constructed stylesheets, **0** `<style>` elements, XLSX drop → 10 tasks / 3 done / 7 left, complete + notes working. The only CSP console output is the inline-`style`-attribute limitation now documented in the port README (15 attributes; features unaffected, some dialog chrome loses padding).
+
+Hosted `app.html` was regression-passed after the capability changes (XLSX load, Test-XLSX write + async read, multi-sheet inspection, capability notice still hidden) and `turnstone-standalone.html` rebuilt. `sw.js` → `v0.9.3`.
+
+### What ships in the repo
+`ports/bookmarklet/{build.js,src/,test.html,test.js,test-csp.html}` plus committed `dist/` payloads (`turnstone-bookmarklet-{csv,core,full}.txt`), a small generated `dist/install.html` that fetches the payloads and builds draggable install links, and `dist/csp-probe.js` (the `core` payload source) that the strict-CSP harness injects as a same-origin script — the reproducible form of the evidence above.
+
 ## 2026-09-24 — Resume: a re-imported file restores its progress
 
 **Request:** "can the app recognize when an exported or updated file has been dropped back in, with notes a completed column, so it can set the default values of those on load? we want folks to be able to pick up where they left off with that approach as well".

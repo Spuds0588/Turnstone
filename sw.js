@@ -2,7 +2,7 @@
    Version bump this constant to invalidate all caches on the next load. */
 'use strict';
 
-const VERSION = 'turnstone-v0.9.2';
+const VERSION = 'turnstone-v0.9.3';
 
 /* Same-origin paths are relative to this file (served from the app root). */
 const PRECACHE = [

@@ -7,7 +7,7 @@ the web app to run; these are future builds living next to the product.
 | Port | Path | Status | One-liner |
 |---|---|---|---|
 | Web app | `/app.html` | **Live** — the canonical experience | Split-pane queue + tabbed iframe workspace, zero backend |
-| Bookmarklet | [`bookmarklet/`](bookmarklet/) | Scaffolded | Composes the whole app live in a new tab; session-only memory; CSV-only fallback when SheetJS can't load |
+| Bookmarklet | [`bookmarklet/`](bookmarklet/) | **Built** — `csv` / `core` / `full` variants, zero library dependencies | Composes the whole app in a shadow-DOM overlay on the page you are on; no network, no CDNs; session-only memory with Copy/Restore state |
 | Chrome extension | [`extension/`](extension/) | Scaffolded | Side Panel queue (no iframes); links open as real tabs; selecting a card switches the active tab |
 | Tauri desktop | [`tauri/`](tauri/) | Scaffolded | Native shell, full web experience incl. iframes — no CORS/X-Frame-Options wall, silent file write-back |
 

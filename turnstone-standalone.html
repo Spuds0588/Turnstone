@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   Turnstone — standalone BETA build.
-  Generated 2026-09-24T16:16:45.840Z from app.html @ 8ab1f68.
+  Generated 2026-09-24T17:22:32.144Z from app.html @ 5bf8906 + uncommitted changes.
 
   Self-contained by construction: the app shell, PapaParse, SheetJS and the logo
   artwork are all inlined above, and the app makes no third-party requests, so this
@@ -214,6 +214,11 @@
   #dropzone .dz-main { font-size: 13px; font-weight: 600; }
   #dropzone .dz-sub { font-size: 11.5px; color: var(--muted); }
   #dropzone .dz-formats { font-size: 10.5px; color: var(--muted); letter-spacing: .3px; margin-top: 3px; }
+  #cap-notice {
+    font-size: 11.5px; color: var(--muted); text-align: center;
+    border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; margin: -4px 0 12px; background: var(--panel-2);
+  }
+  #cap-notice b { color: var(--text); }
   #welcome .or { font-size: 11px; color: var(--muted); text-align: center; margin: 0 0 12px; }
   #welcome input[type=text] {
     flex: 1; background: var(--bg); color: var(--text);
@@ -394,8 +399,9 @@
             <span class="dz-icon" aria-hidden="true">⤓</span>
             <span class="dz-main">Drop a file here, or click to choose</span>
             <span class="dz-sub">Read and parsed on this device — nothing is uploaded.</span>
-            <span class="dz-formats">CSV · TSV · XLSX / XLS / ODS · JSON · HTML · XML</span>
+            <span class="dz-formats" id="dz-formats">CSV · TSV · XLSX / XLS / ODS · JSON · HTML · XML</span>
           </div>
+          <p id="cap-notice" hidden></p>
           <div class="row">
             <input type="text" id="url-input" placeholder="…or paste a link-list URL" spellcheck="false">
             <button class="btn" id="btn-load-url">Load</button>
@@ -630,6 +636,7 @@ const state = {
 const $ = (sel) => document.querySelector(sel);
 const els = {
   fileInput: $('#file-input'), dropzone: $('#dropzone'), btnDemo: $('#btn-demo'),
+  dzFormats: $('#dz-formats'), capNotice: $('#cap-notice'),
   btnMenu: $('#btn-menu'), menu: $('#menu'), headName: $('#head-name'), headSave: $('#head-save'),
   miOpen: $('#mi-open'), miRestore: $('#mi-restore'), miClose: $('#mi-close'), miLink: $('#mi-link'),
   miColumns: $('#mi-columns'), miExportCsv: $('#mi-export-csv'), miExportXlsx: $('#mi-export-xlsx'),
@@ -740,6 +747,24 @@ const FORMAT_INFO = {
 const formatLabel = (f) => (FORMAT_INFO[f] || {}).label || String(f || '').toUpperCase();
 /** Formats whose matrix can be written back into the source file in place. */
 const isWritable = (f) => !!(FORMAT_INFO[f] && FORMAT_INFO[f].writable);
+
+/* Workbook support is a **capability**, not a build assumption. The bookmarklet's
+   no-library variant and the standalone CSV-only build ship without SheetJS, and
+   the app must degrade out loud: refuse `.xlsx` with a real reason, hide the XLSX
+   export, and say so on the welcome panel — never fail on the first workbook. */
+const HAS_XLSX = typeof XLSX === 'object' && XLSX !== null && typeof XLSX.read === 'function';
+/* Reading a workbook and *rebuilding* one are separate capabilities: a build can
+   ship a read-only workbook reader (the bookmarklet's zero-library variant does)
+   and must then treat workbooks as one-way imports instead of promising a
+   write-back it cannot deliver. */
+const HAS_XLSX_WRITE = HAS_XLSX && typeof XLSX.write === 'function';
+/* Some builds have no durable storage at all — the bookmarklet overlay runs on a
+   throwaway origin and shadows IndexedDB. Those builds must say so instead of
+   promising a snapshot that will not outlive the tab. */
+const SESSION_ONLY = false;   // ports/bookmarklet/build.js flips this to true
+const storageLabel = () => (SESSION_ONLY ? 'this tab only' : 'browser storage');
+/** Formats we can rebuild in place, given this build's capabilities. */
+const canWrite = (f) => isWritable(f) && (!isWorkbookFormat(f) || HAS_XLSX_WRITE);
 /** Everything SheetJS opens as a workbook container. */
 const isWorkbookFormat = (f) => f === 'xlsx' || f === 'xls' || f === 'xlsm' || f === 'xlsb' || f === 'ods';
 
@@ -828,9 +853,11 @@ function parseDelimitedText(text, format) {
 }
 
 /* ---- Parser: workbooks (XLSX / XLS / ODS / XLSB) via SheetJS ---- */
-function parseWorkbook(buf, sheetPick) {
+async function parseWorkbook(buf, sheetPick) {
   log(`Parsing workbook (${buf.byteLength} bytes) with SheetJS${sheetPick ? `, sheet "${sheetPick}"` : ''}`);
-  const wb = XLSX.read(buf, { type: 'array' });
+  // `await` on purpose: the real SheetJS resolves synchronously, but a
+  // dependency-free reader (the bookmarklet build) inflates asynchronously.
+  const wb = await XLSX.read(buf, { type: 'array' });
   const name = sheetPick && wb.SheetNames.includes(sheetPick) ? sheetPick : wb.SheetNames[0];
   const ws = wb.Sheets[name];
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' })
@@ -1054,7 +1081,8 @@ async function parseDetected(buf, det, sheetPick, htmlOpts) {
     throw new Error('PDF is not supported yet — export the list to CSV/XLSX first');
   }
   if (isWorkbookFormat(format)) {
-    const { rows, sheetName } = parseWorkbook(buf, sheetPick);
+    if (!HAS_XLSX) throw new Error(`${formatLabel(format)} needs workbook support, which this build does not include — load a CSV, TSV, JSON, HTML or XML list instead`);
+    const { rows, sheetName } = await parseWorkbook(buf, sheetPick);
     return { rows, sheetName, format };
   }
   const text = new TextDecoder('utf-8').decode(buf);
@@ -1388,10 +1416,10 @@ async function loadFromFileObject(file, handle) {
     const { rows: matrix, sheetName } = await parseDetected(buf, det, null, { allowLinkFallback: true });
     if (!matrix.length) { toast('File appears to be empty', 'error'); warn('Empty file:', file.name); return; }
     // Only formats we can rebuild get silent write-back; the rest import one-way.
-    const writable = isWritable(det.format);
+    const writable = canWrite(det.format);
     if (!writable) {
-      log(`"${det.format}" is import-only — write-back disabled, edits persist to browser storage`);
-      toast(`${formatLabel(det.format)} imports as a one-way conversion — your edits save to browser storage. Use Export to keep them.`, 'success');
+      log(`"${det.format}" is import-only — write-back disabled, edits persist to ${storageLabel()}`);
+      toast(`${formatLabel(det.format)} imports as a one-way conversion — your edits save to ${storageLabel()}. Use Export to keep them.`, 'success');
     }
     const keep = writable && !!handle;
     loadMatrix(matrix, { name: file.name, ext: det.format, mode: keep ? 'fs' : 'fallback', handle: keep ? handle : null, sheetName });
@@ -1530,7 +1558,7 @@ async function loadFromUrl(fileUrl) {
     }
 
     let { rows: matrix, sheetName } = await parseDetected(buf, det, null, { allowLinkFallback: false });
-    if (isWorkbookFormat(det.format) && wbHasMultipleSheets(buf)) {
+    if (isWorkbookFormat(det.format) && await wbHasMultipleSheets(buf)) {
       const pick = await pickSheetName(buf, sheetName);
       if (pick === null) { log('User cancelled sheet picker — load aborted'); return; }
       ({ rows: matrix, sheetName } = await parseDetected(buf, det, pick));
@@ -1557,21 +1585,22 @@ async function loadFromUrl(fileUrl) {
 }
 
 /** Sheet-name list for the workbook behind `buf` (SheetJS returns an array OR {SheetNames}). */
-function sheetNamesOf(buf) {
-  const info = XLSX.read(buf, { type: 'array', bookSheets: true });
+async function sheetNamesOf(buf) {
+  if (!HAS_XLSX) return [];
+  const info = await XLSX.read(buf, { type: 'array', bookSheets: true });
   return Array.isArray(info) ? info : (info && info.SheetNames) || [];
 }
 
 /** True when the workbook behind `buf` has more than one sheet. */
-function wbHasMultipleSheets(buf) {
-  try { return sheetNamesOf(buf).length > 1; }
+async function wbHasMultipleSheets(buf) {
+  try { return (await sheetNamesOf(buf)).length > 1; }
   catch (e) { warn('Could not inspect sheet list', e); return false; }
 }
 
 /** Ask the user which worksheet to load (only for multi-sheet workbooks). Returns null when cancelled. */
 function pickSheetName(buf, current) {
-  return new Promise((resolve) => {
-    const names = sheetNamesOf(buf);
+  return new Promise(async (resolve) => {
+    const names = await sheetNamesOf(buf);
     log(`Multi-sheet workbook detected: [${names.join(', ')}]`);
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:999';
@@ -1666,7 +1695,7 @@ async function restoreHandle(handle) {
 function cardCount() { return state.data.length - (state.hasHeader ? 1 : 0); }
 
 function updateChrome() {
-  const modeLabels = { fs: 'file write-back ON', fallback: 'fallback: browser storage', remote: 'remote file (read-only source)', demo: 'demo data' };
+  const modeLabels = { fs: 'file write-back ON', fallback: SESSION_ONLY ? 'this tab only — export to keep' : 'fallback: browser storage', remote: 'remote file (read-only source)', demo: 'demo data' };
   const has = cardCount() > 0;
   // Sidebar header: file name + save state
   els.headName.innerHTML = state.name
@@ -1677,7 +1706,8 @@ function updateChrome() {
   els.miClose.disabled = !state.mode;
   els.miLink.disabled = !state.sourceUrl;
   els.miExportCsv.disabled = !has;
-  els.miExportXlsx.disabled = !has;
+  els.miExportXlsx.disabled = !has || !HAS_XLSX_WRITE;
+  els.miExportXlsx.hidden = !HAS_XLSX_WRITE;   // no workbook writer → offer only what works
   updateSaveIndicator();
   renderModeMenu();
   renderAutoMenu();
@@ -1977,7 +2007,7 @@ async function saveNow() {
   const t0 = performance.now();
   log(`saveNow: mode=${state.mode}, dirty=${state.isDirty}`);
   try {
-    if (state.mode === 'fs' && state.fileHandle && isWritable(state.ext)) {
+    if (state.mode === 'fs' && state.fileHandle && canWrite(state.ext)) {
       const perm = await state.fileHandle.queryPermission({ mode: 'readwrite' });
       if (perm !== 'granted') {
         warn('Write permission lost — cannot silently save. Data kept in memory.');
@@ -2069,6 +2099,11 @@ async function persistSessionSnapshot() {
 
 /* PRD Task 4.3: export via Blob download (always available). */
 function exportFile(kind) {
+  if (kind === 'xlsx' && !HAS_XLSX_WRITE) {
+    warn('XLSX export requested in a build without a workbook writer');
+    toast('XLSX export is not in this build — Export CSV instead', 'error');
+    return;
+  }
   const matrix = buildExportMatrix();
   const base = (state.name || 'turnstone').replace(/\.[a-z0-9]+$/i, '');
   const a = document.createElement('a');
@@ -2351,7 +2386,7 @@ els.btnTestXlsx.addEventListener('click', () => loadTestFile('xlsx'));
 
 /** Preview-sandbox test loader: consumes window.TURNSTONE_TEST_DATA (sample-links.js).
     Production paths (native picker, ?file=) are unaffected — see testing-notes.md. */
-function loadTestFile(ext) {
+async function loadTestFile(ext) {
   const td = window.TURNSTONE_TEST_DATA;
   if (!td) { toast('Test dataset not found — is sample-links.js loaded?', 'error'); return; }
   log(`Loading test dataset (requested as ${ext}, bundled as ${td.ext})`);
@@ -2361,7 +2396,7 @@ function loadTestFile(ext) {
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(td.data), 'Links');
       const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
-      const parsed = parseWorkbook(buf instanceof ArrayBuffer ? buf : buf.buffer);
+      const parsed = await parseWorkbook(buf instanceof ArrayBuffer ? buf : buf.buffer);
       loadMatrix(parsed.rows, { name: 'sample-links.xlsx', ext: 'xlsx', mode: 'remote', sheetName: parsed.sheetName, sourceUrl: null });
       return;
 
@@ -2505,8 +2540,21 @@ function closeCurrentFile() {
 
 /* --------------------------------- Boot ---------------------------------- */
 (async function init() {
-  log(`Turnstone initializing — FSA API: ${!!window.showOpenFilePicker}, URL: ${location.href}`);
+  log(`Turnstone initializing — FSA API: ${!!window.showOpenFilePicker}, XLSX: ${HAS_XLSX}, URL: ${location.href}`);
   applyTheme(document.documentElement.dataset.theme, false);
+
+  // A build without SheetJS says so before the user drops a workbook on it.
+  if (!HAS_XLSX_WRITE) els.btnTestXlsx.hidden = true;   // the test button builds a workbook to re-parse
+  if (!HAS_XLSX) {
+    els.dzFormats.textContent = 'CSV · TSV · JSON · HTML · XML';
+    els.capNotice.hidden = false;
+    els.capNotice.innerHTML = '<b>CSV-only build</b> — no workbook support (XLSX/XLS/ODS). Everything else works: CSV, TSV, JSON, HTML and XML lists.';
+    log('Workbook support unavailable in this build — welcome panel switched to CSV-only');
+  } else if (!HAS_XLSX_WRITE) {
+    els.capNotice.hidden = false;
+    els.capNotice.innerHTML = '<b>Read-only workbooks</b> — this build can open XLSX/XLS/ODS, but your edits are kept in the page and exported as CSV.';
+    log('Workbook writer unavailable — workbooks import one-way, edits export as CSV');
+  }
 
   // Live-follow the OS light/dark preference while the user hasn't picked explicitly.
   if (window.matchMedia) {

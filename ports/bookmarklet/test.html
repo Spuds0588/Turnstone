@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  Turnstone bookmarklet — manual test harness (not generated; safe to edit).
+
+  Build the payloads first:  node ports/bookmarklet/build.js
+  Then serve the repo and open this page. Each link below carries the real
+  `javascript:` one-liner from dist/, so clicking one is exactly what clicking the
+  installed bookmark does — the payload decodes, mounts the overlay and takes over
+  the page. Drag a link to the bookmarks bar to install it for real.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turnstone bookmarklet — test harness</title>
+<style>
+  body { margin: 0; padding: 28px 22px; background: #f7f8fb; color: #1c2330;
+         font: 14px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 74ch; }
+  h1 { font-size: 19px; margin: 0 0 6px; }
+  code { background: #eef1f7; border-radius: 4px; padding: 1px 5px; }
+  li { margin: 7px 0; }
+  a.install { font-weight: 600; }
+  .state { color: #64708a; font-size: 12.5px; }
+  .box { border: 1px solid #d5dbe6; border-radius: 9px; padding: 12px 15px; background: #fff; margin: 14px 0; }
+  .step { margin: 6px 0 6px 2px; }
+</style>
+</head>
+<body>
+  <h1>Turnstone bookmarklet — test harness</h1>
+  <p class="state" id="status">Loading payloads…</p>
+
+  <div class="box">
+    <strong>Install / run a variant</strong>
+    <ul id="links"><li class="state">fetching dist/…</li></ul>
+    <p class="state">Click a link to run the payload on this page; drag it onto the bookmarks bar to install it.</p>
+  </div>
+
+  <div class="box">
+    <strong>What to check once it is running</strong>
+    <div class="step">1. The window is taken over by Turnstone, with a thin bar at the top: <code>Turnstone</code> · the variant name · <em>Copy state</em> / <em>Restore state</em> / <em>✕ Close</em>.</div>
+    <div class="step">2. <em>Demo list</em> loads 5 cards — the app's built-in dataset, no file needed.</div>
+    <div class="step">3. Drop a real <code>.csv</code> / <code>.xlsx</code> anywhere on the page: it loads, cards render, ✓ Complete and notes work.</div>
+    <div class="step">4. <em>Copy state</em> → <em>✕ Close</em> → click the bookmarklet again → <em>Restore state</em> → paste: statuses and notes come back.</div>
+    <div class="step">5. <em>✕ Close</em> returns the page exactly as it was (no leftover styles, no globals).</div>
+  </div>
+
+  <p class="state">The strict-CSP twin of this page is <a href="test-csp.html">test-csp.html</a> — it loads its script
+     from a file rather than inline, so the page itself survives <code>script-src 'self'</code>. A bookmarklet's own
+     code is exempt from page CSP, but an <em>in-page</em> <code>javascript:</code> link is not; see the README for
+     what that means for testing versus installing.</p>
+
+<script src="test.js"></script>
+</body>
+</html>

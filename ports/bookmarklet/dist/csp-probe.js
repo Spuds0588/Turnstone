@@ -1,507 +1,490 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Turnstone — URL List Processor</title>
-<meta name="description" content="Zero-server workspace for link lists (CSV, TSV, XLSX, XLS, ODS, JSON, HTML, XML): tabbed browsing, status tracking, and write-back — all client-side.">
-<meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#f4f6fa" media="(prefers-color-scheme: light)">
-<!-- Data-call-out lockdown: scripts/styles/images/workers only from this origin (plus
-     inline script + data: icons); frames unrestricted so iframe workspace mode works;
-     connect limited to same-origin + https (the user-initiated ?file= remote load).
-     referrer=no-referrer keeps deep-link URLs out of Referer headers. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' file:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: blob: file:; font-src 'self' data: file:; connect-src 'self' https: blob: file:; frame-src https: http: file:; worker-src 'self' blob: file:; manifest-src 'self' blob: file:; object-src 'none'; base-uri 'none'; form-action 'none'">
-<meta name="referrer" content="no-referrer">
-<link rel="icon" href="data:image/png;base64,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">
-<link rel="apple-touch-icon" id="apple-icon" href="data:image/png;base64,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">
-<script>
-  /* Theme boot — runs before first paint to avoid a flash of the wrong theme. */
-  (function () {
-    var saved = null;
-    try { saved = localStorage.getItem('turnstone-theme'); } catch (e) {}
-    var theme = saved === 'light' || saved === 'dark' ? saved
-      : (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-    document.documentElement.dataset.theme = theme;
-  })();
-</script>
-<style>
-  /* Theme tokens — dark is the default; <html data-theme="light"> flips the palette. */
-  :root {
-    color-scheme: dark;
-    --bg: #0f1115;
-    --panel: #171a21;
-    --panel-2: #1d212b;
-    --border: #262b36;
-    --text: #e6e9ef;
-    --muted: #8b93a5;
-    --accent: #7aa2ff;
-    --accent-dark: #5a82e0;
-    --green: #3fb970;
-    --amber: #f5c542;
-    --danger: #e5534b;
-    --sidebar-w: 340px;
-    --mark-bg: #f5c542;
-    --mark-fg: #16181d;
-    --pane-bg: #ffffff;
-    --done-border: #2c4a38;
-    --done-strike: #3a5c47;
-  }
-  :root[data-theme="light"] {
-    color-scheme: light;
-    --bg: #f4f6fa;
-    --panel: #ffffff;
-    --panel-2: #eef1f7;
-    --border: #d5dbe6;
-    --text: #1c2330;
-    --muted: #64708a;
-    --accent: #3b66d0;
-    --accent-dark: #2f57bb;
-    --green: #1e8e4e;
-    --amber: #a87b0a;
-    --danger: #c93c34;
-    --mark-bg: #ffd54d;
-    --mark-fg: #1c2330;
-    --pane-bg: #ffffff;
-    --done-border: #b5dfc4;
-    --done-strike: #7fae91;
-  }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font: 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    display: flex;
-    overflow: hidden;
-  }
-  .btn {
-    background: var(--panel-2); color: var(--text);
-    border: 1px solid var(--border); border-radius: 6px;
-    padding: 5px 11px; font-size: 12px; cursor: pointer; white-space: nowrap;
-  }
-  .btn:hover { border-color: var(--accent-dark); }
-  .btn:disabled { opacity: .45; cursor: default; }
-  .btn.primary { background: var(--accent-dark); border-color: var(--accent-dark); color: #fff; }
-  .btn.primary:hover { background: var(--accent); }
+(function(){
+/* Turnstone bookmarklet — "core" variant, generated 2026-09-24T17:29:17.134Z
+   from app.html @ 5bf8906 + uncommitted changes. Regenerate with: node ports/bookmarklet/build.js --variant core
+   Lines are %0A-encoded at the end of the build; everything above is app.html. */
+'use strict';
+var __TS_BMK__ = { variant: "core", libs: ["papa-shim","xlsx-shim"],
+  blurb: "no libraries — the above plus read-only XLSX",
+  css: "\n  /* Theme tokens — dark is the default; <html data-theme=\"light\"> flips the palette. */\n  :host {\n    color-scheme: dark;\n    --bg: #0f1115;\n    --panel: #171a21;\n    --panel-2: #1d212b;\n    --border: #262b36;\n    --text: #e6e9ef;\n    --muted: #8b93a5;\n    --accent: #7aa2ff;\n    --accent-dark: #5a82e0;\n    --green: #3fb970;\n    --amber: #f5c542;\n    --danger: #e5534b;\n    --sidebar-w: 340px;\n    --mark-bg: #f5c542;\n    --mark-fg: #16181d;\n    --pane-bg: #ffffff;\n    --done-border: #2c4a38;\n    --done-strike: #3a5c47;\n  }\n  :host([data-theme=\"light\"]) {\n    color-scheme: light;\n    --bg: #f4f6fa;\n    --panel: #ffffff;\n    --panel-2: #eef1f7;\n    --border: #d5dbe6;\n    --text: #1c2330;\n    --muted: #64708a;\n    --accent: #3b66d0;\n    --accent-dark: #2f57bb;\n    --green: #1e8e4e;\n    --amber: #a87b0a;\n    --danger: #c93c34;\n    --mark-bg: #ffd54d;\n    --mark-fg: #1c2330;\n    --pane-bg: #ffffff;\n    --done-border: #b5dfc4;\n    --done-strike: #7fae91;\n  }\n  * { box-sizing: border-box; }\n  #ts-app { height: 100%; }\n  #ts-app {\n    flex: 1 1 auto; min-height: 0;\n    margin: 0;\n    background: var(--bg);\n    color: var(--text);\n    font: 13px/1.45 system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif;\n    display: flex;\n    overflow: hidden;\n  }\n  .btn {\n    background: var(--panel-2); color: var(--text);\n    border: 1px solid var(--border); border-radius: 6px;\n    padding: 5px 11px; font-size: 12px; cursor: pointer; white-space: nowrap;\n  }\n  .btn:hover { border-color: var(--accent-dark); }\n  .btn:disabled { opacity: .45; cursor: default; }\n  .btn.primary { background: var(--accent-dark); border-color: var(--accent-dark); color: #fff; }\n  .btn.primary:hover { background: var(--accent); }\n\n  /* ---------- Sidebar header: hamburger + file name (replaces the old topbar) ---------- */\n  #side-head {\n    flex: 0 0 auto;\n    display: flex; align-items: center; gap: 8px;\n    padding: 8px 10px; border-bottom: 1px solid var(--border);\n    background: var(--panel);\n  }\n  #btn-menu {\n    flex: 0 0 auto; width: 30px; height: 30px; border-radius: 7px;\n    border: 1px solid var(--border); background: var(--panel-2); color: var(--text);\n    font-size: 15px; cursor: pointer; line-height: 1;\n  }\n  #btn-menu:hover { border-color: var(--accent-dark); }\n  #head-name {\n    flex: 1 1 auto; min-width: 0; font-size: 12px; color: var(--text);\n    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\n  }\n  #head-name .no-file { color: var(--muted); }\n  #head-save { flex: 0 0 auto; font-size: 10.5px; color: var(--muted); white-space: nowrap; }\n  #head-save.dirty { color: var(--amber); }\n  #head-save.saved { color: var(--green); }\n\n  /* ---------- Hamburger dropdown ---------- */n  #menu {\n    position: fixed; top: 44px; z-index: 120;\n    width: 260px; max-height: 80vh; overflow-y: auto;\n    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;\n    box-shadow: 0 10px 30px rgba(0,0,0,.35); padding: 6px;\n  }\n  #menu[hidden] { display: none; }\n  .menu-item {\n    display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;\n    background: none; border: none; color: var(--text); padding: 8px 9px;\n    border-radius: 7px; cursor: pointer; font-size: 12.5px;\n  }\n  .menu-item:hover { background: var(--panel-2); }\n  .menu-item:disabled { opacity: .4; cursor: default; }\n  .menu-item:disabled:hover { background: none; }\n  .menu-item .mi { flex: 0 0 20px; text-align: center; }\n  .menu-sep { height: 1px; background: var(--border); margin: 5px 4px; }\n  .menu-label { font-size: 10px; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); padding: 7px 9px 3px; }\n  .mode-item.checked::after { content: \"✓\"; margin-left: auto; color: var(--green); font-weight: 700; }\n\n  /* ---------- Split pane: workspace LEFT, sidebar RIGHT (approved deviation) ---------- */\n  #app {\n    flex: 1 1 auto;\n    display: grid;\n    grid-template-columns: 1fr var(--sidebar-w);\n    min-height: 0;\n  }\n\n  /* ---------- Workspace (left) ---------- */\n  #workspace { display: flex; flex-direction: column; min-width: 0; min-height: 0; }\n  #tabbar {\n    flex: 0 0 auto;\n    display: flex; align-items: stretch; gap: 2px;\n    background: var(--panel);\n    border-bottom: 1px solid var(--border);\n    padding: 4px 6px 0;\n    overflow-x: auto;\n    min-height: 36px;\n  }\n  #tabbar.hidden-mode { display: none; }\n  #tabbar:empty::after {\n    content: \"Tabs mode — click a task card to open it here\";\n    color: var(--muted); font-size: 11.5px; align-self: center; padding: 0 8px 6px;\n  }\n  .tab {\n    display: flex; align-items: center; gap: 6px;\n    padding: 6px 8px 6px 12px;\n    background: var(--bg);\n    border: 1px solid var(--border); border-bottom: none;\n    border-radius: 8px 8px 0 0;\n    max-width: 220px; cursor: pointer; user-select: none;\n    color: var(--muted);\n  }\n  .tab.active { background: var(--panel-2); color: var(--text); border-color: var(--accent-dark); }\n  .tab .tab-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }\n  .tab .tab-ext, .tab .tab-close {\n    flex: 0 0 auto; border: none; background: none; color: var(--muted);\n    cursor: pointer; font-size: 12px; padding: 1px 3px; border-radius: 4px; text-decoration: none;\n  }\n  .tab .tab-ext:hover, .tab .tab-close:hover { color: var(--text); background: var(--border); }\n  #panes { flex: 1 1 auto; position: relative; min-height: 0; background: var(--bg); }\n  .pane { position: absolute; inset: 0; display: none; }\n  .pane.active { display: block; }\n  .pane iframe { width: 100%; height: 100%; border: 0; background: var(--pane-bg); }\n  #pane-hint {\n    flex: 0 0 auto; padding: 4px 12px; font-size: 11px; color: var(--muted);\n    border-top: 1px solid var(--border); background: var(--panel);\n  }\n  #welcome {\n    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;\n    padding: 24px;\n  }\n  #welcome .box { max-width: 460px; width: 100%; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 26px; }\n  #welcome h1 { margin: 0 0 2px; font-size: 19px; display: flex; align-items: center; gap: 8px; }\n  #welcome h1 .logo { width: 17px; height: 17px; vertical-align: -2.5px; }\n  #welcome h1 .logo img { display: block; width: 100%; height: 100%; }\n  #welcome h1 .logo img.light { display: none; }\n  :host([data-theme=\"light\"]) #welcome h1 .logo img.light { display: block; }\n  :host([data-theme=\"light\"]) #welcome h1 .logo img.dark { display: none; }\n  #welcome .tagline { margin: 0 0 16px; color: var(--muted); font-size: 12px; }\n  #welcome p { margin: 0 0 16px; color: var(--muted); }\n  #welcome .row { display: flex; gap: 8px; margin-bottom: 10px; }\n  /* Primary start affordance: drop a file on it, or click to pick one. */\n  #dropzone {\n    display: flex; flex-direction: column; align-items: center; gap: 3px;\n    text-align: center; padding: 20px 16px; margin: 0 0 12px;\n    border: 1.5px dashed var(--border); border-radius: 10px; background: var(--bg);\n    cursor: pointer; transition: border-color .15s, background .15s;\n  }\n  #dropzone:hover { border-color: var(--accent-dark); }\n  #dropzone:focus-visible { outline: 2px solid var(--accent-dark); outline-offset: 2px; }\n  #dropzone.over { border-color: var(--accent-dark); background: var(--panel-2); }\n  #dropzone .dz-icon { font-size: 20px; line-height: 1; color: var(--accent-dark); }\n  #dropzone .dz-main { font-size: 13px; font-weight: 600; }\n  #dropzone .dz-sub { font-size: 11.5px; color: var(--muted); }\n  #dropzone .dz-formats { font-size: 10.5px; color: var(--muted); letter-spacing: .3px; margin-top: 3px; }\n  #cap-notice {\n    font-size: 11.5px; color: var(--muted); text-align: center;\n    border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; margin: -4px 0 12px; background: var(--panel-2);\n  }\n  #cap-notice b { color: var(--text); }\n  #welcome .or { font-size: 11px; color: var(--muted); text-align: center; margin: 0 0 12px; }\n  #welcome input[type=text] {\n    flex: 1; background: var(--bg); color: var(--text);\n    border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 12.5px;\n  }\n  #recents { margin-top: 16px; }\n  #recents h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin: 0 0 6px; }\n  .recent-item {\n    display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;\n    background: none; border: none; color: var(--text); padding: 6px 4px; border-radius: 6px; cursor: pointer; font-size: 12.5px;\n  }\n  .recent-item:hover { background: var(--panel-2); }\n  .recent-item .ts { margin-left: auto; color: var(--muted); font-size: 11px; }\n\n  /* ---------- Sidebar (right) ---------- */\n  #sidebar {\n    display: flex; flex-direction: column; min-height: 0;\n    background: var(--panel); border-left: 1px solid var(--border);\n  }\n  #filters { flex: 0 0 auto; padding: 10px 10px 8px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }\n  #search {\n    width: 100%; background: var(--bg); color: var(--text);\n    border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 12.5px;\n  }\n  #search:focus, #welcome input:focus { outline: none; border-color: var(--accent-dark); }\n  #filter-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }\n  #filter-row label { display: flex; align-items: center; gap: 5px; cursor: pointer; }\n  #sort-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }\n  #sort-row select {\n    flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--border);\n    border-radius: 6px; padding: 4px 6px; font-size: 11.5px; cursor: pointer; min-width: 0;\n  }\n  #sort-dir {\n    flex: 0 0 auto; width: 28px; padding: 4px 0; background: var(--bg); color: var(--text);\n    border: 1px solid var(--border); border-radius: 6px; font-size: 12px; cursor: pointer;\n  }\n  #sort-dir:hover { border-color: var(--accent-dark); }\n  #cards { flex: 1 1 auto; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 8px; }\n  #cards .empty { color: var(--muted); text-align: center; padding: 30px 10px; font-size: 12px; }\n  #sidebar-footer {\n    flex: 0 0 auto; padding: 7px 12px; border-top: 1px solid var(--border);\n    color: var(--muted); font-size: 11.5px; display: flex; gap: 10px;\n  }\n  #sidebar-footer .done { color: var(--green); }\n\n  .card {\n    background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;\n    padding: 9px 10px; display: flex; flex-direction: column; gap: 7px;\n  }\n  .card.done { border-color: var(--done-border); }\n  .card.done .card-title { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--done-strike); }\n  .card.done { opacity: .82; }\n  .card-top { display: flex; align-items: flex-start; gap: 6px; }\n  .card-title {\n    flex: 1; background: none; border: none; color: var(--text); text-align: left;\n    font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 0; word-break: break-word;\n  }\n  .card-title:hover { color: var(--accent); }\n  .icon {\n    display: inline-flex; align-items: center; justify-content: center;\n    min-width: 20px; height: 20px; padding: 0 4px;\n    border: none; border-radius: 4px; background: none; color: var(--muted);\n    cursor: pointer; font-size: 12px; text-decoration: none;\n  }\n  .icon:hover { color: var(--text); background: var(--border); }\n  .icon.ok { color: var(--green); }\n  .card-url { display: flex; align-items: center; gap: 4px; font-size: 11.5px; }\n  .card-url a { color: var(--accent); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }\n  .card-url a:hover { text-decoration: underline; }\n  .card-mid { display: flex; gap: 6px; align-items: center; }\n  .btn-done {\n    flex: 1; background: var(--bg); color: var(--green); border: 1px solid var(--done-border);\n    border-radius: 6px; padding: 5px 8px; font-size: 12px; cursor: pointer;\n  }\n  .btn-done:hover { background: var(--done-border); color: #fff; }\n  .btn-undo {\n    flex: 1; background: none; color: var(--muted); border: 1px dashed var(--border);\n    border-radius: 6px; padding: 4px 8px; font-size: 11.5px; cursor: pointer; opacity: .75;\n  }\n  .btn-undo:hover { opacity: 1; color: var(--text); border-color: var(--muted); }\n  .card-notes { display: flex; flex-direction: column; gap: 3px; }\n  .card-notes .label { display: flex; align-items: center; gap: 4px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }\n  .card-notes textarea {\n    background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px;\n    padding: 5px 7px; font-size: 12px; font-family: inherit; resize: vertical; min-height: 34px;\n  }\n  .card-notes textarea:focus { outline: none; border-color: var(--accent-dark); }\n  mark { background: var(--mark-bg); color: var(--mark-fg); border-radius: 2px; padding: 0 1px; }\n\n  /* Inline copy icons sit right after the value they copy; revealed on hover\n     of the card (always visible on touch devices, or right after a copy). */\n  #cards .copy { opacity: 0; transition: opacity .12s; }\n  #cards .card:hover .copy, #cards .copy:focus-visible, #cards .copy.ok { opacity: 1; }\n  @media (hover: none) { #cards .copy { opacity: 1; } }\n\n  /* Data-column rows (collapsed cards show the first 3; expanding shows all). */\n  .col-row { display: flex; align-items: baseline; gap: 5px; font-size: 11.5px; min-width: 0; }\n  .col-row .ck { flex: 0 0 auto; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .5px; }\n  .col-row .cv { flex: 1 1 auto; color: var(--text); word-break: break-word; min-width: 0; }\n  .col-row .emptyv { color: var(--muted); }\n  .col-more {\n    align-self: flex-start; background: none; border: none; color: var(--accent);\n    font-size: 11px; cursor: pointer; padding: 1px 0;\n  }\n  .col-more:hover { text-decoration: underline; }\n  .card.ex .col-more { color: var(--muted); }\n\n  /* Column settings overlay */\n  #settings-overlay {\n    position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200;\n    display: flex; align-items: center; justify-content: center; padding: 20px;\n  }\n  #settings-overlay[hidden] { display: none; }\n  #settings-box {\n    background: var(--panel); color: var(--text); border: 1px solid var(--border);\n    border-radius: 12px; padding: 18px; width: 400px; max-width: 94vw; max-height: 86vh; overflow-y: auto;\n  }\n  #settings-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }\n  #settings-head h2 { margin: 0; font-size: 15px; }\n  #settings-box .hint { font-size: 11px; color: var(--muted); margin: 6px 0; }\n  #settings-cols { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }\n  .set-col {\n    display: flex; align-items: center; gap: 8px; padding: 6px 8px;\n    background: var(--bg); border: 1px solid var(--border); border-radius: 6px; font-size: 12.5px;\n  }\n  .set-col.fixed { color: var(--muted); }\n  .set-col.fixed em { font-style: normal; font-size: 10.5px; opacity: .85; }\n  .set-col .drag { cursor: grab; color: var(--muted); font-size: 12px; user-select: none; }\n  .set-col.fixed .drag { cursor: default; opacity: .5; }\n  .set-col.dragging { opacity: .5; }\n  .set-col label { display: flex; align-items: center; gap: 6px; cursor: pointer; }\n  .set-col .pos { margin-left: auto; color: var(--muted); font-size: 10.5px; }\n  #settings-presets { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }\n  .preset-row { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }\n  .preset-row .pname { font-weight: 600; }\n  .preset-row .pmeta { color: var(--muted); font-size: 10.5px; flex: 1; }\n  .srow { display: flex; gap: 6px; margin-top: 8px; }\n  .srow input[type=text] { flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; font-size: 12px; }\n\n  /* ---------- Toast ---------- */\n  #toast {\n    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%) translateY(8px);\n    background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;\n    padding: 8px 14px; font-size: 12.5px; opacity: 0; pointer-events: none;\n    transition: opacity .2s, transform .2s; max-width: 70vw; z-index: 50;\n  }\n  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }\n  #toast.error { border-color: var(--danger); color: var(--danger); }\n  #toast.success { border-color: var(--green); }\n\n  @media (max-width: 760px) {\n    #app { grid-template-columns: 1fr; grid-template-rows: 1fr 45vh; }\n    #sidebar { border-left: none; border-top: 1px solid var(--border); }\n  }\n",
+  markup: "\n\n<input type=\"file\" id=\"file-input\" accept=\".csv,.tsv,.tab,.txt,.xlsx,.xls,.ods,.json,.jsonl,.ndjson,.html,.htm,.xml,.rss,.atom,.opml,text/csv,text/tab-separated-values,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.oasis.opendocument.spreadsheet,text/html,application/xml,text/xml\" hidden>\n\n<main id=\"app\">\n  <!-- LEFT: tabbed iframe workspace (one of several open modes) -->\n  <section id=\"workspace\">\n    <div id=\"tabbar\"></div>\n    <div id=\"panes\">\n      <div id=\"welcome\">\n        <div class=\"box\">\n          <h1><span class=\"logo\"><img class=\"dark\" src=\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiI+CiAgPCEtLSBEYXJrLXRoZW1lIHZhcmlhbnQ6IHRoZSBzdG9uZSBrZWVwcyBhIGxpZ2h0IHJpbSBzbyBpdCByZWFkcyBhZ2FpbnN0IG5lYXItYmxhY2sKICAgICAgIHN1cmZhY2VzLiBTYW1lIGdlb21ldHJ5IGFuZCBlbmdyYXZpbmcgdGVjaG5pcXVlIGFzIGxvZ28uc3ZnLiAtLT4KICA8ZGVmcz4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0ic3RvbmVTaGFkZUQiIGN4PSIwLjM4IiBjeT0iMC4zMiIgcj0iMC44NSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI2NmY2ZjZiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjAuNzIiIHN0b3AtY29sb3I9IiNhOGE4YTgiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjOGY4ZjhmIi8+CiAgICA8L3JhZGlhbEdyYWRpZW50PgogIDwvZGVmcz4KCiAgPGNpcmNsZSBjeD0iMjU2IiBjeT0iMjU2IiByPSIyNDgiIGZpbGw9InVybCgjc3RvbmVTaGFkZUQpIi8+CiAgPGNpcmNsZSBjeD0iMjU2IiBjeT0iMjU2IiByPSIyNDgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzVjNWY2NiIgc3Ryb2tlLXdpZHRoPSI3Ii8+CgogIDxwYXRoIGQ9Ik0xNDggMjY4IEwyMzIgMzUyIEwzNjggMTgwIiBmaWxsPSJub25lIiBzdHJva2U9IiM2ZjZmNmYiCiAgICAgICAgc3Ryb2tlLXdpZHRoPSI1MiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIgogICAgICAgIHRyYW5zZm9ybT0idHJhbnNsYXRlKDIgMikiLz4KICA8cGF0aCBkPSJNMTQ4IDI2OCBMMjMyIDM1MiBMMzY4IDE4MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGE0YTRhIgogICAgICAgIHN0cm9rZS13aWR0aD0iNTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K\" alt=\"\"><img class=\"light\" src=\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiI+CiAgPCEtLSBMaWdodC10aGVtZSB2YXJpYW50OiB0aGUgc3RvbmUgaXMgbGlnaHRlbmVkIHNvIGl0IGRvZXNuJ3QgdmFuaXNoIG9uIHdoaXRlIHN1cmZhY2VzLgogICAgICAgU2FtZSBnZW9tZXRyeSBhbmQgZW5ncmF2aW5nIHRlY2huaXF1ZSBhcyBsb2dvLnN2Zy4gLS0+CiAgPGRlZnM+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9InN0b25lU2hhZGVMIiBjeD0iMC4zOCIgY3k9IjAuMzIiIHI9IjAuODUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNlNmU2ZTYiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIwLjcyIiBzdG9wLWNvbG9yPSIjYzRjNGM0Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2E2YTZhNiIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICA8L2RlZnM+CgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMjQ4IiBmaWxsPSJ1cmwoI3N0b25lU2hhZGVMKSIvPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMjQ4IiBmaWxsPSJub25lIiBzdHJva2U9IiM4ZThlOGUiIHN0cm9rZS13aWR0aD0iNyIvPgoKICA8cGF0aCBkPSJNMTQ4IDI2OCBMMjMyIDM1MiBMMzY4IDE4MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjN2Q3ZDdkIgogICAgICAgIHN0cm9rZS13aWR0aD0iNTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIKICAgICAgICB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyIDIpIi8+CiAgPHBhdGggZD0iTTE0OCAyNjggTDIzMiAzNTIgTDM2OCAxODAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzUyNTI1MiIKICAgICAgICBzdHJva2Utd2lkdGg9IjUyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+Cg==\" alt=\"\"></span> Turnstone</h1>\n          <p class=\"tagline\">Your list, worked through.</p>\n          <p>Turn your list of links into a work queue: track status &amp; notes, open each link the way you like — tabs, browser tabs, or popup windows — and auto-save back to the file (Chromium) or, in this build, this tab only — export to keep your work.</p>\n          <div id=\"dropzone\" role=\"button\" tabindex=\"0\" aria-label=\"Drop a link-list file here, or activate to choose one from disk\">\n            <span class=\"dz-icon\" aria-hidden=\"true\">⤓</span>\n            <span class=\"dz-main\">Drop a file here, or click to choose</span>\n            <span class=\"dz-sub\">Read and parsed on this device — nothing is uploaded.</span>\n            <span class=\"dz-formats\" id=\"dz-formats\">CSV · TSV · XLSX / XLS / ODS · JSON · HTML · XML</span>\n          </div>\n          <p id=\"cap-notice\" hidden></p>\n          <div class=\"row\">\n            <input type=\"text\" id=\"url-input\" placeholder=\"…or paste a link-list URL\" spellcheck=\"false\">\n            <button class=\"btn\" id=\"btn-load-url\">Load</button>\n          </div>\n          \n          <p class=\"or\">or try it with sample data</p>\n          <div class=\"row\">\n            <button class=\"btn\" id=\"btn-demo\" title=\"Load the small built-in demo list\">Demo list</button>\n            <button class=\"btn\" hidden id=\"btn-test-csv\" title=\"Load the bundled sample dataset (CSV)\">Test CSV</button>\n            <button class=\"btn\" hidden id=\"btn-test-xlsx\" title=\"Load the bundled sample dataset as a real XLSX parse\">Test XLSX</button>\n          </div>\n          <div id=\"recents\" hidden>\n            <h2>Recent files</h2>\n            <div id=\"recents-list\"></div>\n          </div>\n        </div>\n      </div>\n    </div>\n    <div id=\"pane-hint\">If a site refuses to render (X-Frame-Options), it can’t be framed in a browser — switch to “New browser tab” mode in the ☰ menu, or use the ↗ on a card.</div>\n  </section>\n\n  <!-- RIGHT: task sidebar (approved deviation from PRD's left-hand sidebar) -->\n  <aside id=\"sidebar\">\n    <div id=\"side-head\">\n      <button id=\"btn-menu\" title=\"Menu — open, export, columns, settings\">☰</button>\n      <span id=\"head-name\"><span class=\"no-file\">No file loaded</span></span>\n      <span id=\"head-save\"></span>\n    </div>\n    <nav id=\"menu\" hidden>\n      <button class=\"menu-item\" id=\"mi-open\"><span class=\"mi\">📂</span> Open file…</button>\n      <button class=\"menu-item\" id=\"mi-restore\" hidden><span class=\"mi\">↺</span> Restore last file</button>\n      <button class=\"menu-item\" id=\"mi-close\" disabled><span class=\"mi\">✕</span> Close current file</button>\n      <button class=\"menu-item\" id=\"mi-link\" disabled><span class=\"mi\">🔗</span> Copy share link (?file=)</button>\n      <div class=\"menu-sep\"></div>\n      <div class=\"menu-label\">Opening links</div>\n      <button class=\"menu-item mode-item\" data-mode=\"tabs\"><span class=\"mi\">🗂</span> Tabs (iframes)</button>\n      <button class=\"menu-item mode-item\" data-mode=\"newtab\"><span class=\"mi\">↗</span> New browser tab</button>\n      <button class=\"menu-item mode-item\" data-mode=\"newwin\"><span class=\"mi\">◱</span> New popup window</button>\n      <button class=\"menu-item\" id=\"mi-mode-help\"><span class=\"mi\">❔</span> Which should I pick?</button>\n      <div class=\"menu-sep\"></div>\n      <div class=\"menu-label\">Automation</div>\n      <button class=\"menu-item toggle-item\" id=\"mi-auto-open\"><span class=\"mi\">⚡</span> Open link when card is selected</button>\n      <button class=\"menu-item toggle-item\" id=\"mi-auto-advance\"><span class=\"mi\">⏭</span> Auto-open next after completing</button>\n      <div class=\"menu-sep\"></div>\n      <button class=\"menu-item\" id=\"mi-columns\"><span class=\"mi\">⚙</span> Columns &amp; presets…</button>\n      <button class=\"menu-item\" id=\"mi-export-csv\" disabled><span class=\"mi\">⬇</span> Export CSV</button>\n      <button class=\"menu-item\" id=\"mi-export-xlsx\" disabled><span class=\"mi\">⬇</span> Export XLSX</button>\n      <button class=\"menu-item\" id=\"mi-install\" hidden><span class=\"mi\">⤓</span> Install app</button>\n      <button class=\"menu-item\" id=\"mi-theme\"><span class=\"mi\">◐</span> <span id=\"mi-theme-label\">Light mode</span></button>\n    </nav>\n    <div id=\"filters\">\n      <input type=\"search\" id=\"search\" placeholder=\"Search tasks…\" autocomplete=\"off\">\n      <div id=\"filter-row\">\n        <label><input type=\"checkbox\" id=\"show-completed\"> Show completed</label>\n        <span id=\"filter-info\" style=\"margin-left:auto\"></span>\n      </div>\n      <div id=\"sort-row\">\n        <span>Sort</span>\n        <select id=\"sort-col\"><option value=\"\">File order</option></select>\n        <button id=\"sort-dir\" title=\"Toggle ascending / descending\">↓</button>\n      </div>\n    </div>\n    <div id=\"cards\"><div class=\"empty\">No file loaded yet.<br>Open a link list to populate task cards.</div></div>\n    <div id=\"sidebar-footer\"><span id=\"count-total\">0 tasks</span><span id=\"count-done\" class=\"done\">0 done</span><span id=\"count-left\">0 left</span></div>\n  </aside>\n</main>\n\n<div id=\"settings-overlay\" hidden>\n  <div id=\"settings-box\">\n    <div id=\"settings-head\">\n      <h2>Task card columns</h2>\n      <button class=\"icon\" id=\"settings-x\" title=\"Close\">✕</button>\n    </div>\n    <p class=\"hint\">Drag to reorder · untick to hide. URL, name, status and notes are fixed card features. Changes apply live.</p>\n    <div id=\"settings-cols\"></div>\n    <p class=\"hint\">Save the layout as a preset — any link list whose header row matches this exact column order loads with it pre-applied.</p>\n    <div class=\"srow\">\n      <input type=\"text\" id=\"preset-name\" placeholder=\"Preset name (e.g. Client audit)\" maxlength=\"40\">\n      <button class=\"btn primary\" id=\"btn-preset-save\">Save preset</button>\n    </div>\n    <div id=\"settings-presets\"></div>\n    <div class=\"srow\">\n      <button class=\"btn\" id=\"btn-cols-reset\">Reset to file order</button>\n    </div>\n  </div>\n</div>\n\n<div id=\"toast\"></div>\n\n\n\n\n\n\n" };
+/* ---------------------------------------------------------------------------
+ * Bookmarklet boot, part 1 — runs BEFORE the app code is evaluated.
+ *
+ * Why this order: app.html binds its whole element map (`const els = {…}`) at
+ * script-evaluation time, so every element it looks up must already exist. This
+ * layer creates the overlay first, then the app code runs against it.
+ *
+ * Why a shadow root: a bookmarklet runs inside the host page and the page's own
+ * CSS would shred the app's layout. A shadow root isolates both directions, and
+ * a **constructed stylesheet** (`new CSSStyleSheet()` + adoptedStyleSheets)
+ * sidesteps `style-src`, which blocks an injected `<style>` on a strict-CSP page.
+ *
+ * Nothing here becomes a global on the host page: the vendored libraries are
+ * evaluated against a shadow object (`Object.create(window)`), so a page already
+ * shipping its own SheetJS or PapaParse keeps its own copies.
+ * ------------------------------------------------------------------------- */
 
-  /* ---------- Sidebar header: hamburger + file name (replaces the old topbar) ---------- */
-  #side-head {
-    flex: 0 0 auto;
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 10px; border-bottom: 1px solid var(--border);
-    background: var(--panel);
-  }
-  #btn-menu {
-    flex: 0 0 auto; width: 30px; height: 30px; border-radius: 7px;
-    border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
-    font-size: 15px; cursor: pointer; line-height: 1;
-  }
-  #btn-menu:hover { border-color: var(--accent-dark); }
-  #head-name {
-    flex: 1 1 auto; min-width: 0; font-size: 12px; color: var(--text);
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  #head-name .no-file { color: var(--muted); }
-  #head-save { flex: 0 0 auto; font-size: 10.5px; color: var(--muted); white-space: nowrap; }
-  #head-save.dirty { color: var(--amber); }
-  #head-save.saved { color: var(--green); }
+var TS_BMK = __TS_BMK__;                       // { variant, libs, css, markup, … } injected by build.js
+var TS_HOST_ID = 'turnstone-bookmarklet-root';
 
-  /* ---------- Hamburger dropdown ---------- */n  #menu {
-    position: fixed; top: 44px; z-index: 120;
-    width: 260px; max-height: 80vh; overflow-y: auto;
-    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0,0,0,.35); padding: 6px;
-  }
-  #menu[hidden] { display: none; }
-  .menu-item {
-    display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
-    background: none; border: none; color: var(--text); padding: 8px 9px;
-    border-radius: 7px; cursor: pointer; font-size: 12.5px;
-  }
-  .menu-item:hover { background: var(--panel-2); }
-  .menu-item:disabled { opacity: .4; cursor: default; }
-  .menu-item:disabled:hover { background: none; }
-  .menu-item .mi { flex: 0 0 20px; text-align: center; }
-  .menu-sep { height: 1px; background: var(--border); margin: 5px 4px; }
-  .menu-label { font-size: 10px; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); padding: 7px 9px 3px; }
-  .mode-item.checked::after { content: "✓"; margin-left: auto; color: var(--green); font-weight: 700; }
+var ROOT = null;                               // the app's element root — all its queries scope here
+var THEME_ROOT = null;                         // element carrying data-theme
+var TS_HOST = null, TS_SHADOW = null, TS_APP = null;
 
-  /* ---------- Split pane: workspace LEFT, sidebar RIGHT (approved deviation) ---------- */
-  #app {
-    flex: 1 1 auto;
-    display: grid;
-    grid-template-columns: 1fr var(--sidebar-w);
-    min-height: 0;
-  }
+if (document.getElementById(TS_HOST_ID)) {
+  throw new Error('Turnstone is already running on this page — close it first (✕ in the top bar).');
+}
 
-  /* ---------- Workspace (left) ---------- */
-  #workspace { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-  #tabbar {
-    flex: 0 0 auto;
-    display: flex; align-items: stretch; gap: 2px;
-    background: var(--panel);
-    border-bottom: 1px solid var(--border);
-    padding: 4px 6px 0;
-    overflow-x: auto;
-    min-height: 36px;
-  }
-  #tabbar.hidden-mode { display: none; }
-  #tabbar:empty::after {
-    content: "Tabs mode — click a task card to open it here";
-    color: var(--muted); font-size: 11.5px; align-self: center; padding: 0 8px 6px;
-  }
-  .tab {
-    display: flex; align-items: center; gap: 6px;
-    padding: 6px 8px 6px 12px;
-    background: var(--bg);
-    border: 1px solid var(--border); border-bottom: none;
-    border-radius: 8px 8px 0 0;
-    max-width: 220px; cursor: pointer; user-select: none;
-    color: var(--muted);
-  }
-  .tab.active { background: var(--panel-2); color: var(--text); border-color: var(--accent-dark); }
-  .tab .tab-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-  .tab .tab-ext, .tab .tab-close {
-    flex: 0 0 auto; border: none; background: none; color: var(--muted);
-    cursor: pointer; font-size: 12px; padding: 1px 3px; border-radius: 4px; text-decoration: none;
-  }
-  .tab .tab-ext:hover, .tab .tab-close:hover { color: var(--text); background: var(--border); }
-  #panes { flex: 1 1 auto; position: relative; min-height: 0; background: var(--bg); }
-  .pane { position: absolute; inset: 0; display: none; }
-  .pane.active { display: block; }
-  .pane iframe { width: 100%; height: 100%; border: 0; background: var(--pane-bg); }
-  #pane-hint {
-    flex: 0 0 auto; padding: 4px 12px; font-size: 11px; color: var(--muted);
-    border-top: 1px solid var(--border); background: var(--panel);
-  }
-  #welcome {
-    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    padding: 24px;
-  }
-  #welcome .box { max-width: 460px; width: 100%; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 26px; }
-  #welcome h1 { margin: 0 0 2px; font-size: 19px; display: flex; align-items: center; gap: 8px; }
-  #welcome h1 .logo { width: 17px; height: 17px; vertical-align: -2.5px; }
-  #welcome h1 .logo img { display: block; width: 100%; height: 100%; }
-  #welcome h1 .logo img.light { display: none; }
-  :root[data-theme="light"] #welcome h1 .logo img.light { display: block; }
-  :root[data-theme="light"] #welcome h1 .logo img.dark { display: none; }
-  #welcome .tagline { margin: 0 0 16px; color: var(--muted); font-size: 12px; }
-  #welcome p { margin: 0 0 16px; color: var(--muted); }
-  #welcome .row { display: flex; gap: 8px; margin-bottom: 10px; }
-  /* Primary start affordance: drop a file on it, or click to pick one. */
-  #dropzone {
-    display: flex; flex-direction: column; align-items: center; gap: 3px;
-    text-align: center; padding: 20px 16px; margin: 0 0 12px;
-    border: 1.5px dashed var(--border); border-radius: 10px; background: var(--bg);
-    cursor: pointer; transition: border-color .15s, background .15s;
-  }
-  #dropzone:hover { border-color: var(--accent-dark); }
-  #dropzone:focus-visible { outline: 2px solid var(--accent-dark); outline-offset: 2px; }
-  #dropzone.over { border-color: var(--accent-dark); background: var(--panel-2); }
-  #dropzone .dz-icon { font-size: 20px; line-height: 1; color: var(--accent-dark); }
-  #dropzone .dz-main { font-size: 13px; font-weight: 600; }
-  #dropzone .dz-sub { font-size: 11.5px; color: var(--muted); }
-  #dropzone .dz-formats { font-size: 10.5px; color: var(--muted); letter-spacing: .3px; margin-top: 3px; }
-  #cap-notice {
-    font-size: 11.5px; color: var(--muted); text-align: center;
-    border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; margin: -4px 0 12px; background: var(--panel-2);
-  }
-  #cap-notice b { color: var(--text); }
-  #welcome .or { font-size: 11px; color: var(--muted); text-align: center; margin: 0 0 12px; }
-  #welcome input[type=text] {
-    flex: 1; background: var(--bg); color: var(--text);
-    border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 12.5px;
-  }
-  #recents { margin-top: 16px; }
-  #recents h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin: 0 0 6px; }
-  .recent-item {
-    display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
-    background: none; border: none; color: var(--text); padding: 6px 4px; border-radius: 6px; cursor: pointer; font-size: 12.5px;
-  }
-  .recent-item:hover { background: var(--panel-2); }
-  .recent-item .ts { margin-left: auto; color: var(--muted); font-size: 11px; }
+/* --- Host shell: a 26px bar (carry state / close) + the app viewport ------- */
+TS_HOST = document.createElement('div');
+TS_HOST.id = TS_HOST_ID;
+TS_HOST.setAttribute('data-turnstone-variant', TS_BMK.variant);
+TS_HOST.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:2147483647;margin:0;padding:0;' +
+  'background:#0f1115;color:#e6e9ef;font:13px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;' +
+  'display:flex;flex-direction:column;overflow:hidden';
+document.documentElement.appendChild(TS_HOST);
 
-  /* ---------- Sidebar (right) ---------- */
-  #sidebar {
-    display: flex; flex-direction: column; min-height: 0;
-    background: var(--panel); border-left: 1px solid var(--border);
-  }
-  #filters { flex: 0 0 auto; padding: 10px 10px 8px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
-  #search {
-    width: 100%; background: var(--bg); color: var(--text);
-    border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 12.5px;
-  }
-  #search:focus, #welcome input:focus { outline: none; border-color: var(--accent-dark); }
-  #filter-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
-  #filter-row label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
-  #sort-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
-  #sort-row select {
-    flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--border);
-    border-radius: 6px; padding: 4px 6px; font-size: 11.5px; cursor: pointer; min-width: 0;
-  }
-  #sort-dir {
-    flex: 0 0 auto; width: 28px; padding: 4px 0; background: var(--bg); color: var(--text);
-    border: 1px solid var(--border); border-radius: 6px; font-size: 12px; cursor: pointer;
-  }
-  #sort-dir:hover { border-color: var(--accent-dark); }
-  #cards { flex: 1 1 auto; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
-  #cards .empty { color: var(--muted); text-align: center; padding: 30px 10px; font-size: 12px; }
-  #sidebar-footer {
-    flex: 0 0 auto; padding: 7px 12px; border-top: 1px solid var(--border);
-    color: var(--muted); font-size: 11.5px; display: flex; gap: 10px;
-  }
-  #sidebar-footer .done { color: var(--green); }
+TS_SHADOW = TS_HOST.attachShadow({ mode: 'open' });
+TS_SHADOW.innerHTML =
+  '<div id="ts-bar">' +
+    '<span class="ts-brand">Turnstone</span>' +
+    '<span class="ts-variant"></span>' +
+    '<span class="ts-spacer"></span>' +
+    '<button type="button" id="ts-copy" title="Copy this queue as JSON — paste it back later with Restore">Copy state</button>' +
+    '<button type="button" id="ts-restore" title="Paste a state JSON copied earlier and keep going">Restore state</button>' +
+    '<button type="button" id="ts-close" title="Close Turnstone and return to the page">✕ Close</button>' +
+  '</div>' +
+  '<div id="ts-app">' + TS_BMK.markup + '</div>';
 
-  .card {
-    background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
-    padding: 9px 10px; display: flex; flex-direction: column; gap: 7px;
-  }
-  .card.done { border-color: var(--done-border); }
-  .card.done .card-title { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--done-strike); }
-  .card.done { opacity: .82; }
-  .card-top { display: flex; align-items: flex-start; gap: 6px; }
-  .card-title {
-    flex: 1; background: none; border: none; color: var(--text); text-align: left;
-    font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 0; word-break: break-word;
-  }
-  .card-title:hover { color: var(--accent); }
-  .icon {
-    display: inline-flex; align-items: center; justify-content: center;
-    min-width: 20px; height: 20px; padding: 0 4px;
-    border: none; border-radius: 4px; background: none; color: var(--muted);
-    cursor: pointer; font-size: 12px; text-decoration: none;
-  }
-  .icon:hover { color: var(--text); background: var(--border); }
-  .icon.ok { color: var(--green); }
-  .card-url { display: flex; align-items: center; gap: 4px; font-size: 11.5px; }
-  .card-url a { color: var(--accent); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-  .card-url a:hover { text-decoration: underline; }
-  .card-mid { display: flex; gap: 6px; align-items: center; }
-  .btn-done {
-    flex: 1; background: var(--bg); color: var(--green); border: 1px solid var(--done-border);
-    border-radius: 6px; padding: 5px 8px; font-size: 12px; cursor: pointer;
-  }
-  .btn-done:hover { background: var(--done-border); color: #fff; }
-  .btn-undo {
-    flex: 1; background: none; color: var(--muted); border: 1px dashed var(--border);
-    border-radius: 6px; padding: 4px 8px; font-size: 11.5px; cursor: pointer; opacity: .75;
-  }
-  .btn-undo:hover { opacity: 1; color: var(--text); border-color: var(--muted); }
-  .card-notes { display: flex; flex-direction: column; gap: 3px; }
-  .card-notes .label { display: flex; align-items: center; gap: 4px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
-  .card-notes textarea {
-    background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px;
-    padding: 5px 7px; font-size: 12px; font-family: inherit; resize: vertical; min-height: 34px;
-  }
-  .card-notes textarea:focus { outline: none; border-color: var(--accent-dark); }
-  mark { background: var(--mark-bg); color: var(--mark-fg); border-radius: 2px; padding: 0 1px; }
+ROOT = TS_SHADOW.getElementById('ts-app');
+TS_APP = ROOT;
+THEME_ROOT = TS_HOST;
 
-  /* Inline copy icons sit right after the value they copy; revealed on hover
-     of the card (always visible on touch devices, or right after a copy). */
-  #cards .copy { opacity: 0; transition: opacity .12s; }
-  #cards .card:hover .copy, #cards .copy:focus-visible, #cards .copy.ok { opacity: 1; }
-  @media (hover: none) { #cards .copy { opacity: 1; } }
+/* Styles that go into the shadow root: constructed sheet when available (CSP-proof),
+   a plain <style> otherwise. Used for both the bar and the app's own stylesheet. */
+function tsAdoptCss(text) {
+  try {
+    if (typeof CSSStyleSheet === 'function' && 'adoptedStyleSheets' in ShadowRoot.prototype) {
+      var sheet = new CSSStyleSheet();
+      sheet.replaceSync(text);
+      TS_SHADOW.adoptedStyleSheets = TS_SHADOW.adoptedStyleSheets.concat(sheet);
+      return 'constructed';
+    }
+  } catch (e) { console.warn('[Turnstone] constructed stylesheet unavailable', e); }
+  var el = document.createElement('style');
+  el.textContent = text;
+  TS_SHADOW.appendChild(el);
+  return 'inline';
+}
 
-  /* Data-column rows (collapsed cards show the first 3; expanding shows all). */
-  .col-row { display: flex; align-items: baseline; gap: 5px; font-size: 11.5px; min-width: 0; }
-  .col-row .ck { flex: 0 0 auto; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .5px; }
-  .col-row .cv { flex: 1 1 auto; color: var(--text); word-break: break-word; min-width: 0; }
-  .col-row .emptyv { color: var(--muted); }
-  .col-more {
-    align-self: flex-start; background: none; border: none; color: var(--accent);
-    font-size: 11px; cursor: pointer; padding: 1px 0;
+/* Chrome the app knows nothing about — styled from here so the app's stylesheet
+   stays byte-for-byte what app.html ships. */
+var TS_CSS_HOW = tsAdoptCss(
+  '#ts-bar{display:flex;align-items:center;gap:8px;flex:0 0 26px;height:26px;padding:0 8px;' +
+  'background:#171a21;color:#8b93a5;border-bottom:1px solid #262b36;font-size:11.5px}' +
+  '#ts-bar button{font:inherit;font-size:11px;color:#e6e9ef;background:#1d212b;border:1px solid #262b36;' +
+  'border-radius:5px;padding:1px 7px;cursor:pointer}' +
+  '#ts-bar button:hover{border-color:#5a82e0}' +
+  '.ts-brand{font-weight:600;color:#e6e9ef}' +
+  '.ts-variant{font-size:10.5px;letter-spacing:.3px;text-transform:uppercase}' +
+  '.ts-spacer{flex:1 1 auto}'
+);
+/* The app's own stylesheet, shadow-scoped. */
+tsAdoptCss(TS_BMK.css);
+
+/* --- Theme: the app's tokens now select on :host([data-theme=…]) ----------- */
+(function themeBoot() {
+  var theme = 'dark';
+  try {
+    var saved = localStorage.getItem('turnstone-theme');
+    if (saved === 'light' || saved === 'dark') theme = saved;
+    else if (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) theme = 'light';
+  } catch (e) { /* storage blocked: dark is the app's own default */ }
+  TS_HOST.dataset.theme = theme;
+})();
+
+/* --- Session-only storage -------------------------------------------------
+ * Locked scope: a bookmarklet tab may run on a throwaway origin, so storage must
+ * never be assumed to stick. IndexedDB is shadowed with an in-memory stand-in so
+ * the app's snapshot code keeps working for the tab's lifetime — and the user's
+ * queue is never written into the host site's database. localStorage stays real
+ * (every access in the app is already guarded) because that is what remembers
+ * theme, open mode and column presets: small, namespaced keys. */
+var indexedDB = (function memIndexedDb() {
+  var stores = {};
+  function request() { return { result: undefined, onsuccess: null, onerror: null }; }
+  function soon(fn) { setTimeout(fn, 0); }
+  function makeStore(name) {
+    if (!Object.prototype.hasOwnProperty.call(stores, name)) stores[name] = new Map();
+    var map = stores[name];
+    return {
+      put: function (value) {
+        var req = request();
+        soon(function () { map.set(value.key, value); req.result = value.key; if (req.onsuccess) req.onsuccess(); });
+        return req;
+      },
+      get: function (key) {
+        var req = request();
+        soon(function () { req.result = map.get(key); if (req.onsuccess) req.onsuccess(); });
+        return req;
+      },
+      getAll: function () {
+        var req = request();
+        soon(function () { req.result = Array.from(map.values()); if (req.onsuccess) req.onsuccess(); });
+        return req;
+      },
+      delete: function (key) {
+        var req = request();
+        soon(function () { map.delete(key); if (req.onsuccess) req.onsuccess(); });
+        return req;
+      },
+      clear: function () {
+        var req = request();
+        soon(function () { map.clear(); if (req.onsuccess) req.onsuccess(); });
+        return req;
+      },
+    };
   }
-  .col-more:hover { text-decoration: underline; }
-  .card.ex .col-more { color: var(--muted); }
-
-  /* Column settings overlay */
-  #settings-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200;
-    display: flex; align-items: center; justify-content: center; padding: 20px;
-  }
-  #settings-overlay[hidden] { display: none; }
-  #settings-box {
-    background: var(--panel); color: var(--text); border: 1px solid var(--border);
-    border-radius: 12px; padding: 18px; width: 400px; max-width: 94vw; max-height: 86vh; overflow-y: auto;
-  }
-  #settings-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-  #settings-head h2 { margin: 0; font-size: 15px; }
-  #settings-box .hint { font-size: 11px; color: var(--muted); margin: 6px 0; }
-  #settings-cols { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
-  .set-col {
-    display: flex; align-items: center; gap: 8px; padding: 6px 8px;
-    background: var(--bg); border: 1px solid var(--border); border-radius: 6px; font-size: 12.5px;
-  }
-  .set-col.fixed { color: var(--muted); }
-  .set-col.fixed em { font-style: normal; font-size: 10.5px; opacity: .85; }
-  .set-col .drag { cursor: grab; color: var(--muted); font-size: 12px; user-select: none; }
-  .set-col.fixed .drag { cursor: default; opacity: .5; }
-  .set-col.dragging { opacity: .5; }
-  .set-col label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-  .set-col .pos { margin-left: auto; color: var(--muted); font-size: 10.5px; }
-  #settings-presets { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
-  .preset-row { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }
-  .preset-row .pname { font-weight: 600; }
-  .preset-row .pmeta { color: var(--muted); font-size: 10.5px; flex: 1; }
-  .srow { display: flex; gap: 6px; margin-top: 8px; }
-  .srow input[type=text] { flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; font-size: 12px; }
-
-  /* ---------- Toast ---------- */
-  #toast {
-    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%) translateY(8px);
-    background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
-    padding: 8px 14px; font-size: 12.5px; opacity: 0; pointer-events: none;
-    transition: opacity .2s, transform .2s; max-width: 70vw; z-index: 50;
-  }
-  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  #toast.error { border-color: var(--danger); color: var(--danger); }
-  #toast.success { border-color: var(--green); }
-
-  @media (max-width: 760px) {
-    #app { grid-template-columns: 1fr; grid-template-rows: 1fr 45vh; }
-    #sidebar { border-left: none; border-top: 1px solid var(--border); }
-  }
-</style>
-</head>
-<body>
-
-<input type="file" id="file-input" accept=".csv,.tsv,.tab,.txt,.xlsx,.xls,.ods,.json,.jsonl,.ndjson,.html,.htm,.xml,.rss,.atom,.opml,text/csv,text/tab-separated-values,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.oasis.opendocument.spreadsheet,text/html,application/xml,text/xml" hidden>
-
-<main id="app">
-  <!-- LEFT: tabbed iframe workspace (one of several open modes) -->
-  <section id="workspace">
-    <div id="tabbar"></div>
-    <div id="panes">
-      <div id="welcome">
-        <div class="box">
-          <h1><span class="logo"><img class="dark" src="assets/logo-dark.svg" alt=""><img class="light" src="assets/logo-light.svg" alt=""></span> Turnstone</h1>
-          <p class="tagline">Your list, worked through.</p>
-          <p>Turn your list of links into a work queue: track status &amp; notes, open each link the way you like — tabs, browser tabs, or popup windows — and auto-save back to the file (Chromium) or browser storage.</p>
-          <div id="dropzone" role="button" tabindex="0" aria-label="Drop a link-list file here, or activate to choose one from disk">
-            <span class="dz-icon" aria-hidden="true">⤓</span>
-            <span class="dz-main">Drop a file here, or click to choose</span>
-            <span class="dz-sub">Read and parsed on this device — nothing is uploaded.</span>
-            <span class="dz-formats" id="dz-formats">CSV · TSV · XLSX / XLS / ODS · JSON · HTML · XML</span>
-          </div>
-          <p id="cap-notice" hidden></p>
-          <div class="row">
-            <input type="text" id="url-input" placeholder="…or paste a link-list URL" spellcheck="false">
-            <button class="btn" id="btn-load-url">Load</button>
-          </div>
-          <p style="font-size:11px; color:var(--muted); margin:0 0 10px">Any public link-list URL works (host must allow CORS). Deep-link support: <code>?file=&lt;url&gt;</code> or <code>?url=&lt;url&gt;</code>; add <code>&amp;open=1</code> to auto-open the first task.</p>
-          <p class="or">or try it with sample data</p>
-          <div class="row">
-            <button class="btn" id="btn-demo" title="Load the small built-in demo list">Demo list</button>
-            <button class="btn" id="btn-test-csv" title="Load the bundled sample dataset (CSV)">Test CSV</button>
-            <button class="btn" id="btn-test-xlsx" title="Load the bundled sample dataset as a real XLSX parse">Test XLSX</button>
-          </div>
-          <div id="recents" hidden>
-            <h2>Recent files</h2>
-            <div id="recents-list"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div id="pane-hint">If a site refuses to render (X-Frame-Options), it can’t be framed in a browser — switch to “New browser tab” mode in the ☰ menu, or use the ↗ on a card.</div>
-  </section>
-
-  <!-- RIGHT: task sidebar (approved deviation from PRD's left-hand sidebar) -->
-  <aside id="sidebar">
-    <div id="side-head">
-      <button id="btn-menu" title="Menu — open, export, columns, settings">☰</button>
-      <span id="head-name"><span class="no-file">No file loaded</span></span>
-      <span id="head-save"></span>
-    </div>
-    <nav id="menu" hidden>
-      <button class="menu-item" id="mi-open"><span class="mi">📂</span> Open file…</button>
-      <button class="menu-item" id="mi-restore" hidden><span class="mi">↺</span> Restore last file</button>
-      <button class="menu-item" id="mi-close" disabled><span class="mi">✕</span> Close current file</button>
-      <button class="menu-item" id="mi-link" disabled><span class="mi">🔗</span> Copy share link (?file=)</button>
-      <div class="menu-sep"></div>
-      <div class="menu-label">Opening links</div>
-      <button class="menu-item mode-item" data-mode="tabs"><span class="mi">🗂</span> Tabs (iframes)</button>
-      <button class="menu-item mode-item" data-mode="newtab"><span class="mi">↗</span> New browser tab</button>
-      <button class="menu-item mode-item" data-mode="newwin"><span class="mi">◱</span> New popup window</button>
-      <button class="menu-item" id="mi-mode-help"><span class="mi">❔</span> Which should I pick?</button>
-      <div class="menu-sep"></div>
-      <div class="menu-label">Automation</div>
-      <button class="menu-item toggle-item" id="mi-auto-open"><span class="mi">⚡</span> Open link when card is selected</button>
-      <button class="menu-item toggle-item" id="mi-auto-advance"><span class="mi">⏭</span> Auto-open next after completing</button>
-      <div class="menu-sep"></div>
-      <button class="menu-item" id="mi-columns"><span class="mi">⚙</span> Columns &amp; presets…</button>
-      <button class="menu-item" id="mi-export-csv" disabled><span class="mi">⬇</span> Export CSV</button>
-      <button class="menu-item" id="mi-export-xlsx" disabled><span class="mi">⬇</span> Export XLSX</button>
-      <button class="menu-item" id="mi-install" hidden><span class="mi">⤓</span> Install app</button>
-      <button class="menu-item" id="mi-theme"><span class="mi">◐</span> <span id="mi-theme-label">Light mode</span></button>
-    </nav>
-    <div id="filters">
-      <input type="search" id="search" placeholder="Search tasks…" autocomplete="off">
-      <div id="filter-row">
-        <label><input type="checkbox" id="show-completed"> Show completed</label>
-        <span id="filter-info" style="margin-left:auto"></span>
-      </div>
-      <div id="sort-row">
-        <span>Sort</span>
-        <select id="sort-col"><option value="">File order</option></select>
-        <button id="sort-dir" title="Toggle ascending / descending">↓</button>
-      </div>
-    </div>
-    <div id="cards"><div class="empty">No file loaded yet.<br>Open a link list to populate task cards.</div></div>
-    <div id="sidebar-footer"><span id="count-total">0 tasks</span><span id="count-done" class="done">0 done</span><span id="count-left">0 left</span></div>
-  </aside>
-</main>
-
-<div id="settings-overlay" hidden>
-  <div id="settings-box">
-    <div id="settings-head">
-      <h2>Task card columns</h2>
-      <button class="icon" id="settings-x" title="Close">✕</button>
-    </div>
-    <p class="hint">Drag to reorder · untick to hide. URL, name, status and notes are fixed card features. Changes apply live.</p>
-    <div id="settings-cols"></div>
-    <p class="hint">Save the layout as a preset — any link list whose header row matches this exact column order loads with it pre-applied.</p>
-    <div class="srow">
-      <input type="text" id="preset-name" placeholder="Preset name (e.g. Client audit)" maxlength="40">
-      <button class="btn primary" id="btn-preset-save">Save preset</button>
-    </div>
-    <div id="settings-presets"></div>
-    <div class="srow">
-      <button class="btn" id="btn-cols-reset">Reset to file order</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast"></div>
-
-<script>
-  /* Bundled test dataset (mirrors sample-links.csv / sample-links.xlsx in the repo root).
-     Inlined because the preview sandbox serves only the entry page; production users
-     load real files via the native picker or ?file= (see testing-notes.md). */
-  window.TURNSTONE_TEST_DATA = {
-    name: 'sample-links.csv',
-    ext: 'csv',
-    sheetName: 'Sheet1',
-    data: [
-      ['Name', 'URL', 'Status', 'Notes'],
-      ['Apple Newsroom', 'https://www.apple.com/newsroom/', 'incomplete', 'Q3 earnings page'],
-      ['BBC Homepage', 'https://www.bbc.com/', 'complete', ''],
-      ['Changelog Nightly', 'https://changelog.com/nightly', 'incomplete', 'Skip the archive pages'],
-      ['Comma, Inc. Blog', 'https://example.com/comma-blog', 'complete', 'Note with, commas, and "quotes"'],
-      ['Demo Domain', 'https://example.com/', 'incomplete', ''],
-      ['GitHub Trending', 'https://github.com/trending', 'incomplete', 'Check weekly'],
-      ['Hacker News', 'https://news.ycombinator.com/', 'complete', 'Blocked in iframes'],
-      ['Sheets Example', 'https://example.com/sheet-demo', 'incomplete', ''],
-      ['Turnstone Repo', 'https://github.com/', 'incomplete', ''],
-      ['Wikipedia Portal', 'https://www.wikipedia.org/', 'incomplete', ''],
-    ],
+  return {
+    open: function (name) {
+      var req = request();
+      soon(function () {
+        req.result = {
+          name: name,
+          objectStoreNames: { contains: function (n) { return Object.prototype.hasOwnProperty.call(stores, n); } },
+          createObjectStore: function (n) { makeStore(n); return {}; },
+          transaction: function (n) {
+            var os = makeStore(n);
+            var tx = { objectStore: function () { return os; }, oncomplete: null, onerror: null, error: null };
+            soon(function () { if (tx.oncomplete) tx.oncomplete(); });   // writes above are queued first
+            return tx;
+          },
+        };
+        if (req.onupgradeneeded) req.onupgradeneeded();
+        if (req.onsuccess) req.onsuccess();
+      });
+      return req;
+    },
   };
-</script>
+})();
 
-<script src="vendor/papaparse.min.js"></script>
-<script src="vendor/xlsx.full.min.js"></script>
-<script>
+/* PapaParse stand-in — the app's API surface, in ~2 KB, no dependency. */
+/* PapaParse stand-in — the exact slice of the API app.html consumes.
+ *
+ *   Papa.parse(text, { skipEmptyLines: 'greedy', delimiter }) -> { data, errors, meta: { delimiter } }
+ *   Papa.unparse(matrix, { delimiter })                        -> string
+ *
+ * Real RFC-4180 behaviour (quoted fields, doubled quotes, embedded commas and
+ * newlines, CRLF, BOM) plus delimiter sniffing, in ~2 KB and with no dependency.
+ * That is what lets the zero-library bookmarklet keep full CSV/TSV support —
+ * the hosted app loads the real PapaParse through vendor/ instead.
+ */
+var Papa = (function () {
+  var CANDIDATES = [',', '\t', ';', '|'];
+
+  /** Delimiter counts on a line, ignoring anything inside quotes. */
+  function countOutsideQuotes(line, delim) {
+    var n = 0, quoted = false;
+    for (var i = 0; i < line.length; i++) {
+      var ch = line[i];
+      if (quoted) {
+        if (ch === '"') {
+          if (line[i + 1] === '"') i++;
+          else quoted = false;
+        }
+      } else if (ch === '"') quoted = true;
+      else if (ch === delim) n++;
+    }
+    return n;
+  }
+
+  /** Pick the delimiter that splits the most lines into the same number of fields. */
+  function sniff(text) {
+    var lines = text.split(/\r?\n/).slice(0, 30).filter(function (l) { return l.trim() !== ''; });
+    if (!lines.length) return ',';
+    var best = ',', bestScore = 0;
+    for (var c = 0; c < CANDIDATES.length; c++) {
+      var d = CANDIDATES[c];
+      var counts = lines.map(function (l) { return countOutsideQuotes(l, d); });
+      var sorted = counts.slice().sort(function (a, b) { return a - b; });
+      var median = sorted[Math.floor(sorted.length / 2)];
+      if (median < 1) continue;                                     // delim never appears
+      var agree = counts.filter(function (n) { return n === median; }).length / counts.length;
+      var score = median * agree;
+      if (score > bestScore) { bestScore = score; best = d; }
+    }
+    return best;
+  }
+
+  /** RFC-4180 state machine. Unterminated quotes are an error, not a crash. */
+  function splitRows(text, delim, errors) {
+    var rows = [], row = [], field = '', quoted = false, i = 0;
+    var sawField = false;
+    while (i < text.length) {
+      var ch = text[i];
+      if (quoted) {
+        if (ch === '"') {
+          if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+          quoted = false; i++; continue;
+        }
+        field += ch; i++; continue;
+      }
+      if (ch === '"' && field === '') { quoted = true; sawField = true; i++; continue; }
+      if (ch === delim) { row.push(field); field = ''; sawField = true; i++; continue; }
+      if (ch === '\r') { i++; continue; }                            // CRLF or lone CR
+      if (ch === '\n') {
+        if (field !== '' || sawField || row.length) { row.push(field); rows.push(row); }
+        row = []; field = ''; sawField = false; i++; continue;
+      }
+      field += ch; sawField = true; i++;
+    }
+    if (quoted) errors.push({ type: 'Quotes', message: 'Unterminated quoted field', row: rows.length });
+    if (field !== '' || sawField || row.length) { row.push(field); rows.push(row); }
+    return rows;
+  }
+
+  function parse(text, opts) {
+    opts = opts || {};
+    var errors = [];
+    var delim = opts.delimiter || sniff(text);
+    var data = splitRows(String(text == null ? '' : text), delim, errors);
+    if (opts.skipEmptyLines) {
+      data = data.filter(function (r) { return r.some(function (c) { return String(c).trim() !== ''; }); });
+    }
+    return { data: data, errors: errors, meta: { delimiter: delim } };
+  }
+
+  function needsQuotes(s, delim) {
+    return s.indexOf('"') >= 0 || s.indexOf('\n') >= 0 || s.indexOf('\r') >= 0
+      || s.indexOf(delim) >= 0 || s.charAt(0) === ' ' || s.charAt(s.length - 1) === ' ';
+  }
+
+  function unparse(rows, opts) {
+    var delim = (opts && opts.delimiter) || ',';
+    return rows.map(function (row) {
+      return row.map(function (cell) {
+        var s = cell == null ? '' : String(cell);
+        return needsQuotes(s, delim) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }).join(delim);
+    }).join('\n');
+  }
+
+  return {
+    parse: parse,
+    unparse: unparse,
+    shim: true,                       // app/payload can log which implementation is live
+  };
+})();
+
+/* SheetJS stand-in — read-only XLSX via the browser's own ZIP + DecompressionStream. */
+/* SheetJS stand-in — read-only XLSX support with zero dependencies.
+ *
+ * Implements exactly the API surface app.html consumes:
+ *   XLSX.read(buf, { type:'array' })                  -> Promise<{ SheetNames, Sheets, version }>
+ *   XLSX.read(buf, { type:'array', bookSheets: true }) -> Promise<{ SheetNames }>
+ *   XLSX.utils.sheet_to_json(ws, { header:1 })          -> string[][]
+ *
+ * `XLSX.write` is deliberately absent, so the app reports HAS_XLSX_WRITE=false,
+ * treats workbooks as one-way imports and hides XLSX export — the locked-scope
+ * rule that a build must never promise a write-back it cannot deliver.
+ *
+ * How it works without SheetJS: an .xlsx file is a ZIP of XML. The ZIP is walked
+ * through its central directory, each member inflated with the browser's own
+ * DecompressionStream('deflate-raw'), and the sheet/shared-string XML read with
+ * DOMParser. No eval, no blob-script injection, no network — which is what makes
+ * this variant survivable under a strict page CSP.
+ *
+ * Deliberately not supported (throws a readable reason instead): .xls (BIFF8),
+ * .xlsb, .ods, and cell number formats (dates arrive as their stored serial).
+ */
+var XLSX = (function () {
+  var ENTRY_SIG = 0x04034b50, CD_SIG = 0x02014b50, EOCD_SIG = 0x06054b50;
+  var REL_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+
+  function u16(dv, o) { return dv.getUint16(o, true); }
+  function u32(dv, o) { return dv.getUint32(o, true); }
+
+  /** Locate the End Of Central Directory record by scanning back from the tail. */
+  function findEocd(dv) {
+    var min = Math.max(0, dv.byteLength - 65557 - 22);
+    for (var i = dv.byteLength - 22; i >= min; i--) {
+      if (u32(dv, i) === EOCD_SIG) return i;
+    }
+    return -1;
+  }
+
+  /** name -> central-directory entry (offset/size/method). */
+  function readCentralDirectory(buf) {
+    var dv = new DataView(buf);
+    var eocd = findEocd(dv);
+    if (eocd < 0) throw new Error('not a ZIP container (no end-of-central-directory record) — not an .xlsx file?');
+    var count = u16(dv, eocd + 10);
+    var offset = u32(dv, eocd + 16);
+    var entries = {};
+    for (var n = 0; n < count; n++) {
+      if (u32(dv, offset) !== CD_SIG) break;
+      var method = u16(dv, offset + 10);
+      var compSize = u32(dv, offset + 20);
+      var nameLen = u16(dv, offset + 28);
+      var extraLen = u16(dv, offset + 30);
+      var commentLen = u16(dv, offset + 32);
+      var localOffset = u32(dv, offset + 42);
+      var name = new TextDecoder('utf-8').decode(new Uint8Array(buf, offset + 46, nameLen));
+      entries[name] = { method: method, compSize: compSize, localOffset: localOffset };
+      offset += 46 + nameLen + extraLen + commentLen;
+    }
+    return entries;
+  }
+
+  /** Inflate (stored or deflate) one member to text. */
+  async function readEntryText(buf, entry) {
+    var dv = new DataView(buf);
+    if (u32(dv, entry.localOffset) !== ENTRY_SIG) throw new Error('corrupt ZIP member header');
+    var nameLen = u16(dv, entry.localOffset + 26);
+    var extraLen = u16(dv, entry.localOffset + 28);
+    var start = entry.localOffset + 30 + nameLen + extraLen;
+    var bytes = new Uint8Array(buf, start, entry.compSize);
+    if (entry.method === 0) return new TextDecoder('utf-8').decode(bytes);
+    if (entry.method !== 8) throw new Error('unsupported ZIP compression method ' + entry.method);
+    if (typeof DecompressionStream !== 'function') {
+      throw new Error('this browser cannot inflate XLSX parts (no DecompressionStream) — use the full build or export to CSV');
+    }
+    var stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return new TextDecoder('utf-8').decode(await new Response(stream).arrayBuffer());
+  }
+
+  function parseXml(text, label) {
+    var doc = new DOMParser().parseFromString(text, 'application/xml');
+    var bad = doc.querySelector('parsererror');
+    if (bad) throw new Error('could not read ' + label + ' XML');
+    return doc;
+  }
+
+  /** "BC12" -> 54 (zero-based column index). */
+  function colIndex(ref) {
+    var letters = String(ref || '').match(/^[A-Za-z]+/);
+    if (!letters) return 0;
+    var s = letters[0].toUpperCase(), n = 0;
+    for (var i = 0; i < s.length; i++) n = n * 26 + (s.charCodeAt(i) - 64);
+    return n - 1;
+  }
+
+  /** Every <t> under a shared-string <si>, so rich text runs concatenate. */
+  function sharedStringsOf(text) {
+    if (text == null) return [];
+    var doc = parseXml(text, 'sharedStrings');
+    return Array.prototype.map.call(doc.getElementsByTagName('si'), function (si) {
+      return Array.prototype.map.call(si.getElementsByTagName('t'), function (t) { return t.textContent; }).join('');
+    });
+  }
+
+  function relationshipTargets(text) {
+    var doc = parseXml(text, 'workbook relationships');
+    var map = {};
+    Array.prototype.forEach.call(doc.getElementsByTagName('Relationship'), function (rel) {
+      map[rel.getAttribute('Id')] = rel.getAttribute('Target');
+    });
+    return map;
+  }
+
+  /** Sheet name -> worksheet part path, in workbook order. */
+  function sheetParts(workbookXml, rels) {
+    var doc = parseXml(workbookXml, 'workbook');
+    var sheets = doc.getElementsByTagName('sheet');
+    return Array.prototype.map.call(sheets, function (s) {
+      var rid = s.getAttributeNS(REL_NS, 'id') || s.getAttribute('r:id');
+      var target = rels[rid] || '';
+      if (/^\//.test(target)) target = target.slice(1);            // absolute package path
+      else if (target) target = 'xl/' + target.replace(/^\.\//, '');
+      return { name: s.getAttribute('name') || 'Sheet1', path: target };
+    });
+  }
+
+  /** One worksheet -> dense 2D array of strings (or numbers-as-written). */
+  function gridFromSheet(xml, strings) {
+    var doc = parseXml(xml, 'worksheet');
+    var rows = doc.getElementsByTagName('row');
+    var grid = [], width = 0;
+    Array.prototype.forEach.call(rows, function (row) {
+      var rowIndex = parseInt(row.getAttribute('r'), 10);
+      if (isNaN(rowIndex)) rowIndex = grid.length + 1;
+      var out = [];
+      Array.prototype.forEach.call(row.getElementsByTagName('c'), function (cell) {
+        var at = colIndex(cell.getAttribute('r'));
+        var type = cell.getAttribute('t') || 'n';
+        var value = '';
+        if (type === 'inlineStr') {
+          var is = cell.getElementsByTagName('is')[0];
+          value = is ? Array.prototype.map.call(is.getElementsByTagName('t'), function (t) { return t.textContent; }).join('') : '';
+        } else {
+          var v = cell.getElementsByTagName('v')[0];
+          var raw = v ? v.textContent : '';
+          if (type === 's') value = strings[parseInt(raw, 10)] || '';
+          else if (type === 'b') value = raw === '1' ? 'TRUE' : 'FALSE';
+          else value = raw;
+        }
+        out[at] = value;
+        if (at + 1 > width) width = at + 1;
+      });
+      while (grid.length < rowIndex - 1) grid.push([]);            // honour sparse rows
+      grid[rowIndex - 1] = out;
+    });
+    for (var r = 0; r < grid.length; r++) {
+      var row = grid[r] || [];
+      for (var c = 0; c < width; c++) if (row[c] === undefined) row[c] = '';
+      row.length = width;
+      grid[r] = row;
+    }
+    return grid;
+  }
+
+  function utils() {
+    return {
+      /** The slice app.html uses: { header: 1, raw: false, defval: '' }. */
+      sheet_to_json: function (ws, opts) {
+        opts = opts || {};
+        var defval = opts.defval === undefined ? '' : opts.defval;
+        return (ws.rows || []).map(function (row) {
+          return row.map(function (cell) { return cell === undefined || cell === null ? defval : cell; });
+        });
+      },
+    };
+  }
+
+  async function read(buf, opts) {
+    opts = opts || {};
+    var head = new Uint8Array(buf, 0, Math.min(8, buf.byteLength));
+    if (head[0] === 0xD0 && head[1] === 0xCF && head[2] === 0x11 && head[3] === 0xE0) {
+      throw new Error('legacy .xls (BIFF8) needs the full build — re-save it as .xlsx or CSV');
+    }
+    var entries = readCentralDirectory(buf);
+    if (!entries['xl/workbook.xml']) {
+      if (entries['content.xml']) throw new Error('.ods workbooks need the full build — re-save as .xlsx or CSV');
+      if (entries['xl/workbook.bin']) throw new Error('.xlsb workbooks need the full build — re-save as .xlsx or CSV');
+      throw new Error('no xl/workbook.xml inside the archive — not a readable .xlsx file');
+    }
+    var parts = sheetParts(await readEntryText(buf, entries['xl/workbook.xml']),
+      entries['xl/_rels/workbook.xml.rels'] ? relationshipTargets(await readEntryText(buf, entries['xl/_rels/workbook.xml.rels'])) : {});
+    var names = parts.map(function (p) { return p.name; });
+    if (opts.bookSheets) return { SheetNames: names };
+
+    var strings = sharedStringsOf(entries['xl/sharedStrings.xml'] ? await readEntryText(buf, entries['xl/sharedStrings.xml']) : null);
+    var Sheets = {};
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i];
+      var entry = entries[p.path] || entries['xl/worksheets/sheet' + (i + 1) + '.xml'];
+      if (!entry) continue;
+      Sheets[p.name] = { rows: gridFromSheet(await readEntryText(buf, entry), strings) };
+    }
+    return { SheetNames: names, Sheets: Sheets, version: 'turnstone-mini', mini: true };
+  }
+
+  return { read: read, utils: utils(), mini: true };
+})();
+
+
+(function(){
+
 'use strict';
 /* =========================================================================
    Project Turnstone — zero-server URL-list processor.
@@ -581,7 +564,7 @@ const state = {
   expanded: {},         // card index → true when all data columns are shown
 };
 
-const $ = (sel) => document.querySelector(sel);
+const $ = (sel) => ROOT.querySelector(sel);
 const els = {
   fileInput: $('#file-input'), dropzone: $('#dropzone'), btnDemo: $('#btn-demo'),
   dzFormats: $('#dz-formats'), capNotice: $('#cap-notice'),
@@ -709,7 +692,7 @@ const HAS_XLSX_WRITE = HAS_XLSX && typeof XLSX.write === 'function';
 /* Some builds have no durable storage at all — the bookmarklet overlay runs on a
    throwaway origin and shadows IndexedDB. Those builds must say so instead of
    promising a snapshot that will not outlive the tab. */
-const SESSION_ONLY = false;   // ports/bookmarklet/build.js flips this to true
+const SESSION_ONLY = true;   // ports/bookmarklet/build.js flips this to true
 const storageLabel = () => (SESSION_ONLY ? 'this tab only' : 'browser storage');
 /** Formats we can rebuild in place, given this build's capabilities. */
 const canWrite = (f) => isWritable(f) && (!isWorkbookFormat(f) || HAS_XLSX_WRITE);
@@ -1191,7 +1174,7 @@ function showModePicker(firstRun) {
       ${opts}
       <button id="picker-later" style="margin-top:8px;padding:6px 10px;font-size:11.5px;cursor:pointer;border-radius:7px;border:1px solid var(--border);background:none;color:var(--muted)">${firstRun ? 'Decide later (tabs by default)' : 'Cancel'}</button>
     </div>`;
-  document.body.appendChild(overlay);
+  ROOT.appendChild(overlay);
   const done = () => { overlay.remove(); };
   overlay.querySelectorAll('button[data-pick]').forEach(b => {
     b.onclick = () => {
@@ -1559,7 +1542,7 @@ function pickSheetName(buf, current) {
         ${names.map(n => `<button data-sheet="${esc(n)}" style="display:block;width:100%;text-align:left;margin:4px 0;padding:7px 12px;font-size:13px;cursor:pointer;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text)${n === current ? ';border-color:var(--accent-dark);font-weight:600' : ''}">${esc(n)}</button>`).join('')}
         <button id="sheet-cancel" style="margin-top:8px;padding:6px 12px;font-size:12px;cursor:pointer;border-radius:8px;border:1px solid var(--border);background:none;color:var(--muted)">Cancel</button>
       </div>`;
-    document.body.appendChild(overlay);
+    ROOT.appendChild(overlay);
     overlay.querySelector('#sheet-cancel').onclick = () => { overlay.remove(); resolve(null); };
     overlay.querySelectorAll('button[data-sheet]').forEach(b => { b.onclick = () => { const s = b.dataset.sheet; overlay.remove(); log('User picked sheet:', s); resolve(s); }; });
   });
@@ -2070,27 +2053,15 @@ function exportFile(kind) {
   toast(`Exported ${a.download}`, 'success');
 }
 
-/* PRD Task 4.4: strict beforeunload guard in fallback/remote modes. */
-window.addEventListener('beforeunload', (e) => {
-  if (state.mode && state.mode !== 'fs' && state.isDirty) {
-    warn('beforeunload blocked: unexported changes in fallback mode');
-    e.preventDefault();
-    e.returnValue = ''; // required for Chrome
-    return 'You have unexported changes. Export CSV/XLSX before leaving.';
-  }
-});
+/* beforeunload guard removed in the bookmarklet build: leaving a page is the host
+   page's business, and our state is session-only by design anyway. */
 // Safety net: flush pending debounced saves when the tab is hidden.
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden' && state.isDirty) { log('Visibility hidden → flushing pending save'); saveNow(); }
 });
 
-/* ------------------------------ PWA plumbing ------------------------------ */
-/* Inline manifest built at runtime from embedded icon data URIs — keeps the
-   PWA single-file friendly (no separate manifest.json needed). */
-const ICON_192 = document.querySelector('link#apple-icon').href;   // same embedded 192px PNG
-const ICON_512_PNG = (() => {                                       // lazily fetched below when needed
-  return null;
-})();
+/* PWA plumbing removed in the bookmarklet build — an installed app and an
+   install prompt belong to a real origin, not to a page we were launched from. */
 (function buildManifest() {
   try {
     const icon = (src, size) => ({ src, sizes: size + 'x' + size, type: 'image/png', purpose: 'any' });
@@ -2118,7 +2089,7 @@ const ICON_512_PNG = (() => {                                       // lazily fe
 /* Service worker: offline shell. Skipped on plain file:// (nothing to serve), and
    skipped in the standalone single-file build, where there is no sw.js to load.
    assets/build-standalone.js flips STANDALONE_BUILD to true. */
-const STANDALONE_BUILD = false;
+const STANDALONE_BUILD = true;
 if (!STANDALONE_BUILD && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
@@ -2190,15 +2161,15 @@ els.dropzone.addEventListener('click', openLocalFile);
 els.dropzone.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLocalFile(); }
 });
-document.addEventListener('dragover', (e) => {
+ROOT.addEventListener('dragover', (e) => {
   if (!isFileDrag(e)) return;                 // leave in-page drags (settings reorder) alone
   e.preventDefault();                          // required for `drop` to fire at all
   els.dropzone.classList.add('over');
 });
-document.addEventListener('dragleave', (e) => {
+ROOT.addEventListener('dragleave', (e) => {
   if (!e.relatedTarget) els.dropzone.classList.remove('over');   // left the window
 });
-document.addEventListener('drop', async (e) => {
+ROOT.addEventListener('drop', async (e) => {
   els.dropzone.classList.remove('over');
   if (!isFileDrag(e)) return;                 // an in-page drag: not ours to handle
   e.preventDefault();
@@ -2252,7 +2223,7 @@ els.miExportXlsx.addEventListener('click', () => { closeMenu(); exportFile('xlsx
 els.miTheme.addEventListener('click', () => { closeMenu(); toggleThemeFromMenu(); });
 
 function toggleThemeFromMenu() {
-  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  const next = THEME_ROOT.dataset.theme === 'dark' ? 'light' : 'dark';
   applyTheme(next);
   try { localStorage.setItem('turnstone-theme', next); log(`Theme saved to localStorage: ${next}`); }
   catch (e) { warn('Could not persist theme preference', e); }
@@ -2359,7 +2330,7 @@ async function loadTestFile(ext) {
 
 /* ------------------------------ Theme (light/dark) ----------------------- */
 function applyTheme(theme, announce = true) {
-  document.documentElement.dataset.theme = theme;
+  THEME_ROOT.dataset.theme = theme;
   els.miThemeLabel.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
   if (announce) log(`Theme → ${theme}`);
 }
@@ -2489,7 +2460,7 @@ function closeCurrentFile() {
 /* --------------------------------- Boot ---------------------------------- */
 (async function init() {
   log(`Turnstone initializing — FSA API: ${!!window.showOpenFilePicker}, XLSX: ${HAS_XLSX}, URL: ${location.href}`);
-  applyTheme(document.documentElement.dataset.theme, false);
+  applyTheme(THEME_ROOT.dataset.theme, false);
 
   // A build without SheetJS says so before the user drops a workbook on it.
   if (!HAS_XLSX_WRITE) els.btnTestXlsx.hidden = true;   // the test button builds a workbook to re-parse
@@ -2520,7 +2491,7 @@ function closeCurrentFile() {
   } catch (e) { warn('IndexedDB unavailable — persistence limited to this page load', e); }
 
   const params = new URLSearchParams(location.search);
-  const fileParam = params.get('file') || params.get('url');
+  const fileParam = null;   // bookmarklet: the host page's query string is not ours to read
   const openFirst = params.get('open') === '1';
   if (fileParam) {
     log(`?file=/?url= param detected → loading remote file (takes precedence over restore): ${fileParam}`);
@@ -2535,6 +2506,112 @@ function closeCurrentFile() {
     log('No ?file=/?url= param — waiting for user to pick or restore a file');
   }
 })();
-</script>
-</body>
-</html>
+
+/* ---------------------------------------------------------------------------
+ * Bookmarklet boot, part 2 — runs AFTER the app code, wired to the bar.
+ *
+ * Everything below may call app functions (toast/loadMatrix/state) because by
+ * now they exist. This is also where the locked-scope "carry a queue across
+ * sessions" pair lives: storage is session-only by design (see boot-pre), so
+ * Copy state / Restore state is the supported way to move a queue between tabs.
+ * ------------------------------------------------------------------------- */
+
+(function tsWireBar() {
+  var bar = TS_SHADOW.getElementById('ts-bar');
+  var label = TS_BMK.variant + (TS_BMK.libs.length ? ' · ' + TS_BMK.libs.join(' + ') : ' · no libraries');
+  bar.querySelector('.ts-variant').textContent = label;
+
+  log(`Turnstone bookmarklet mounted — variant "${TS_BMK.variant}", libs [${TS_BMK.libs.join(', ') || 'none'}], ` +
+      `styles ${TS_CSS_HOW}, XLSX read=${HAS_XLSX} write=${HAS_XLSX_WRITE}, IndexedDB=memory-only`);
+
+  /* --- Close: the overlay is the only thing we added to the page ---------- */
+  TS_SHADOW.getElementById('ts-close').addEventListener('click', function () {
+    log('Closing overlay — removing the host element');
+    TS_HOST.remove();
+    toast('Turnstone closed');
+  });
+
+  /* --- Copy state: a self-contained JSON snapshot of the queue ------------ */
+  function snapshot() {
+    return {
+      turnstone: 'bookmarklet-state/1',
+      name: state.name,
+      ext: state.ext,
+      sheetName: state.sheetName,
+      data: state.data,
+      status: state.status,
+      notes: state.notes,
+      savedAt: new Date().toISOString(),
+    };
+  }
+
+  TS_SHADOW.getElementById('ts-copy').addEventListener('click', async function () {
+    if (!cardCount()) { toast('Nothing to copy — load a list first', 'error'); return; }
+    var json = JSON.stringify(snapshot());
+    await copyText(json, 'queue state');
+    log(`Copied queue state (${json.length} chars, ${cardCount()} cards)`);
+    toast(`Copied ${cardCount()} card${cardCount() === 1 ? '' : 's'} as JSON (${(json.length / 1024).toFixed(1)} KB)`);
+  });
+
+  /* --- Restore state: paste it back, statuses and notes included ---------- */
+  function openRestorePanel() {
+    var existing = TS_SHADOW.getElementById('ts-restore-panel');
+    if (existing) { existing.remove(); return; }
+    var panel = document.createElement('div');
+    panel.id = 'ts-restore-panel';
+    panel.style.cssText = 'position:absolute;top:34px;right:8px;z-index:5;width:min(560px,92vw);' +
+      'background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:10px;' +
+      'padding:12px;box-shadow:0 12px 32px rgba(0,0,0,.45)';
+    panel.innerHTML =
+      '<div style="font-size:12.5px;font-weight:600;margin-bottom:4px">Restore a copied queue</div>' +
+      '<div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">Paste a state JSON from <em>Copy state</em>. ' +
+      'Statuses and notes come back with it.</div>' +
+      '<textarea id="ts-restore-text" spellcheck="false" placeholder=\'{"turnstone":"bookmarklet-state/1", …}\' ' +
+      'style="width:100%;height:110px;background:var(--bg);color:var(--text);border:1px solid var(--border);' +
+      'border-radius:6px;padding:7px;font:11.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace"></textarea>' +
+      '<div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">' +
+      '<button type="button" class="btn" id="ts-restore-cancel">Cancel</button>' +
+      '<button type="button" class="btn" id="ts-restore-apply">Restore</button>' +
+      '</div>';
+    TS_SHADOW.appendChild(panel);
+    var text = panel.querySelector('#ts-restore-text');
+    text.focus();
+    panel.querySelector('#ts-restore-cancel').addEventListener('click', function () { panel.remove(); });
+    panel.querySelector('#ts-restore-apply').addEventListener('click', function () {
+      var raw = text.value.trim();
+      if (!raw) { toast('Paste a copied state first', 'error'); return; }
+      var parsed;
+      try { parsed = JSON.parse(raw); }
+      catch (e) { toast(`That is not valid JSON: ${e.message}`, 'error'); return; }
+      if (!Array.isArray(parsed.data) || !parsed.data.length) { toast('That JSON has no queue data', 'error'); return; }
+      var rows = parsed.data.length - (analyzeMatrix(parsed.data).hasHeader ? 1 : 0);
+      if (Array.isArray(parsed.status) && parsed.status.length !== rows) {
+        warn(`State status length ${parsed.status.length} ≠ ${rows} rows — statuses will be ignored`);
+        parsed.status = null; parsed.notes = null;
+      }
+      log(`Restoring queue state: ${parsed.data.length} rows from "${parsed.name || 'pasted state'}"`);
+      loadMatrix(parsed.data, {
+        name: parsed.name || 'restored-state.csv',
+        ext: parsed.ext || 'csv',
+        mode: 'fallback',
+        sheetName: parsed.sheetName,
+        status: parsed.status,
+        notes: parsed.notes,
+      });
+      panel.remove();
+    });
+  }
+  TS_SHADOW.getElementById('ts-restore').addEventListener('click', openRestorePanel);
+
+  /* --- First-run hint + capability notice --------------------------------- */
+  if (!HAS_XLSX) {
+    toast('Turnstone (no libraries) is running — CSV, TSV, JSON, HTML and XML lists only', 'success');
+  } else if (!HAS_XLSX_WRITE) {
+    toast('Turnstone is running — workbooks open read-only, edits export as CSV', 'success');
+  } else {
+    toast('Turnstone is running in this page — drop a CSV/XLSX list anywhere', 'success');
+  }
+})();
+
+}).call(this);
+})();void 0
