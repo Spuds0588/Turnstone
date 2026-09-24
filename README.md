@@ -54,7 +54,8 @@ The 🔗 **Link** menu item copies a shareable `?file=` deep link that reopens t
 - **Copy buttons** — every value (name, URL, notes, and each extra column) has a ⧉ button sitting right after the text; hover a card to reveal them (always visible on touch screens).
 - **Cards stay compact** — beyond the fixed name/URL/status/notes, only the **first 3 data columns** show by default; expanding reveals the rest.
 - **Column presets (⚙ Columns)** — reorder (drag), show/hide, and **save the layout as a preset keyed to the file's header**. Any list loaded later whose header matches that exact column order (case/whitespace-insensitive) **auto-applies the preset** — order and hidden columns included.
-- **Saving** — Chromium: silent write-back to the picked file. Everywhere else: automatic IndexedDB snapshots + Export CSV/XLSX, and a `beforeunload` guard when there are unexported changes. Files that already carry `Status`/`Notes` columns reopen with their progress intact.
+- **Saving** — Chromium: silent write-back to the picked file. Everywhere else: automatic IndexedDB snapshots + Export CSV/XLSX, and a `beforeunload` guard when there are unexported changes.
+- **Resume where you left off** — re-importing a file you exported or updated puts its **completed** and **notes** columns straight back into the cards, so the queue continues exactly where it stopped. The completed column is recognised by its name (`Status`, `Completed`, `Done`, `Finished`, `Checked`, `Reviewed`, `Processed`, …) as well as by its values (`complete`, `done`, `yes`, `y`, `true`, `1`, `x`, `✓`, `✔`, or a completion date); the notes column likewise (`Notes`, `Comment`, `Remark`, `Memo`). Completed cards stay hidden by default, so the first thing you see is the work that is left, and the load toast reports what came back: `Loaded 10 tasks from queue-turnstone.csv — resumed 5 complete · 5 notes`.
 
 ## Theming
 

@@ -1,5 +1,26 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-24 — Resume: a re-imported file restores its progress
+
+**Request:** "can the app recognize when an exported or updated file has been dropped back in, with notes a completed column, so it can set the default values of those on load? we want folks to be able to pick up where they left off with that approach as well".
+
+### What already worked — and the exact gap
+`loadMatrix` has seeded cards from a file's own Status/Notes columns since v0.2, so a Turnstone-written file did reopen with its progress. But the detection was one word deep: a column literally headed `Status` and a value matching `complete|completed|done|yes|true|1|x`. Probing the running app made the gap concrete — a perfectly ordinary list with a **`Completed`** column loaded every single card as *incomplete*, silently, notes and all. The most common shapes people actually receive work in (`Completed`, `Done`, `Finished`, `Checked`, often carrying `Y`/`N` or a date) were precisely the ones that reset.
+
+### What changed in `app.html`
+- **The completed column is recognized by name, not by one word.** `Status`, `State`, `Complete(d)`, `Completion`, `Done`, `Finished`, `Checked`, `Reviewed`, `Processed`, `Handled` — matched as a **whole header word first**, then as a prefix. The ordering matters: `pickColumn` looks for an exact word before falling back to a prefix, so a list with both `Checked` (column 2) and `Completed` (column 5) doesn't hand the role to whichever happens to sit leftmost. `Completed on` and `Checked?` still match through the prefix pass. Notes widened the same way: `Note(s)`, `Comment(s)`, `Remark(s)`, `Memo`.
+- **The value vocabulary widened, and decoration is stripped before the test.** Ticks (`✓ ✔ ☑ ✅`, variation selectors dropped), `y`, `finished`, and ISO **completion dates** (`2026-09-01`, with or without a time) all read as done — a "Finished on" column is a completion column, not a data column. Stripping decoration first means `✓ done`, `done ✔`, `- complete` and `✅` all count, while the tests stay anchored so `not done` and `incomplete` can't leak in as complete.
+- **Resume is now visible instead of silent.** Each seeded column logs its own line naming the real header (`Seeded 5 'complete' status(es) from the file's Status column (round-trip)`), and the load toast reports the outcome: `Loaded 10 tasks from queue-turnstone.csv — resumed 5 complete · 5 notes`. Nothing is claimed when a file carries no such columns, or none of them hold values.
+- **An all-complete file explains itself.** With completed cards hidden by default the card area used to read "No tasks match your filters."— technically true, useless on a file that is simply finished. It now says `All N tasks complete — tick “Show completed” to review them.` (the `done` count moved above the empty-state render so the two branches share it).
+- Header evidence for "this first row is a header" now includes the widened status/notes words, so a list whose only recognizable header is `Completed` still parses as headed.
+
+### Verification (in-browser, through the real loader)
+The round trip was exercised the way a user does it — real `File` objects through `loadFromFileObject`, which is the shared path for both a **drop** and a **pick**: load `sample-links.csv`, mark two further rows complete and note a row, then re-import the app's own output. CSV (`Papa.unparse(buildExportMatrix())`), TSV (tab delimiter preserved) and XLSX (`XLSX.write`) each landed `10 tasks | 5 done | 5 left`, first note intact (`resume me`), completed cards hidden, toast `resumed 5 complete · 5 notes`, `statusCol=2, notesCol=3`.
+Header probes: `Completed`, `Done` (Y/N), `Finished on` (dates), `Checked?`, `Notes / comments` all map to the right role; a `Priority` column containing `yes` is **not** mistaken for status; `✓ done` / `- complete` / `✅` / `☑️` are complete while `not done` / `incomplete` / `N` are not; and an all-complete file renders the new empty state with the toast `resumed 2 complete`. No console errors or warnings.
+
+### Follow-through
+`sw.js` → **`v0.9.2`** so the changed shell is re-precached. `README.md` gained a **Resume where you left off** bullet under *Working the list* (naming the accepted column names and values), `todo.md` the task entry with the verified counts, and `testing-notes.md` a step 4b: export a queue, drop it back in, expect the counts and notes to return — then rename the completed column and expect it to survive that too.
+
 ## 2026-09-24 — v0.9.0: more input formats (TSV, JSON, HTML tables, XML, spreadsheets)
 
 **Request:** add more input-format support — TSV, JSON arrays, HTML tables, XML maybe, "potentially PDFs with tables or lists" — and call out other common formats people get work in with.

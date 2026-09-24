@@ -644,6 +644,29 @@ const HEADER_URL_RE = /^(url|link|href|website|web site|site|address|loc|permali
 const HEADER_NAME_RE = /^(name|title|task|label|page|description)\b/i;
 const URL_VALUE_RE = /^https?:\/\//i;
 
+/* Completed/status + notes columns. We emit "Status"/"Notes" on export, but a
+   file dropped back in (or built elsewhere) may label them Completed / Done /
+   Finished / Checked / Comment — accepting that whole family is what lets a
+   re-import resume the user's progress instead of resetting every card. */
+const HEADER_STATUS_RE = /^(status|state|complet(e|ed|ion)|done|finished|checked|reviewed|processed|handled)\b/i;
+const HEADER_NOTES_RE  = /^(notes?|comments?|remarks?|memo)\b/i;
+const STATUS_HEADER_WORDS = new Set(['status', 'state', 'complete', 'completed', 'completion', 'done', 'finished', 'checked', 'reviewed', 'processed', 'handled']);
+const NOTES_HEADER_WORDS  = new Set(['note', 'notes', 'comment', 'comments', 'remark', 'remarks', 'memo']);
+const normalizeHeader = (h) => String(h ?? '').toLowerCase().replace(/[^a-z]/g, '');
+
+/** Cell values that mean "this task is done". Ticks are accepted so rows pasted
+    from a spreadsheet round-trip, and a completion *date* counts as done too. */
+const COMPLETE_RE = /^(complete|completed|done|finished|yes|y|true|1|x|✓|✔|☑|✅)$/i;
+const COMPLETE_DATE_RE = /^\d{4}-\d{1,2}-\d{1,2}([T ].*)?$/;
+/* Same test after stripping decoration, so "✓ done", "done ✔" and "- complete"
+   all count. Anchored matches keep "not done" and "incomplete" safely false. */
+const DONE_DECOR_RE = /[\s✓✔☑✅·•\-–—:]/g;
+const isCompleteValue = (raw) => {
+  const v = String(raw ?? '').trim().replace(/\uFE0F/g, '');   // drop emoji variation selectors
+  if (!v) return false;
+  return COMPLETE_RE.test(v) || COMPLETE_RE.test(v.replace(DONE_DECOR_RE, '')) || COMPLETE_DATE_RE.test(v);
+};
+
 /* `writable` = we can rebuild the file byte-for-byte in its own format, so edits
    save silently in place. Everything else is a one-way import: its edits live in
    browser storage until the user exports CSV/XLSX. XLS/XLSM/XLSB/ODS are read-only
@@ -990,6 +1013,13 @@ async function parseDetected(buf, det, sheetPick, htmlOpts) {
   return { rows, sheetName: null, format };
 }
 
+/** Pick a header column: an exact word ("Completed") outranks a prefix match
+    ("Completed on", "Notes / comments"). Returns -1 when nothing matches. */
+function pickColumn(header, exactWords, re) {
+  const exact = header.findIndex(h => exactWords.has(normalizeHeader(h)));
+  return exact >= 0 ? exact : header.findIndex(h => re.test(h));
+}
+
 /** Detect header row + column roles from a 2D matrix. */
 function analyzeMatrix(data) {
   // Trim fully-empty trailing rows
@@ -1000,7 +1030,7 @@ function analyzeMatrix(data) {
 
   // Header heuristic: known header words, or a first row with no URL values while later rows have URLs.
   const firstRowHasUrl = first.some(c => URL_VALUE_RE.test(c));
-  const hasHeader = first.some(c => HEADER_URL_RE.test(c) || HEADER_NAME_RE.test(c) || /^(status|notes?|comment)\b/i.test(c))
+  const hasHeader = first.some(c => HEADER_URL_RE.test(c) || HEADER_NAME_RE.test(c) || HEADER_STATUS_RE.test(c) || HEADER_NOTES_RE.test(c))
     || (!firstRowHasUrl && data.slice(1, 51).some(r => r.some(c => URL_VALUE_RE.test(String(c)))));
 
   const header = hasHeader ? first : [];
@@ -1009,10 +1039,10 @@ function analyzeMatrix(data) {
   if (hasHeader) {
     header.forEach((h, i) => {
       if (urlCol < 0 && HEADER_URL_RE.test(h)) urlCol = i;
-      if (statusCol < 0 && /^status\b/i.test(h)) statusCol = i;
-      if (notesCol < 0 && /^(notes?|comments?)\b/i.test(h)) notesCol = i;
       if (nameCol < 0 && HEADER_NAME_RE.test(h)) nameCol = i;
     });
+    statusCol = pickColumn(header, STATUS_HEADER_WORDS, HEADER_STATUS_RE);
+    notesCol = pickColumn(header, NOTES_HEADER_WORDS, HEADER_NOTES_RE);
   }
   // Fallback URL column: the column with the most http-prefixed values in the first 50 rows.
   if (urlCol < 0) {
@@ -1054,11 +1084,13 @@ function loadMatrix(data, meta) {
   // own Status/Notes columns (round-trip) > blank state.
   const n = bodyRows;
   const fileHasCols = a.hasHeader && (a.statusCol >= 0 || a.notesCol >= 0);
-  const COMPLETE_RE = /^(complete|completed|done|yes|true|1|x)$/i;
+  const headerRow = data[0] || [];
+  const statusName = a.statusCol >= 0 ? String(headerRow[a.statusCol] || 'Status') : 'Status';
+  const notesName  = a.notesCol  >= 0 ? String(headerRow[a.notesCol]  || 'Notes')  : 'Notes';
   const seeded = Array.from({ length: n }, (_, i) => {
     const row = data[i + (a.hasHeader ? 1 : 0)] || [];
     const raw = a.statusCol >= 0 ? String(row[a.statusCol] || '').trim() : '';
-    return COMPLETE_RE.test(raw) ? 'complete' : 'incomplete';
+    return isCompleteValue(raw) ? 'complete' : 'incomplete';
   });
   const seededNotes = a.hasHeader && a.notesCol >= 0
     ? Array.from({ length: n }, (_, i) => String((data[i + (a.hasHeader ? 1 : 0)] || [])[a.notesCol] ?? ''))
@@ -1067,7 +1099,23 @@ function loadMatrix(data, meta) {
   state.status = restoring ? meta.status.slice() : seeded;
   state.notes  = restoring ? (Array.isArray(meta.notes) && meta.notes.length === n ? meta.notes.slice() : Array(n).fill(''))
                : (seededNotes || Array(n).fill(''));
-  if (fileHasCols && !restoring) log(`Seeded ${seeded.filter(s => s === 'complete').length} 'complete' status(es) from the file's Status column (round-trip)`);
+
+  // Round-trip resume: an exported/updated file dropped back in carries the
+  // user's progress in its completed status + notes columns. Report what was
+  // picked up so "continue where you left off" is visible, not silent.
+  const seededDone = seeded.filter(s => s === 'complete').length;
+  const seededWithNotes = seededNotes ? seededNotes.filter(s => String(s).trim()).length : 0;
+  const resumed = [];
+  if (!restoring && fileHasCols) {
+    if (a.statusCol >= 0) {
+      log(`Seeded ${seededDone} 'complete' status(es) from the file's ${statusName} column (round-trip)`);
+      if (seededDone) resumed.push(`${seededDone} complete`);
+    }
+    if (a.notesCol >= 0) {
+      log(`Seeded ${seededWithNotes} note(s) from the file's ${notesName} column (round-trip)`);
+      if (seededWithNotes) resumed.push(`${seededWithNotes} note${seededWithNotes === 1 ? '' : 's'}`);
+    }
+  }
 
   state.isDirty = false;
   closeAllTabs();
@@ -1083,7 +1131,8 @@ function loadMatrix(data, meta) {
   els.welcome.hidden = true;
   els.welcome.style.display = 'none';
   maybeShowFirstRunPicker();
-  toast(`Loaded ${n} task${n === 1 ? '' : 's'} from ${state.name}`, 'success');
+  const noun = `task${n === 1 ? '' : 's'}`;
+  toast(`Loaded ${n} ${noun} from ${state.name}${resumed.length ? ` — resumed ${resumed.join(' · ')}` : ''}`, 'success');
 }
 
 /* ----------------------- First-run open-mode picker ----------------------- */
@@ -1702,11 +1751,15 @@ function renderCards() {
     frag.appendChild(card);
   }
 
+  const done = state.status.filter(s => s === 'complete').length;
+  const allDone = total > 0 && state.hideCompleted && done === total;
   els.cards.innerHTML = '';
-  if (!visible) els.cards.innerHTML = `<div class="empty">${total ? 'No tasks match your filters.' : 'No file loaded yet.<br>Open a link list to populate task cards.'}</div>`;
+  if (!visible) els.cards.innerHTML = `<div class="empty">${
+    !total ? 'No file loaded yet.<br>Open a link list to populate task cards.'
+    : allDone ? `All ${total} task${total === 1 ? '' : 's'} complete — tick “Show completed” to review them.`
+    : 'No tasks match your filters.'}</div>`;
   else els.cards.appendChild(frag);
 
-  const done = state.status.filter(s => s === 'complete').length;
   els.countTotal.textContent = `${total} task${total === 1 ? '' : 's'}`;
   els.countDone.textContent = `${done} done`;
   els.countLeft.textContent = `${total - done} left`;

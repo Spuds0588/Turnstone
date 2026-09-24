@@ -20,6 +20,7 @@ The PRD's primary flows (native picker / `?file=` URL) can't run inside the sand
 2. `Open File…` → pick `sample-links.csv` → expect 10 cards; 3 pre-seeded complete; "Comma, Inc. Blog" intact; notes seeded.
 3. Switch status, type a note → save indicator flips `● unsaved changes` → `✓ saved to file` (Chromium writes back silently).
 4. Reopen the file → statuses/notes persist (written back into the file's own columns).
+4b. **Resume round-trip:** complete a few cards and type notes → **Export CSV** → open `app.html` fresh and drop/pick that exported file back in → expect the same counts (`N tasks | M done | M left`), the notes back in their textareas, completed cards still hidden, and the toast `Loaded N tasks from …-turnstone.csv — resumed M complete · K notes`. Repeat with **Export XLSX**. Then rename the completed column to `Completed` (or `Done`, `Finished`, `Checked`) and reload: the progress must survive under any of those names — and a `Priority`/`Size` column with `yes`/`x`-style values must **not** be mistaken for status.
 5. `Load test XLSX` → same 10 tasks from the binary workbook.
 6. Toggle theme → UI flips instantly; reload → choice remembered; fresh profile → follows OS preference.
 7. **URL parameter (v0.3):** `index.html?file=<encoded raw.githubusercontent.com/.../sample-links.csv>` → fetches, sniffs format, 10 cards with chip showing `sample-links.csv`. Same for the `.xlsx` (raw serves it as `application/octet-stream` — magic-byte sniffing handles it). Add `&open=1` → first task auto-opens in a tab.
