@@ -119,7 +119,11 @@ js = patch(js, "const fileParam = params.get('file') || params.get('url');", 'co
 /* PWA + unload machinery is host-page behaviour, not overlay behaviour: an
    install prompt or a "you have unsaved changes" dialog on someone else's page
    would be rude and wrong. */
-js = patch(js, /\/\* ------------------------------ PWA plumbing ------------------------------ \*\/[\s\S]*?\n\}\)\(\);\n/,
+/* Anchored on the end of buildManifest, not on the first "})();" after the heading:
+   the icon constants above it are an IIFE too, so the loose pattern stopped early
+   and left a buildManifest() behind that threw "ICON_192 is not defined" on every
+   launch — a console warning on somebody else's page. */
+js = patch(js, /\/\* ------------------------------ PWA plumbing ------------------------------ \*\/[\s\S]*?warn\('Manifest build failed \(PWA features limited\)', e\); \}\n\}\)\(\);\n/,
   '/* PWA plumbing removed in the bookmarklet build — an installed app and an\n   install prompt belong to a real origin, not to a page we were launched from. */\n', 'PWA plumbing block');
 js = patch(js, '/* PRD Task 4.4: strict beforeunload guard in fallback/remote modes. */\nwindow.addEventListener(\'beforeunload\', (e) => {\n  if (state.mode && state.mode !== \'fs\' && state.isDirty) {\n    warn(\'beforeunload blocked: unexported changes in fallback mode\');\n    e.preventDefault();\n    e.returnValue = \'\'; // required for Chrome\n    return \'You have unexported changes. Export CSV/XLSX before leaving.\';\n  }\n});\n',
   '/* beforeunload guard removed in the bookmarklet build: leaving a page is the host\n   page\'s business, and our state is session-only by design anyway. */\n', 'beforeunload guard');
