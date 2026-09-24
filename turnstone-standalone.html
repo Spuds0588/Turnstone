@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   Turnstone — standalone BETA build.
-  Generated 2026-09-24T14:57:10.915Z from app.html @ 830225a.
+  Generated 2026-09-24T15:10:53.693Z from app.html @ 9bf667d + uncommitted changes.
 
   Self-contained by construction: the app shell, PapaParse, SheetJS and the logo
   artwork are all inlined above, and the app makes no third-party requests, so this
@@ -200,6 +200,21 @@
   #welcome .tagline { margin: 0 0 16px; color: var(--muted); font-size: 12px; }
   #welcome p { margin: 0 0 16px; color: var(--muted); }
   #welcome .row { display: flex; gap: 8px; margin-bottom: 10px; }
+  /* Primary start affordance: drop a file on it, or click to pick one. */
+  #dropzone {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    text-align: center; padding: 20px 16px; margin: 0 0 12px;
+    border: 1.5px dashed var(--border); border-radius: 10px; background: var(--bg);
+    cursor: pointer; transition: border-color .15s, background .15s;
+  }
+  #dropzone:hover { border-color: var(--accent-dark); }
+  #dropzone:focus-visible { outline: 2px solid var(--accent-dark); outline-offset: 2px; }
+  #dropzone.over { border-color: var(--accent-dark); background: var(--panel-2); }
+  #dropzone .dz-icon { font-size: 20px; line-height: 1; color: var(--accent-dark); }
+  #dropzone .dz-main { font-size: 13px; font-weight: 600; }
+  #dropzone .dz-sub { font-size: 11.5px; color: var(--muted); }
+  #dropzone .dz-formats { font-size: 10.5px; color: var(--muted); letter-spacing: .3px; margin-top: 3px; }
+  #welcome .or { font-size: 11px; color: var(--muted); text-align: center; margin: 0 0 12px; }
   #welcome input[type=text] {
     flex: 1; background: var(--bg); color: var(--text);
     border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 12.5px;
@@ -374,21 +389,24 @@
         <div class="box">
           <h1><span class="logo"><img class="dark" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiI+CiAgPCEtLSBEYXJrLXRoZW1lIHZhcmlhbnQ6IHRoZSBzdG9uZSBrZWVwcyBhIGxpZ2h0IHJpbSBzbyBpdCByZWFkcyBhZ2FpbnN0IG5lYXItYmxhY2sKICAgICAgIHN1cmZhY2VzLiBTYW1lIGdlb21ldHJ5IGFuZCBlbmdyYXZpbmcgdGVjaG5pcXVlIGFzIGxvZ28uc3ZnLiAtLT4KICA8ZGVmcz4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0ic3RvbmVTaGFkZUQiIGN4PSIwLjM4IiBjeT0iMC4zMiIgcj0iMC44NSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI2NmY2ZjZiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjAuNzIiIHN0b3AtY29sb3I9IiNhOGE4YTgiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjOGY4ZjhmIi8+CiAgICA8L3JhZGlhbEdyYWRpZW50PgogIDwvZGVmcz4KCiAgPGNpcmNsZSBjeD0iMjU2IiBjeT0iMjU2IiByPSIyNDgiIGZpbGw9InVybCgjc3RvbmVTaGFkZUQpIi8+CiAgPGNpcmNsZSBjeD0iMjU2IiBjeT0iMjU2IiByPSIyNDgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzVjNWY2NiIgc3Ryb2tlLXdpZHRoPSI3Ii8+CgogIDxwYXRoIGQ9Ik0xNDggMjY4IEwyMzIgMzUyIEwzNjggMTgwIiBmaWxsPSJub25lIiBzdHJva2U9IiM2ZjZmNmYiCiAgICAgICAgc3Ryb2tlLXdpZHRoPSI1MiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIgogICAgICAgIHRyYW5zZm9ybT0idHJhbnNsYXRlKDIgMikiLz4KICA8cGF0aCBkPSJNMTQ4IDI2OCBMMjMyIDM1MiBMMzY4IDE4MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGE0YTRhIgogICAgICAgIHN0cm9rZS13aWR0aD0iNTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K" alt=""><img class="light" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiI+CiAgPCEtLSBMaWdodC10aGVtZSB2YXJpYW50OiB0aGUgc3RvbmUgaXMgbGlnaHRlbmVkIHNvIGl0IGRvZXNuJ3QgdmFuaXNoIG9uIHdoaXRlIHN1cmZhY2VzLgogICAgICAgU2FtZSBnZW9tZXRyeSBhbmQgZW5ncmF2aW5nIHRlY2huaXF1ZSBhcyBsb2dvLnN2Zy4gLS0+CiAgPGRlZnM+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9InN0b25lU2hhZGVMIiBjeD0iMC4zOCIgY3k9IjAuMzIiIHI9IjAuODUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNlNmU2ZTYiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIwLjcyIiBzdG9wLWNvbG9yPSIjYzRjNGM0Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2E2YTZhNiIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICA8L2RlZnM+CgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMjQ4IiBmaWxsPSJ1cmwoI3N0b25lU2hhZGVMKSIvPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMjQ4IiBmaWxsPSJub25lIiBzdHJva2U9IiM4ZThlOGUiIHN0cm9rZS13aWR0aD0iNyIvPgoKICA8cGF0aCBkPSJNMTQ4IDI2OCBMMjMyIDM1MiBMMzY4IDE4MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjN2Q3ZDdkIgogICAgICAgIHN0cm9rZS13aWR0aD0iNTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIKICAgICAgICB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyIDIpIi8+CiAgPHBhdGggZD0iTTE0OCAyNjggTDIzMiAzNTIgTDM2OCAxODAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzUyNTI1MiIKICAgICAgICBzdHJva2Utd2lkdGg9IjUyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+Cg==" alt=""></span> Turnstone</h1>
           <p class="tagline">Your list, worked through. <span class="ts-beta" title="Standalone single-file beta build: the app, its libraries and its artwork all live in this one document. Nothing is loaded from the network. Local files work fully; remote ?file= URLs need the hosted app.">beta · standalone</span></p>
-          <p>Load a local CSV, TSV, XLSX/XLS/ODS, JSON, or HTML/XML list of URLs. Track status &amp; notes, open links the way you like — tabs, browser tabs, or popup windows — and auto-save back to the file (Chromium) or browser storage.</p>
-          <div class="row">
-            <button class="btn primary" id="btn-open-2">Choose a file…</button>
-            <button class="btn" id="btn-demo">Load demo list</button>
+          <p>Turn your list of links into a work queue: track status &amp; notes, open each link the way you like — tabs, browser tabs, or popup windows — and auto-save back to the file (Chromium) or browser storage.</p>
+          <div id="dropzone" role="button" tabindex="0" aria-label="Drop a link-list file here, or activate to choose one from disk">
+            <span class="dz-icon" aria-hidden="true">⤓</span>
+            <span class="dz-main">Drop a file here, or click to choose</span>
+            <span class="dz-sub">Read and parsed on this device — nothing is uploaded.</span>
+            <span class="dz-formats">CSV · TSV · XLSX / XLS / ODS · JSON · HTML · XML</span>
           </div>
           <div class="row">
-            <input type="text" id="url-input" placeholder="https://example.com/tasks.csv" spellcheck="false">
+            <input type="text" id="url-input" placeholder="…or paste a link-list URL" spellcheck="false">
             <button class="btn" id="btn-load-url">Load</button>
           </div>
           <p style="font-size:11px; color:var(--muted); margin:0 0 10px">Any public link-list URL works (host must allow CORS). Deep-link support: <code>?file=&lt;url&gt;</code> or <code>?url=&lt;url&gt;</code>; add <code>&amp;open=1</code> to auto-open the first task.</p>
+          <p class="or">or try it with sample data</p>
           <div class="row">
-            <button class="btn" id="btn-test-csv" title="Load the bundled sample dataset">Load test CSV</button>
-            <button class="btn" id="btn-test-xlsx" title="Load the bundled sample dataset (as a mock XLSX parse)">Load test XLSX</button>
+            <button class="btn" id="btn-demo" title="Load the small built-in demo list">Demo list</button>
+            <button class="btn" id="btn-test-csv" title="Load the bundled sample dataset (CSV)">Test CSV</button>
+            <button class="btn" id="btn-test-xlsx" title="Load the bundled sample dataset as a real XLSX parse">Test XLSX</button>
           </div>
-          <p style="font-size:11px; color:var(--muted); margin:2px 0 0">Test buttons load a bundled sample dataset. Real files: use Open File…, a pasted URL, or the <code>?file=</code> param.</p>
           <div id="recents" hidden>
             <h2>Recent files</h2>
             <div id="recents-list"></div>
@@ -611,7 +629,7 @@ const state = {
 
 const $ = (sel) => document.querySelector(sel);
 const els = {
-  fileInput: $('#file-input'), btnOpen2: $('#btn-open-2'), btnDemo: $('#btn-demo'),
+  fileInput: $('#file-input'), dropzone: $('#dropzone'), btnDemo: $('#btn-demo'),
   btnMenu: $('#btn-menu'), menu: $('#menu'), headName: $('#head-name'), headSave: $('#head-save'),
   miOpen: $('#mi-open'), miRestore: $('#mi-restore'), miClose: $('#mi-close'), miLink: $('#mi-link'),
   miColumns: $('#mi-columns'), miExportCsv: $('#mi-export-csv'), miExportXlsx: $('#mi-export-xlsx'),
@@ -1335,6 +1353,43 @@ async function loadFromFileObject(file, handle) {
     err('Failed to load file', file.name, e);
     toast(`Could not parse "${file.name}": ${e.message}`, 'error');
   }
+}
+
+/* ---------------------- Drag & drop initial acquisition ------------------- */
+/** True when a drag is carrying files from the OS (not an in-page drag like the
+    settings panel's column reordering, which must stay untouched). */
+function isFileDrag(e) {
+  return [...((e.dataTransfer && e.dataTransfer.types) || [])].includes('Files');
+}
+
+/** Chromium hands dropped files a real handle, which can restore silent write-back.
+    Resolve it only when it is already writable — no surprise permission dialog on drop. */
+async function handleFromDrop(dt) {
+  const item = [...(dt.items || [])].find(i => i.kind === 'file' && typeof i.getAsFileSystemHandle === 'function');
+  if (!item) return null;
+  try {
+    const handle = await item.getAsFileSystemHandle();
+    if (!handle || handle.kind !== 'file') return null;
+    if (!handle.queryPermission) return handle;
+    const state = await handle.queryPermission({ mode: 'readwrite' });
+    if (state === 'granted') { log(`Dropped file "${handle.name}" is writable → silent write-back enabled`); return handle; }
+    log('Dropped file handle is read-only — edits will go to browser storage (use the drop zone→picker, or Open file…, for live write-back)');
+    return null;
+  } catch (e) {
+    warn('Could not read a file handle from the drop', e);
+    return null;
+  }
+}
+
+/** Load the file(s) of a drop. Extra files are reported rather than silently ignored. */
+async function handleDroppedFiles(dt) {
+  const files = [...(dt.files || [])];
+  if (!files.length) return;
+  if (files.length > 1) warn(`Drop carried ${files.length} files — loading the first one ("${files[0].name}")`);
+  const file = files[0];
+  log(`Dropped file "${file.name}" (${file.size} bytes, type="${file.type || 'unknown'}")`);
+  toast(`Reading ${file.name}…`);
+  await loadFromFileObject(file, await handleFromDrop(dt));
 }
 
 /** If this exact file was previously worked on in fallback mode, reuse its statuses/notes. */
@@ -2091,7 +2146,34 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(
 window.addEventListener('resize', () => { if (!els.menu.hidden) closeMenu(); });
 
 els.miOpen.addEventListener('click', () => { closeMenu(); openLocalFile(); });
-els.btnOpen2.addEventListener('click', openLocalFile);
+
+/* Drop zone: click/press to pick a file. Drops themselves are handled on the
+   document (below) so that a file dropped anywhere still loads — and, just as
+   importantly, so the browser never navigates away to the dropped file. */
+els.dropzone.addEventListener('click', openLocalFile);
+els.dropzone.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLocalFile(); }
+});
+document.addEventListener('dragover', (e) => {
+  if (!isFileDrag(e)) return;                 // leave in-page drags (settings reorder) alone
+  e.preventDefault();                          // required for `drop` to fire at all
+  els.dropzone.classList.add('over');
+});
+document.addEventListener('dragleave', (e) => {
+  if (!e.relatedTarget) els.dropzone.classList.remove('over');   // left the window
+});
+document.addEventListener('drop', async (e) => {
+  els.dropzone.classList.remove('over');
+  if (!isFileDrag(e)) return;                 // an in-page drag: not ours to handle
+  e.preventDefault();
+  try {
+    await handleDroppedFiles(e.dataTransfer);
+  } catch (err2) {
+    err('Dropped-file load failed', err2);
+    toast(`Could not read the dropped file: ${err2.message}`, 'error');
+  }
+});
+window.addEventListener('blur', () => els.dropzone.classList.remove('over'));
 els.miRestore.addEventListener('click', () => { closeMenu(); restoreLastFile(); });
 els.miClose.addEventListener('click', () => { closeMenu(); closeCurrentFile(); });
 els.miLink.addEventListener('click', async () => {
