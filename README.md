@@ -56,6 +56,19 @@ No app store, no backend, no build step — installing just pins the same single
 
 Implementation note: the web-app manifest is generated at runtime from icons embedded in `app.html` as data URIs, so the PWA adds only one real file to the repo — `sw.js`.
 
+## Hardened deployment: zero data call-outs
+
+Turnstone is built to run where external scripts and outbound requests are unacceptable (locked-down corporate machines, air-gapped networks, strict-CSP environments):
+
+- **Every dependency is vendored.** `vendor/papaparse.min.js` and `vendor/xlsx.full.min.js` are the exact upstream builds, served from this repo. The app makes **no third-party requests at all** — verified in-browser, where a full queue load produced only same-origin requests (shell, logos, the two vendor scripts, the data file).
+- **A Content-Security-Policy ships inside the HTML** (`<meta http-equiv>` — GitHub Pages can't set response headers). For the app: scripts, styles, images, workers, and the manifest come only from this origin (plus `data:`/`blob:` for the embedded icons, and `file:` so copies opened from disk keep working). `object-src`, `base-uri`, and `form-action` are `'none'`.
+- **`connect-src` allows same-origin plus `https:`** — deliberately: the **user-initiated `?file=` / share-link remote load is the single outbound path the product has**. Websocket (`ws:`/`wss:`) requests, a classic exfiltration channel, are blocked, and so are `http:` and `data:` fetches.
+- **`frame-src` stays open on purpose** so the iframe workspace can display the sites in your queue. Embedded pages are governed by their own policies, not this one, so **iframe mode is unaffected** — verified live: framing a real site returned `200 (Document)` with no CSP violation.
+- **`referrer: no-referrer`** on both pages, so deep-link URLs (which can carry file URLs and identifiers) never leak through `Referer` headers to framed or fetched sites.
+- **The sales page is stricter still:** `default-src 'none'`, with only its own inline redirect and same-origin images permitted. It loads no external scripts, styles, fonts, or frames and cannot phone home.
+
+Because nothing external is left to fetch, a plain `file://` copy of the app (or a copy on an internal share) works offline. Registry-style install isn't required for any of this.
+
 ## Repository layout
 
 ```
@@ -69,6 +82,7 @@ assets/             # logo system — SVG source of truth + generated PNG icons
 icon-192/512.png    # PWA icons (generated — do not hand-edit)
 sample-links.csv    # demo queue (CSV) used by the deep-link examples
 sample-links.xlsx   # demo queue (XLSX, multi-sheet)
+vendor/             # vendored libraries — no CDN at runtime (PapaParse, SheetJS)
 ports/              # future editions of Turnstone (see ports/README.md)
   bookmarklet/      #   composes the app live in a new tab; CSV-only fallback if CDNs are blocked
   extension/        #   Chrome MV3 side panel; no iframes — selecting a card switches the active tab
@@ -88,6 +102,7 @@ The web app is the canonical core; these ports (scaffolded under [`ports/`](port
 - **Bookmarklet** — composes the whole Turnstone app live in a new tab from a paste-safe (<~8 KB) payload: parsing, cards, link modes, exports, and write-back where the browser allows. Session-only memory by design, and a **CSV-only fallback mode** with a built-in parser when SheetJS can't load — locked-down, no-external-scripts environments are a first-class case, with the UI clearly noting the degraded mode.
 - **Chrome extension (MV3)** — the queue lives in Chrome's **Side Panel** with no iframe workflow at all: links open as real browser tabs, and **selecting a card switches the active tab** to that page. Statuses/presets persist in `chrome.storage`; exports via `chrome.downloads`; right-click any link to queue it.
 - **Tauri desktop app** — the **full web experience including the tabbed iframe workspace**, with the CORS / `X-Frame-Options` wall gone: sites that refuse iframing on the web load natively. Silent filesystem write-back on every OS, system tray, auto-update, tiny bundle.
+- **Bundled single-file HTML** — `turnstone-standalone.html`: one document holding the whole app (shell + vendored libraries + icons inlined) for `file://` use, USB sticks, internal shares, and machines where nothing can be installed. No server, no CDN, no checkout — since the app already makes zero external requests, this build is genuinely self-contained. A CSV-only variant covers environments that can't ship the binary parser at all.
 - Shared prerequisite (planned): extract the DOM-free core — parsing, matrix analysis, presets, persistence — from `app.html` into a `core.js` all ports consume.
 - Further future state (see [`todo.md`](todo.md)): a **web MCP server** so AI agents can set up the workspace for their users (load the queue, apply presets, pick the open mode) or take over and work it on request — plus embedded **phone / SMS / mail hand-off layers**, native CORS bypass, and Google Drive / OneDrive sync.
 
@@ -95,6 +110,6 @@ The web app is the canonical core; these ports (scaffolded under [`ports/`](port
 
 - `PRD-Turnstone.md` — master document (§4 = agent rules, mirrored in `agents.md`)
 - `todo.md` — task tracker + future-state plans
-- `history.md` — build log (v0.1 MVP → v0.7 sales page + ports scaffolding)
+- `history.md` — build log (v0.1 MVP → v0.8 vendored dependencies + data-call-out lockdown)
 - `testing-notes.md` — test files and the manual production test plan
 - `ports/README.md` — how the ports relate and what's scaffolded

@@ -1,5 +1,31 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-24 — v0.8.0: vendored dependencies + zero data call-outs, sales-page hero fix
+
+**Requests:** (1) vendor SheetJS and any other dependencies so nothing loads from a CDN — the tool must work in highly secure environments; (2) then add headers that prevent data call-outs, as long as that doesn't break iframe mode; (3) fix the sales-page logo placement and shorten the hero heading; (4) add bundled single-file `.html` builds for `file://` / internal hosting to the roadmap.
+
+### Vendored dependencies (`vendor/`)
+- `vendor/papaparse.min.js` (5.4.1) and `vendor/xlsx.full.min.js` (0.20.3) — the exact upstream builds, fetched from the very URLs the page used to reference, syntax-checked and served from the repo root.
+- `app.html`'s script tags now point at `vendor/…`; both CDN `<script>` tags are gone. Verified in-browser: a full CSV load produced **only same-origin requests** (shell, logo SVGs, both vendor scripts, the data file) — no jsdelivr, no sheetjs.com.
+- `sw.js` → `v0.8.0`: precaches `vendor/papaparse.min.js` + `vendor/xlsx.full.min.js` instead of the CDN URLs, and the cache-first CDN branch is deleted (nothing requests those hosts any more).
+
+### Data-call-out lockdown (CSP + referrer policy)
+- GitHub Pages can't set HTTP response headers, so the policy ships as `<meta http-equiv="Content-Security-Policy">`.
+- `app.html`: `default-src 'self' file:`; `script-src`/`style-src` `'self' 'unsafe-inline' file:` (the app *is* an inline-script single file); `img-src 'self' data: blob: file:`; `manifest-src 'self' blob: file:` (the PWA manifest is a runtime Blob URL); `worker-src 'self' blob: file:`; `connect-src 'self' https: blob: file:`; `object-src`, `base-uri`, `form-action` `'none'`. `file:` is listed throughout so copies opened from disk keep working.
+- **`frame-src https: http: file:` is deliberately left open** — the iframe workspace has to frame the sites in the queue. Verified live under the policy: tabs mode + a card click produced `GET https://example.com/ → 200 (Document)`, the workspace tab opened normally, and **no CSP violation was logged**. That was the acceptance test for "don't break iframe mode."
+- `connect-src` keeps `https:` because the **user-initiated `?file=` / share-link remote load is a supported feature** — it's the product's single outbound path. Everything else outbound is closed: `ws:`/`wss:` (a classic exfiltration channel), `http:`, and `data:`. With `form-action 'none'` and `object-src 'none'`, the classic data-call-out routes are shut. `referrer: no-referrer` on both pages stops deep-link URLs leaking via `Referer` to framed or fetched sites.
+- Sales page (`index.html`) is stricter: `default-src 'none'` plus only `script-src`/`style-src 'unsafe-inline'` (its inline legacy redirect) and `img-src 'self' data:`. Console stayed completely empty — no violations.
+- Regression-tested under the policy: CSV load (PapaParse), XLSX load (`Parsing XLSX binary (17881 bytes) with SheetJS` → 11 rows → 10 cards), CSV blob download + XLSX write via SheetJS (15,914 b), the PWA manifest blob, session persistence to IndexedDB, and the legacy `?file=` redirect from the sales page. **Zero CSP violations anywhere.**
+
+### Sales page: hero logo + headline
+- The hero had `padding: 0` and the logo's `getBoundingClientRect().top` was `0` — the stone was jammed against (and visually clipped by) the top edge. Added `padding: 3.6rem 0 3.2rem` to `.hero`; the logo now sits 58px down with real breathing room.
+- Removed the duplicate 13px logo inside the eyebrow pill — two marks stacked read as a mistake. The pill is now text-only.
+- Headline shortened from "Your link spreadsheet, worked like a workspace." to **"Your spreadsheet, now a modern workspace."**
+
+### Roadmap
+- `todo.md` + README roadmap: **bundled single-file `.html` builds** (`turnstone-standalone.html`) for `file://` and internal/air-gapped hosting — a build step inlining the shell, vendored libraries, and icons into one document, plus an optional CSV-only variant. Since the app now makes no external requests, that build is genuinely self-contained.
+- Also fixed a stale filename in the porting prerequisite (`index.html` → `app.html`).
+
 ## 2026-09-23 — v0.7.1: New logo (engraved stone) + web-MCP future state
 
 **Request:** the product logo is a circular grey stone with a dark-grey checkmark engraved into it — compose it as SVG, break it out into asset files, keep easy light/dark variants. Also add web MCP setup to the future-state plans (agents set up the workspace for users, or take over on request).

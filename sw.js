@@ -2,7 +2,7 @@
    Version bump this constant to invalidate all caches on the next load. */
 'use strict';
 
-const VERSION = 'turnstone-v0.7.1';
+const VERSION = 'turnstone-v0.8.0';
 
 /* Same-origin paths are relative to this file (served from the app root). */
 const PRECACHE = [
@@ -16,9 +16,9 @@ const PRECACHE = [
   'assets/logo.svg',
   'assets/logo-light.svg',
   'assets/logo-dark.svg',
-  /* CDN libraries the app needs at boot (kept immutable in the cache). */
-  'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js',
-  'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js',
+  /* Vendored libraries — same-origin, no CDN dependency at boot. */
+  'vendor/papaparse.min.js',
+  'vendor/xlsx.full.min.js',
 ];
 
 self.addEventListener('install', (event) => {
@@ -93,20 +93,4 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  /* CDN libraries: cache-first (versioned URLs are effectively immutable). */
-  if (/cdn\.jsdelivr\.net$|cdn\.sheetjs\.com$/.test(url.hostname)) {
-    event.respondWith((async () => {
-      const cached = await caches.match(req);
-      if (cached) return cached;
-      try {
-        const res = await fetch(req, { credentials: 'omit' });
-        if (res && (res.ok || res.type === 'opaque')) {
-          caches.open(VERSION).then((c) => c.put(req, res.clone())).catch(() => {});
-        }
-        return res;
-      } catch (e) {
-        return new Response('offline', { status: 503 });
-      }
-    })());
-  }
 });

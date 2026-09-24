@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Zero-call-out page: no external scripts, styles, frames, or fetches of any kind.
+     Only the inline legacy-redirect script and same-origin images are permitted. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; font-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; manifest-src 'none'">
+<meta name="referrer" content="no-referrer">
 <title>Turnstone — Turn any link spreadsheet into a streamlined workspace</title>
 <meta name="description" content="Load a CSV or XLSX of links and work through it in a modern split-pane workspace: task cards, statuses, notes, tabbed browsing, and auto-save — with zero backend, zero signup, and zero cost.">
 <meta name="robots" content="index, follow">
@@ -100,7 +104,7 @@
   .container { max-width: 1140px; margin: 0 auto; }
   .has-text-centered { text-align: center; }
 
-  .hero { min-height: min(76vh, 720px); display: flex; align-items: center; }
+  .hero { min-height: min(76vh, 720px); display: flex; align-items: center; padding: 3.6rem 0 3.2rem; }
   .hero h1 { color: #fff; font-weight: 900; font-size: 3.3rem; letter-spacing: -.045em; line-height: 1.05; margin: 1.1rem 0 0; }
   .hero .subtitle { color: var(--text-dim); font-size: 1.15rem; max-width: 840px; margin: 1rem auto 0; }
   .has-text-ts { color: var(--accent); }
@@ -201,8 +205,8 @@
 <section class="hero">
   <div class="container has-text-centered">
     <img src="assets/logo-dark.svg" alt="Turnstone logo — a grey stone with an engraved checkmark" style="width:64px;height:64px;margin-bottom:1.1rem">
-    <span class="eyebrow"><img src="assets/logo-light.svg" alt="" style="width:13px;height:13px;vertical-align:-2px;margin-right:7px">Free &amp; open source · zero backend</span>
-    <h1>Your link spreadsheet,<br><span class="has-text-ts">worked like a workspace.</span></h1>
+    <span class="eyebrow">Free &amp; open source · zero backend</span>
+    <h1>Your spreadsheet,<br><span class="has-text-ts">now a modern workspace.</span></h1>
     <h2 class="subtitle">
       Turnstone loads the CSV or XLSX you already keep — prospects, listings, docs to review,
       outreach to send — and turns it into a modern split-pane workspace: task cards with statuses
