@@ -770,6 +770,27 @@ async function run() {
     extraNote(wsList, ws.total === 0 && /cut short|could not be opened|not what was sent/.test(wsToast()),
       `and a truncated link says so instead of opening a shortened queue — <i>${wsToast().slice(0, 90)}</i>`, wsToast());
 
+    /* A generator outside this repo follows llms.txt: it hashes the bytes it deflated.
+       When the list text starts with a UTF-8 BOM — Excel writes one — `TextDecoder`
+       strips those three bytes on decode, so the digest built over the decoded text
+       can never match the one built over the raw bytes. The verify side must accept
+       the contract (raw bytes) first; the decoded-text digest is the fallback. Both
+       forms are asserted here, because either failing silently strands an agent's
+       link with a "tampered" message that is not true. */
+    const bomCsv = '\uFEFFName,URL\nExcel Export,https://excel.example.com/row\n';
+    const bomZ = await deflateB64(bomCsv);                      // includes the BOM bytes
+    const rawSum = sumOf(bomCsv);                               // hashed over the BOM'd bytes — the documented contract
+    const noBomSum = sumOf(bomCsv.slice(1));                    // what hashing the decoded text produces
+    w = await bootWithFragment(`zdata=${bomZ}&sum=${rawSum}`);
+    ws = await waitForRows(1);
+    extraNote(wsList, ws.total === 1,
+      `a link built exactly as llms.txt says — digest over the bytes deflated — opens even when the list carries a UTF-8 BOM, which TextDecoder strips on decode`,
+      JSON.stringify(ws));
+    w = await bootWithFragment(`zdata=${bomZ}&sum=${noBomSum}`);
+    ws = await waitForRows(1);
+    extraNote(wsList, ws.total === 1,
+      '…and so does the same link digested over the decoded text, the form an app-built link has always carried');
+
     /* A tool that can only append a query string gets the same behaviour. */
     w = await bootWithFragment('');
     w = await (async () => {

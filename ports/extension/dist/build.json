@@ -11,7 +11,7 @@
     "contextMenus"
   ],
   "files": 15,
-  "bytes": 1320490,
+  "bytes": 1321493,
   "harnessFiles": 3,
   "install": "chrome://extensions → Developer mode → Load unpacked → this folder"
 }

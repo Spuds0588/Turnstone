@@ -27,6 +27,8 @@ url   = "https://spuds0588.github.io/Turnstone/app.html#zdata=" + zdata + "&sum=
 
 The deflate stream must be **raw** (no zlib or gzip wrapper). In Node: `zlib.deflateRawSync(b).toString('base64url')`. In Python: `zlib.compressobj(9, zlib.DEFLATED, -15)` then `base64.urlsafe_b64encode(...).rstrip(b'=')`. In a browser: `CompressionStream('deflate-raw')`.
 
+**fnv1a32 must be a true 32-bit multiply.** In JavaScript use `Math.imul` — the naive `h = (h * 0x01000193) >>> 0` computes the product in float64, and once it passes 2^53 the low bits round away, so the hash silently disagrees with Turnstone's and any link with a `sum` built that way is refused. In Python and other languages with native 32-bit ints, a plain multiply-and-mask works: `h = ((h ^ byte) * 0x01000193) & 0xFFFFFFFF`.
+
 A worked example, carrying four rows and no portal address:
 
 ```

@@ -2413,9 +2413,17 @@ function workspaceLinkFrom(text) {
     still opened — a person typing `#data=` by hand cannot compute a checksum, and
     refusing their link would be pedantry. A link *with* a token that disagrees is
     refused, because that is the silent-partial-list case. */
-function checkInlineDigest(raw, text) {
+function checkInlineDigest(raw, text, rawBytes) {
   const claimed = String(raw.sum || '').trim();
   if (!claimed) return { verified: false };
+  /* The documented contract (llms.txt, workspace-link.html) hashes the same bytes
+     the link deflates. Those are the *raw* bytes here — but `TextDecoder` strips a
+     leading UTF-8 BOM, so a generator that built its list from a BOM'd file (Excel
+     writes one) hashed three bytes the decoder no longer sees, and a correct link
+     was refused as tampered. Verify against the raw bytes first — the contract —
+     and fall back to the decoded text, which is what every app-built link has
+     carried and what a generator that digests the BOM-less text produces. */
+  if (rawBytes && claimed === inlineDigest(rawBytes)) return { verified: true };
   const actual = inlineDigest(new TextEncoder().encode(text));
   if (claimed !== actual) {
     throw new Error('this link is not what was sent — it decoded to a different list, which is what a link cut short in transit looks like');
@@ -2433,8 +2441,12 @@ async function decodeInlineList(raw) {
     catch (e) { throw new Error('the compressed list in this link is not valid base64 — it was probably truncated when it was shared'); }
     const out = await inflateRawBytes(bytes);
     if (out.length > INLINE_MAX_BYTES) throw new Error(`this link carries ${Math.round(out.length / 1048576)} MB of list — too much for a URL`);
+    /* `TextDecoder` strips a leading UTF-8 BOM by default — the right parse outcome
+       (Excel writes BOMs, the sniffer handles the rest) — so the raw inflated bytes
+       ride along for the digest check above, which verifies the contract (the bytes
+       the link carries) before falling back to the decoded text. */
     const text = new TextDecoder('utf-8').decode(out);
-    const { verified } = checkInlineDigest(raw, text);
+    const { verified } = checkInlineDigest(raw, text, out);
     return { text, encoding: 'zdata', bytes: out.length, verified };
   }
   const bytes = new TextEncoder().encode(plain);

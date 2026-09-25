@@ -1,4 +1,4 @@
-# Turnstone — a dumb list in, a smart workspace out
+# Turnstone — a messy workflow in, an organized workspace out
 
 > Load the list you already keep — a spreadsheet, a CSV, or a link your AI agent hands you — and work it
 > as cards with statuses and notes, with the pages themselves alongside. Everything happens in your
@@ -11,28 +11,31 @@ Licence: MIT · Free and open source · No telemetry · No account
 
 ## Why it works when the process doesn't
 
-Your list can be a mess upstream. Your side of it doesn't have to be.
+Your list can be a mess upstream — six systems, a chain of forwards, a sheet kept by hand. Throw
+anything in, and your side of it comes out as one organized system.
 
-- **Whatever the list looks like.** Six systems, a chain of forwards, a sheet kept by hand — it doesn't
-  matter. Your side is cards with statuses and notes, not a grid of cells. Rows with *no links* work too:
-  point it at your portal once (`…/ticket/{Ticket}`) and every card builds its own address.
+- **Throw anything in. Organized work comes out.** CSV, TSV, XLSX, Word tables, Markdown, JSON, HTML
+  tables, XML feeds, saved email — even a table pasted from a portal. Any list, any spreadsheet, becomes
+  task cards with statuses, notes and the pages themselves: one system for doing the work, not a grid of
+  cells. Rows with *no links* work too: point it at your portal once (`…/ticket/{Ticket}`) and every card
+  builds its own address.
 - **No account, nobody to ask.** One person can start today: no sign-up, no seat licence, no IT ticket, no
   manager sign-off.
 - **All local — nothing is uploaded.** There is no server to upload to. Your browser reads your file and
   writes your ticks and notes back into that same file.
-- **The tools you already have.** Pages open beside the list instead of in fifteen tabs, and an address or
-  a number opens your webmail or web phone — not a desktop app you don't have.
-- **Or let an agent hand you the list.** Your assistant finds or writes it and gives you one link. It opens
-  ready to work, and the rows travel inside the link rather than through a server. See
+- **Works with the web tools you already use.** Pages open beside the list instead of in fifteen tabs, and
+  an address or a number opens your webmail or web phone — not a desktop app you don't have.
+- **Works with your AI agent already.** Your assistant finds or writes the list and gives you one link. It
+  opens ready to work, and the rows travel inside the link rather than through a server. See
   [Share a list as a link](https://spuds0588.github.io/Turnstone/workspace-link.html.md).
 
 ## From list to workspace in one step
 
-1. **Bring the list** — drop a CSV, XLSX, Word table, Markdown list, JSON or saved email anywhere on the
+1. **Throw the list in** — drop a CSV, XLSX, Word table, Markdown list, JSON or saved email anywhere on the
    app, paste a table, or open a link someone sent you. No template, no import wizard.
 2. **Work it like an app** — cards down one side, pages across the other. Complete, note, auto-advance —
    and your file is already up to date.
-3. **Or let an agent hand you the list** — have your assistant find or write it, and open the link it
+3. **Let your agent hand you the list** — have your assistant find or write it, and open the link it
    gives you. Nothing to set up, install or upload.
 
 ## Supported formats

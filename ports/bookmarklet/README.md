@@ -40,12 +40,12 @@ fails. Three of those four turned out to be wrong, and the evidence is in this r
 
 | Variant | Payload | Carries | Formats |
 | --- | --- | --- | --- |
-| `csv` | ~297 KB | app + a 2 KB RFC-4180 reader | CSV, TSV, JSON, HTML, XML |
+| `csv` | ~298 KB | app + a 2 KB RFC-4180 reader | CSV, TSV, JSON, HTML, XML |
 | `core` | ~306 KB | app + a read-only XLSX reader | the above **+ XLSX / XLS / ODS reading** |
 | `full` | ~1.21 MB | app + vendored PapaParse + SheetJS | every format, plus **XLSX export and write-back** |
 
 The old "< ~8 KB" target is not reachable while keeping the real app: the app shell alone is
-~291 KB, and the promise was always "the whole Turnstone app, not a cut-down clone". What is
+~292 KB, and the promise was always "the whole Turnstone app, not a cut-down clone". What is
 reachable — and what the variants now deliver — is *no libraries at all in two of three*, with
 the third available when someone wants workbook writing and can accept the size.
 
