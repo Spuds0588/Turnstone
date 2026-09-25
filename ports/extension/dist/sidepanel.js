@@ -78,11 +78,14 @@ const state = {
   isDirty: false,
   search: '', hideCompleted: true,   // completed cards hidden by default (toggle: Show completed)
   sortCol: null, sortAsc: true,      // card ordering; null = file order
-  autoOpenOnSelect: false,           // open a link as soon as its card is expanded
+  autoOpenOnSelect: true,            // clicking a card opens its link as well as expanding it
   autoAdvance: false,                // open the next incomplete card's link when one is completed
-  sourceUrl: null,      // remote URL the file was fetched from (?file=/ pasted), enables 🔗 Link
+  autoCloseOnComplete: true,         // close the tab a row opened when that row is marked done
+  sourceUrl: null,      // remote URL the file was fetched from (?file=/ pasted), enables a share link
   colOrder: null,       // card-display order of data columns (indices); null = file order
   colHidden: {},        // column index → true when hidden from cards
+  colTypes: {},         // column index → how its cell is edited ('' = read-only, the default)
+  colOptions: {},       // column index → the choices a dropdown or a button array offers
   expanded: {},         // card index → true when all data columns are shown
 };
 
@@ -93,7 +96,16 @@ const $ = (sel) => document.querySelector(sel);
    app inside a shadow root — where `document.body` is somebody else's page and
    `document.querySelector` cannot see our own overlays at all. */
 const mountPoint = () => document.body;
-const modalOpen = (sel) => !!document.querySelector(sel);
+/* "Is a dialog on screen?" — and *on screen* is the whole question. The app's own
+   dialogs are created and removed, so finding one in the DOM was the same as seeing it;
+   the ☰ menu is different: it is static markup, hidden most of the time, so a bare
+   querySelector found it always and deferred the portal prompt and the paste path
+   forever. Hidden, display:none and visibility:hidden all count as not there. */
+const modalOpen = (sel) => [...document.querySelectorAll(sel)].some((el) => {
+  if (el.hidden) return false;
+  const cs = getComputedStyle(el);
+  return cs.display !== 'none' && cs.visibility !== 'hidden';
+});
 const els = {
   fileInput: $('#file-input'), dropzone: $('#dropzone'), btnDemo: $('#btn-demo'),
   dzFormats: $('#dz-formats'), capNotice: $('#cap-notice'),
@@ -101,7 +113,8 @@ const els = {
   miOpen: $('#mi-open'), miOpenLink: $('#mi-open-link'), miRestore: $('#mi-restore'), miClose: $('#mi-close'), miLink: $('#mi-link'), miBuild: $('#mi-build'),
   miColumns: $('#mi-columns'), miExportCsv: $('#mi-export-csv'), miExportXlsx: $('#mi-export-xlsx'),
   miInstall: $('#mi-install'), miTheme: $('#mi-theme'), miThemeLabel: $('#mi-theme-label'),
-  miAutoOpen: $('#mi-auto-open'), miAutoAdvance: $('#mi-auto-advance'),
+  miAutoOpen: $('#mi-auto-open'), miAutoAdvance: $('#mi-auto-advance'), miAutoClose: $('#mi-auto-close'),
+  menuFile: $('#menu-file'), menuClose: $('#menu-close'),
   miPortal: $('#mi-portal'), miPaste: $('#mi-paste'), pasteHint: $('#paste-hint'),
   settingsOverlay: $('#settings-overlay'), settingsCols: $('#settings-cols'), settingsPresets: $('#settings-presets'),
   settingsX: $('#settings-x'), presetName: $('#preset-name'), btnPresetSave: $('#btn-preset-save'), btnColsReset: $('#btn-cols-reset'),
@@ -419,7 +432,7 @@ const normalizeHeader = (h) => String(h ?? '').toLowerCase().replace(/[^a-z]/g, 
    to the whole value, so "Pending approval" can never read as "Approved". */
 const COMPLETE_RE = /^(complete|completed|done|finished|yes|y|true|1|x|✓|✔|☑|✅|closed?|resolved|approved?|accepted|paid|sent|signed|shipped|filed|submitted|handled|processed|cancell?ed|declined|rejected|void|archived|reconciled|verified|published|renewed|delivered|no action needed)$/i;
 const COMPLETE_DATE_RE = /^\d{4}-\d{1,2}-\d{1,2}([T ].*)?$/;
-/* Same test after stripping decoration, so "✓ done", "done ✔" and "- complete"
+/* Same test after stripping decoration, so "✓ done", "done ✓" and "- complete"
    all count. Anchored matches keep "not done" and "incomplete" safely false. */
 const DONE_DECOR_RE = /[\s✓✔☑✅·•\-–—:]/g;
 const isCompleteValue = (raw) => {
@@ -1723,6 +1736,9 @@ function loadMatrix(data, meta) {
   // round-trips the file's progress.
   const roleRec = a.hasHeader ? loadRoles()[headerSignature(data[0] || [])] : null;
   if (applyRoleRecord(a, roleRec, a.width)) log(`Remembered column flags applied: URL=${a.urlCol}, name=${a.nameCol}, status=${a.statusCol}, notes=${a.notesCol}`);
+  /* The editors are remembered the same way and read in the same place: this is the
+     live store, and a preset may only fill the gap when there is no record here. */
+  applyFieldRecord(a.hasHeader ? loadFields()[headerSignature(data[0] || [])] : null, a.width);
   const bodyRows = data.length - (a.hasHeader ? 1 : 0);
 
   state.name = meta.name;
@@ -1931,6 +1947,187 @@ function setColumnRole(col, role) {
   renderSettings();
 }
 
+/* ---- Column field types: how a cell is *edited* on a card ------------------ */
+/* Three different questions get asked about a column and they are answered in
+   three different places on purpose:
+
+     · what is it?       — the role (URL / name / status / notes), which the card
+                           layout itself is built around;
+     · where does it go? — the order and the hidden set, which are display only; and
+     · how is it edited? — this: read-only by default, because most columns are
+                           somebody else's data that the queue only has to show,
+                           but a column you keep updating (a stage, an owner, a next
+                           action, a date) deserves a real control.
+
+   Read-only stays the default deliberately: turning every cell of every column into
+   a field would make a queue you are only reading look like one you are expected to
+   maintain, and the app's claim is that it shows you the list you already have. */
+const LS_FIELDS = 'turnstone-col-fields';
+const FIELD_TYPES = { '': 'Read only', text: 'Text', long: 'Long text', select: 'Dropdown', buttons: 'Buttons' };
+const CHOICE_TYPES = new Set(['select', 'buttons']);
+const MAX_SEEDED_OPTIONS = 24;   // a column with 200 distinct values is not a dropdown
+
+function loadFields() {
+  try { return JSON.parse(localStorage.getItem(LS_FIELDS) || '{}'); }
+  catch (e) { warn('Could not read column editors', e); return {}; }
+}
+function saveFields(f) {
+  try { localStorage.setItem(LS_FIELDS, JSON.stringify(f)); return true; }
+  catch (e) { warn('Could not persist column editors', e); return false; }
+}
+
+/** Persist this file's editor types and choice lists, keyed exactly like roles and
+    presets. An entry is removed when nothing is set, so a file that has been reset
+    does not leave an empty record behind that makes the next load look edited.
+    A headerless list has no stable signature, so its editors last the session. */
+function persistFields() {
+  if (!state.hasHeader) { log('No header row to key column editors to — they last this session only'); return; }
+  const sig = headerSignature(state.data[0]);
+  const all = loadFields();
+  const rec = { types: {}, options: {}, ts: Date.now() };
+  for (const [c, t] of Object.entries(state.colTypes)) if (t && FIELD_TYPES[t]) rec.types[c] = t;
+  for (const [c, list] of Object.entries(state.colOptions)) if (Array.isArray(list) && list.length) rec.options[c] = list;
+  if (Object.keys(rec.types).length || Object.keys(rec.options).length) all[sig] = rec;
+  else delete all[sig];
+  if (saveFields(all)) log(`Column editors saved: ${Object.keys(rec.types).length} typed column(s), ${Object.keys(rec.options).length} with choices`);
+}
+
+/** Overlay a remembered editor record onto the live state (null clears it). */
+function applyFieldRecord(rec, width) {
+  state.colTypes = {};
+  state.colOptions = {};
+  if (!rec || typeof rec !== 'object') return false;
+  const ok = (c) => Number.isInteger(c) && c >= 0 && c < width;
+  for (const [c, t] of Object.entries(rec.types || {})) if (ok(+c) && FIELD_TYPES[t]) state.colTypes[+c] = t;
+  for (const [c, list] of Object.entries(rec.options || {})) if (ok(+c) && Array.isArray(list)) state.colOptions[+c] = list.map(String).slice(0, 40);
+  const typed = Object.keys(state.colTypes).length;
+  if (typed || Object.keys(state.colOptions).length) log(`Column editors applied from storage: ${typed} typed column(s)`);
+  return true;
+}
+
+/** The values a column already holds, **most common first**. This is the seed for a
+    choice list, so a dropdown offers the vocabulary the file actually uses — and the
+    ordering is the point rather than a detail: a status column should open on the
+    status that happens most, not on whichever value starts with “A”. */
+function columnValues(c) {
+  const counts = new Map();
+  for (let i = 0; i < cardCount(); i++) {
+    const v = String(((state.data[i + (state.hasHeader ? 1 : 0)] || [])[c] ?? '')).trim();
+    if (v) counts.set(v, (counts.get(v) || 0) + 1);
+  }
+  return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([v]) => v);
+}
+
+/** Fill a column's choice list from its own values. Offered as a button because it
+    is the difference between a dropdown you have to populate by hand and one that is
+    useful the moment you pick the type. */
+function seedOptions(c) {
+  const all = columnValues(c);
+  if (!all.length) { toast(`No values in “${colLabel(c)}” to build choices from`, 'error'); return; }
+  const list = all.slice(0, MAX_SEEDED_OPTIONS);
+  state.colOptions[c] = list;
+  log(`Choices seeded for column ${c} from ${all.length} distinct value(s), ${list.length} kept`);
+  toast(all.length > list.length
+    ? `${list.length} choices taken from “${colLabel(c)}” — the rest are past the ${MAX_SEEDED_OPTIONS}-choice cap`
+    : `${list.length} choice${list.length === 1 ? '' : 's'} taken from “${colLabel(c)}”`, 'success');
+  persistFields();
+  renderCards();
+  renderSettings();
+}
+
+/** Set a column's field type. Switching *to* a choice type with an empty list seeds
+    it from the file, because a dropdown with no options is not an empty control —
+    it is a broken one. */
+function setFieldType(c, type) {
+  if (!FIELD_TYPES[type]) type = '';
+  if (columnRole(c)) { toast('That column is a card feature — Status and Notes have their own controls', 'error'); return; }
+  const prev = state.colTypes[c] || '';
+  if (!type) delete state.colTypes[c];
+  else { state.colTypes[c] = type; delete state.colHidden[c]; }   // an editor on a hidden column is one nobody can reach
+  log(`Column ${c} (${colLabel(c)}) editor: ${FIELD_TYPES[prev]} → ${FIELD_TYPES[type]}`);
+  if (CHOICE_TYPES.has(type) && !fieldOptions(c).length) { seedOptions(c); return; }  // seeds, persists and re-renders
+  persistFields();
+  renderCards();
+  renderSettings();
+}
+
+/** The choices a dropdown or a button array offers. Read through this rather than
+    touching the map, so the "not set" case is one answer everywhere. */
+function fieldOptions(c) { return state.colOptions[c] || []; }
+
+/** Replace a column's choice list. `live` is true while the user is typing in the
+    panel's field, where re-rendering the panel would take the caret with it — the
+    cards still follow along on every keystroke. */
+function setFieldOptions(c, value, live = false) {
+  const seen = new Set();
+  const list = String(value || '').split(',').map(s => s.trim()).filter(Boolean)
+    .filter(v => (seen.has(v) ? false : seen.add(v))).slice(0, 40);
+  state.colOptions[c] = list;
+  persistFields();
+  renderCards();
+  if (live) log(`Choices for column ${c}: ${list.length}`);
+  else { log(`Choices for column ${c} set to ${list.length}: ${list.join(' · ')}`); renderSettings(); }
+}
+
+/** Move everything remembered about a list from one header signature to another.
+
+    All of it — the column flags, the editors, the preset and the portal template —
+    is keyed by the header row, so renaming one column would orphan the lot in a
+    single keystroke. The column *indices* are unaffected by a rename, which is why
+    nothing inside these records has to be renumbered; only the key moves. */
+function rekeySignature(oldSig, newSig) {
+  if (!oldSig || !newSig || oldSig === newSig) return;
+  const moves = [];
+  const roles = loadRoles();
+  if (roles[oldSig]) { roles[newSig] = roles[oldSig]; delete roles[oldSig]; saveRoles(roles); moves.push('column flags'); }
+  const fields = loadFields();
+  if (fields[oldSig]) { fields[newSig] = fields[oldSig]; delete fields[oldSig]; saveFields(fields); moves.push('column editors'); }
+  const presets = loadPresets();
+  if (presets[oldSig]) { presets[newSig] = presets[oldSig]; delete presets[oldSig]; savePresets(presets); moves.push('layout preset'); }
+  const templates = loadTemplates();
+  if (templates[oldSig]) { templates[newSig] = templates[oldSig]; delete templates[oldSig]; saveTemplates(templates); moves.push('portal template'); }
+  try {
+    const list = JSON.parse(localStorage.getItem(LS_PORTAL_DECLINED) || '[]') || [];
+    if (list.includes(oldSig)) { localStorage.setItem(LS_PORTAL_DECLINED, JSON.stringify(list.map(k => k === oldSig ? newSig : k))); moves.push('declined prompt'); }
+  } catch (e) { /* storage blocked */ }
+  log(moves.length ? `Re-keyed after rename: ${moves.join(', ')}` : 'Renamed with nothing remembered to re-key');
+}
+
+/** Rename a column — by editing its header cell, which is the rename people mean.
+
+    Not a display alias: the header row is what gets exported, what a portal
+    template's `{Column}` names, and what the sort dropdown lists, so a second private
+    name for the same column would be a worse lie than the original. The header cell
+    changes, the signature changes with it, and everything keyed by that signature is
+    carried over (`rekeySignature`) — including the template's own `{Old name}`
+    placeholders, which would otherwise silently stop composing a link for every row. */
+function renameColumn(c, name) {
+  if (!state.hasHeader) { toast('This file has no header row to rename', 'error'); renderSettings(); return; }
+  const header = state.data[0] || [];
+  const before = String(header[c] ?? '').trim();
+  const after = String(name ?? '').replace(/\s+/g, ' ').trim().slice(0, 120);
+  if (!after) { toast('A column needs a name', 'error'); renderSettings(); return; }
+  if (after === before) return;
+  const oldSig = headerSignature(state.data[0]);
+  header[c] = after;
+  const newSig = headerSignature(state.data[0]);
+  rekeySignature(oldSig, newSig);
+  if (state.linkTemplate && before) {
+    const next = state.linkTemplate.split(`{${before}}`).join(`{${after}}`);
+    if (next !== state.linkTemplate) {
+      state.linkTemplate = next;
+      rememberTemplate(newSig, next);
+      log(`Portal template placeholder {${before}} → {${after}}`);
+    }
+  }
+  log(`Column ${c} renamed: “${before}” → “${after}” (header signature changed)`);
+  toast(`Renamed to “${after}” — the header cell changes in the file you export`, 'success');
+  buildSortOptions();
+  renderCards();
+  renderSettings();
+  markDirty();
+}
+
 /** If a saved preset matches this file's header exactly, apply its layout. */
 function applyLayoutFor(headerRow) {
   const width = (state.data[0] || []).length;
@@ -1947,6 +2144,7 @@ function applyLayoutFor(headerRow) {
     // The live flag store wins over a preset's copy: a preset is only saved on
     // demand, so it can be stale the moment the user re-flags a column.
     if (preset.roles && !loadRoles()[sig] && applyRoleRecord(state, preset.roles, width)) log('Preset also carried column flags (URL/name/status/notes)');
+    if (preset.fields && !loadFields()[sig] && applyFieldRecord(preset.fields, width)) log('Preset also carried column editors (field types and choice lists)');
     log(`Preset "${preset.name}" auto-applied (header signature matched)`);
     toast(`Layout preset "${preset.name}" applied`, 'success');
   } else {
@@ -1997,21 +2195,40 @@ function renderSettings() {
   const order = state.colOrder ? state.colOrder.filter(c => c < width) : [];
   for (let c = 0; c < width; c++) if (!order.includes(c)) order.push(c);
 
+  /* Position numbers count the columns a card actually puts in that order. The role
+     columns are pinned features (name, URL, status, notes) and are not in it, so
+     numbering them 1–5 here said "#4" of a sequence the reader could only see two of. */
+  const dataOrder = order.filter(c => !columnRole(c));
   const frag = document.createDocumentFragment();
   for (const c of order) {
     const role = columnRole(c);
+    const type = state.colTypes[c] || '';
     const div = document.createElement('div');
-    div.className = 'set-col' + (role ? ' fixed' : '');
+    div.className = 'set-col' + (role ? ' fixed' : '') + (CHOICE_TYPES.has(type) ? ' has-choices' : '');
     div.draggable = !role;
     div.dataset.col = c;
-    const opts = ['', 'url', 'name', 'status', 'notes']
+    const name = esc(colLabel(c));
+    const roleOpts = ['', 'url', 'name', 'status', 'notes']
       .map(r => `<option value="${r}"${r === role ? ' selected' : ''}>${ROLE_LABELS[r]}</option>`).join('');
+    const typeOpts = Object.entries(FIELD_TYPES)
+      .map(([v, label]) => `<option value="${v}"${v === type ? ' selected' : ''}>${label}</option>`).join('');
     div.innerHTML =
       `<span class="drag"${role ? '' : ' title="Drag to reorder"'}>⋮⋮</span>
-       ${role ? '' : `<input type="checkbox" data-colshow="${c}" aria-label="Show ${esc(colLabel(c))} on cards" title="Show on cards" ${state.colHidden[c] ? '' : 'checked'}>`}
-       <span class="cname" title="${esc(colLabel(c))}">${esc(colLabel(c))}</span>
-       <select data-colrole="${c}" title="What this column means" aria-label="Role for ${esc(colLabel(c))}">${opts}</select>
-       <span class="pos">${role ? 'card feature' : '#' + (order.indexOf(c) + 1)}</span>`;
+       ${role ? '' : `<input type="checkbox" data-colshow="${c}" aria-label="Show ${name} on cards" title="Show on cards" ${state.colHidden[c] ? '' : 'checked'}>`}
+       <input class="cname" type="text" data-colname="${c}" value="${name}"${state.hasHeader ? '' : ' disabled'}
+              title="${state.hasHeader ? 'Rename this column — the header cell is what gets written back' : 'This file has no header row, so there is no name to change'}"
+              aria-label="Name for column ${c + 1}">
+       <select data-colrole="${c}" title="What this column means" aria-label="Role for ${name}">${roleOpts}</select>
+       <select data-coltype="${c}"${role ? ' disabled' : ''}
+               title="${role ? 'A card feature is not an editable cell' : 'How this column is edited on a card'}"
+               aria-label="Editor for ${name}">${typeOpts}</select>
+       <span class="pos">${role ? 'card feature' : '#' + (dataOrder.indexOf(c) + 1)}</span>
+       ${role ? '' : `<span class="crow2">
+         <input class="coptions" type="text" data-coloptions="${c}" value="${esc(fieldOptions(c).join(', '))}"
+                placeholder="Choices, comma separated" aria-label="Choices for ${name}"
+                title="What this dropdown or button row offers. The ↧ button fills it from the column's own values.">
+         <button class="icon" type="button" data-colseed="${c}" title="Fill with the values already in this column">↧</button>
+       </span>`}`;
     frag.appendChild(div);
   }
   if (!order.length) els.settingsCols.innerHTML = '<p class="hint">No columns in this file.</p>';
@@ -2026,9 +2243,9 @@ function renderSettings() {
     const row = document.createElement('div');
     row.className = 'preset-row';
     row.innerHTML = `<span class="pname">${esc(p.name)}</span>
-      <span class="pmeta">${(p.colOrder || []).length} columns · ${p.hidden?.length ? p.hidden.length + ' hidden' : 'none hidden'}${s === sig ? ' · matches this file' : ''}</span>
+      <span class="pmeta">${(p.colOrder || []).length} columns · ${p.hidden?.length ? p.hidden.length + ' hidden' : 'none hidden'}${Object.keys(p.fields?.types || {}).length ? ` · ${Object.keys(p.fields.types).length} editable` : ''}${s === sig ? ' · matches this file' : ''}</span>
       <button class="btn" data-preset-apply="${esc(s)}" ${s === sig ? 'disabled' : ''}>Apply here</button>
-      <button class="icon" data-preset-del="${esc(s)}" title="Delete preset">🗑</button>`;
+      <button class="icon" data-preset-del="${esc(s)}" title="Delete preset">⌫</button>`;
     els.settingsPresets.appendChild(row);
   }
 }
@@ -2043,8 +2260,12 @@ function savePreset() {
   const hidden = Object.keys(state.colHidden).map(Number).filter(c => c < width);
   const sig = headerSignature(state.data[0]);
   const roles = { url: state.urlCol, name: state.nameCol, status: state.statusCol, notes: state.notesCol };
+  /* The editors ride along in the preset, so a layout that includes them is restored
+     whole — a preset that remembered the order but not which columns were editable
+     would be a layout with a hole in it. */
+  const fields = { types: { ...state.colTypes }, options: { ...state.colOptions } };
   const presets = loadPresets();
-  presets[sig] = { name, colOrder: order, hidden, roles, ts: Date.now() };
+  presets[sig] = { name, colOrder: order, hidden, roles, fields, ts: Date.now() };
   if (savePresets(presets)) {
     log(`Column preset "${name}" saved for header signature (${sig.split('¦').length} cols)`);
     toast(`Preset "${name}" saved — files with this exact header auto-apply it`, 'success');
@@ -2065,16 +2286,27 @@ function applyPresetByKey(sig) {
     log('Preset carried column flags (URL/name/status/notes) — remembering them for this header');
     persistRoles();   // the live store follows an explicit preset apply
   }
+  /* Editors come from the preset *as a whole*, including the case where it has none:
+     applying a saved layout should put the columns back the way they were when it was
+     saved, not merge with whatever happens to be set now. */
+  applyFieldRecord(p.fields || null, width);
+  persistFields();
   log(`Preset "${p.name}" applied manually`);
   renderCards();
   renderSettings();
 }
 
+/** Back to the file's own arrangement: no reordering, nothing hidden, no editors.
+    The stored record is deleted rather than merely forgotten, so re-opening the file
+    cannot resurrect a layout the user has cleared. */
 function resetColLayout() {
   state.colOrder = null;
   state.colHidden = {};
+  state.colTypes = {};
+  state.colOptions = {};
   state.expanded = {};
-  log('Column layout reset to file order');
+  persistFields();
+  log('Column layout reset to file order (order, visibility and editors cleared)');
   renderCards();
   renderSettings();
 }
@@ -2182,7 +2414,7 @@ function declinePortal(key) {
 /** Offer the portal prompt once, for a list that has no links anywhere. */
 function maybeOfferPortalSetup() {
   if (!state.linkless || state.linkTemplate || !cardCount()) return;
-  if (modalOpen('#mode-picker')) { log('Portal prompt deferred — another modal is open'); return; }
+  if (modalOpen('#mode-picker, #menu')) { log('Portal prompt deferred — another modal is open'); return; }
   const key = templateKeyFor(state.data, state.hasHeader);
   if (!key) { log('Portal list with no header row — no key to remember a decline against, offering the prompt each load'); }
   else if (portalDeclined(key)) { log('Portal prompt already declined for this header — staying quiet'); return; }
@@ -2506,7 +2738,7 @@ function showPastePreview(rows, format, why) {
 /** Handle a paste anywhere in the app that is not a text field. */
 async function onPaste(e) {
   if (isEditableTarget(e.target)) return;                      // typing, not loading
-  if (modalOpen('#mode-picker, #portal-modal, #paste-modal, #sheet-picker')) return;
+  if (modalOpen('#mode-picker, #portal-modal, #paste-modal, #sheet-picker, #menu')) return;
   const dt = e.clipboardData;
   if (!dt) return;
   const files = [...(dt.files || [])];
@@ -2871,7 +3103,7 @@ async function renderRecents() {
     for (const r of all) {
       const btn = document.createElement('button');
       btn.className = 'recent-item';
-      btn.innerHTML = `<span>📄 ${esc(r.name)}</span><span class="ts">${new Date(r.ts).toLocaleString()}</span>`;
+      btn.innerHTML = `<span>▤ ${esc(r.name)}</span><span class="ts">${new Date(r.ts).toLocaleString()}</span>`;
       btn.addEventListener('click', () => {
         log('Recent file clicked:', r.name);
         if (r.kind === 'fs' && r.handle) { restoreHandle(r.handle); }
@@ -2917,7 +3149,7 @@ function updateChrome() {
   document.body.classList.toggle('has-file', has);
   updateSaveIndicator();
   renderModeMenu();
-  renderAutoMenu();
+  renderAutoRows();
 }
 
 function updateSaveIndicator() {
@@ -2986,6 +3218,64 @@ function rowLink(i) {
   return kind ? { href: linkHrefOf(raw), kind, value: raw, composed: false } : null;
 }
 
+/** One editable cell's control. `i` is the card index — what statuses, notes and
+    tabs are all keyed by — and `c` is the column.
+
+    Every control carries its own coordinates in `data-cell="i:c"` rather than leaning
+    on where it sits in the DOM, because the sidebar is rebuilt from scratch on every
+    tick, sort, search and edit, so a positional index would be a promise the markup
+    cannot keep.
+
+    The row's own value is always an option in a dropdown or a button array, even when
+    the choice list has moved on. A control that cannot display what the file says
+    would be lying about the data it is showing, and silently dropping a value on the
+    next write is the one thing an editable column must never do. */
+function cellEditor(c, i, raw, type) {
+  const key = `${i}:${c}`;
+  const label = esc(colLabel(c));
+  if (type === 'text')
+    return `<input class="cell-input" type="text" data-cell="${key}" value="${esc(raw)}" placeholder="${label}" aria-label="${label}">`;
+  if (type === 'long')
+    return `<textarea class="cell-area" rows="2" data-cell="${key}" placeholder="${label}" aria-label="${label}">${esc(raw)}</textarea>`;
+  const list = fieldOptions(c);
+  const all = raw && !list.includes(raw) ? [raw, ...list] : list;
+  if (type === 'select')
+    return `<select class="cell-select" data-cell="${key}" aria-label="${label}">`
+      + `<option value=""${raw ? '' : ' selected'}>—</option>`
+      + all.map(v => `<option value="${esc(v)}"${v === raw ? ' selected' : ''}>${esc(v)}</option>`).join('')
+      + `</select>`;
+  return `<span class="cell-btns" role="group" aria-label="${label}">`
+    + (raw ? '' : '<span class="emptyv">—</span>')
+    + all.map(v => `<button class="cell-btn${v === raw ? ' on' : ''}" type="button" data-cell="${key}" data-cellvalue="${esc(v)}" aria-pressed="${v === raw ? 'true' : 'false'}">${esc(v)}</button>`).join('')
+    + `</span>`;
+}
+
+/** Write an edited cell back into the row it belongs to — and only there.
+
+    The matrix is the single source of truth for a loaded list, so an edit here is
+    exported by exactly the path a status tick already takes: `buildExportMatrix()`
+    copies `state.data` and overlays Status/Notes, and CSV, TSV and XLSX all write that
+    out. No second store, no second save path — and search (`row.join(' ')`), the sort
+    comparators and the copy buttons pick the new value up with no bookkeeping at all.
+
+    `live` is true while the user is typing: re-rendering the sidebar there would take
+    the caret out of the field they are typing in. A dropdown or a button has no caret
+    to lose, and re-rendering is how its own selected state gets redrawn. */
+function writeCellValue(key, value, live = false) {
+  const [i, c] = String(key).split(':').map(Number);
+  if (!Number.isInteger(i) || !Number.isInteger(c)) { warn(`writeCellValue: bad cell key "${key}"`); return; }
+  const r = i + (state.hasHeader ? 1 : 0);
+  const row = state.data[r] || (state.data[r] = []);
+  while (row.length <= c) row.push('');
+  const before = String(row[c] ?? '');
+  const after = String(value ?? '');
+  if (before === after) return;
+  row[c] = after;
+  log(`Cell edited (row ${i}, ${colLabel(c)}): ${after ? `“${after.slice(0, 40)}”` : 'cleared'}`);
+  markDirty();
+  if (!live) renderCards();
+}
+
 function renderCards() {
   const q = state.search.trim().toLowerCase();
   const total = cardCount();
@@ -3002,15 +3292,20 @@ function renderCards() {
   const colRow = (c, i) => {
     const row = state.data[i + (state.hasHeader ? 1 : 0)] || [];
     const raw = String(row[c] ?? '').trim();
-    if (!raw) return ''; // no value → no row, no clutter
+    const type = state.colTypes[c] || '';
+    /* An editable cell keeps its row even when it is empty — an empty field is the
+       whole point of an editable column, and hiding it would make the column
+       impossible to fill in. Every other empty cell still disappears. */
+    if (!raw && !type) return ''; // no value → no row, no clutter
     /* The link column already has a home on the card, so don't repeat it here.
        Every *other* cell that is an address or a number becomes a real link, so
        MailLayer and PhoneLayer pick the click up wherever it appears — no need
        to flag those columns in Settings first. */
-    const kind = c === state.urlCol ? null : linkKindOf(raw);
-    const body = kind
-      ? `<a class="cell-link" href="${esc(linkHrefOf(raw))}"${kind === 'url' ? ' target="_blank" rel="noopener"' : layerAnchorAttrs(kind)}>${esc(raw)}</a>`
-      : esc(raw);
+    const kind = (type || c === state.urlCol) ? null : linkKindOf(raw);
+    const body = type ? cellEditor(c, i, raw, type)
+      : kind
+        ? `<a class="cell-link" href="${esc(linkHrefOf(raw))}"${kind === 'url' ? ' target="_blank" rel="noopener"' : layerAnchorAttrs(kind)}>${esc(raw)}</a>`
+        : esc(raw);
     return `<div class="col-row">
       <span class="ck">${esc(colLabel(c))}</span>
       <span class="cv">${body}</span>
@@ -3058,7 +3353,7 @@ function renderCards() {
     card.dataset.rowIndex = i; // PRD: DOM↔array mapping via data-row-index
     card.innerHTML = `
       <div class="card-top">
-        <button class="card-title" title="Open this link (your chosen mode) + show all columns">${highlight(name, state.search.trim())}</button>
+        <button class="card-title" title="${state.autoOpenOnSelect ? 'Open this link (your chosen mode) + show all columns' : 'Show all columns — the link opens from its ↗, or turn on the automation in ☰'} ">${highlight(name, state.search.trim())}</button>
         ${copyBtn(name, 'name', `${i}:name`)}
         ${url ? `<a class="icon" href="${esc(urlHref)}"${urlAttrs} title="${esc(urlHint)}">${urlGlyph}</a>` : ''}
       </div>
@@ -3098,7 +3393,36 @@ function renderCards() {
 }
 
 /** Completion side-effects: hide the done card (default) and auto-advance. */
+/** The tab a completed row opened, closed with it.
+
+    Three things have to be true and each one is a decision, not a guard:
+
+    · the automation is on (it is on by default — a toggle nobody finds is a feature
+      nobody has);
+    · links open in **tabs**, because a real browser tab or a popup window is not ours
+      to close; and
+    · the tab belongs to the *row*. A portal-template list composes each row's address
+      out of the one system the whole list keys into, so its tab is the portal the user
+      is working *in*: closing it on every tick would pull them out of the place they
+      are working. That is the "unless the whole list happens in one portal" case, and
+      the switch says so instead of doing nothing when pressed. */
+function closeTabForCompletedRow(i) {
+  /* No iframe to close: this edition opens real browser tabs. */
+  return null;
+}
+
+/** Why this automation is not on offer, or null when it is.
+
+    One function, one line each, so a port with no iframes can say its own reason
+    instead of inheriting the web app's — the panel edition opens real browser tabs,
+    and a tab in the user's own window is theirs to close, not ours. */
+function autoCloseBlockedReason() {
+  return 'Not in this edition: the panel opens real browser tabs, and a tab in your own window is yours to close.';
+}
+
 function afterComplete(i) {
+  const closed = closeTabForCompletedRow(i);
+  if (closed) toast(`Closed the tab for “${closed.title}”`);
   if (state.autoAdvance) {
     const next = nextIncompleteRow(i);
     if (next >= 0) {
@@ -3107,7 +3431,7 @@ function afterComplete(i) {
       openUrlFor(next);
     } else {
       log('Auto-advance: no incomplete rows left — queue finished!');
-      toast('🎉 Queue finished — every task is complete', 'success');
+      toast('Queue finished — every task is complete', 'success');
     }
   }
   renderCards();
@@ -3374,18 +3698,34 @@ function loadDemo() {
 }
 
 /* ------------------------------ Event wiring ----------------------------- */
-/* Hamburger menu */
+/* The ☰ menu — a panel over the whole app rather than a dropdown (see the CSS note).
+   Everything the menu renders is re-rendered on open, so it can never show a stale
+   ✓ or a switch in the wrong position: the file name, the open mode, and the three
+   automations are all read at that moment. */
 function openMenu() {
+  els.menuFile.textContent = els.headName.textContent.trim();
+  renderModeMenu();
+  renderAutoRows();
   els.menu.hidden = false;
-  const r = els.btnMenu.getBoundingClientRect();
-  els.menu.style.left = Math.min(r.left, window.innerWidth - 276) + 'px';
+  els.menuClose.focus();
   log('Menu opened');
 }
-function closeMenu() { els.menu.hidden = true; }
+function closeMenu() {
+  if (els.menu.hidden) return;
+  els.menu.hidden = true;
+  /* Back to the ☰ button — the menu's only opener, and therefore always the right place
+     to land. It is also the honest answer: remembering `document.activeElement` looks
+     tidier and fails on the one path that matters, because a programmatic click on a
+     button does not focus it, so the "return target" would be the document body. */
+  els.btnMenu.focus();
+  log('Menu closed');
+}
 els.btnMenu.addEventListener('click', (e) => { e.stopPropagation(); els.menu.hidden ? openMenu() : closeMenu(); });
-document.addEventListener('click', (e) => { if (!els.menu.hidden && !e.target.closest('#menu') && !e.target.closest('#btn-menu')) closeMenu(); });
+els.menuClose.addEventListener('click', closeMenu);
+/* A click that lands on the dimmed backdrop is a click outside; a click inside the panel
+   is not, which is why this compares the target rather than asking for `closest`. */
+els.menu.addEventListener('click', (e) => { if (e.target === els.menu) closeMenu(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
-window.addEventListener('resize', () => { if (!els.menu.hidden) closeMenu(); });
 
 els.miOpen.addEventListener('click', () => { closeMenu(); openLocalFile(); });
 
@@ -3451,21 +3791,66 @@ els.miLink.addEventListener('click', async () => {
 els.menu.querySelectorAll('.mode-item').forEach(b => b.addEventListener('click', () => { closeMenu(); setOpenMode(b.dataset.mode); }));
 els.menu.querySelector('#mi-mode-help')?.addEventListener('click', () => { closeMenu(); showModePicker(false); });
 
-/* Automation toggles (persisted) */
-const LS_AUTO_OPEN = 'turnstone-auto-open', LS_AUTO_ADV = 'turnstone-auto-advance';
-function getAutoOpen() { try { return localStorage.getItem(LS_AUTO_OPEN) === '1'; } catch (e) { return false; } }
+/* ------------------------------ Automations ------------------------------- */
+/* Three switches, persisted, and each announces what it just did — the row behind the
+   panel is dimmed, so the toast is the only feedback that lands where the user is
+   looking. `auto-close` defaults to ON, unlike the other two: it is the behaviour a
+   queue wants (the tab belongs to the task that is now done), and a feature behind a
+   switch nobody opens is a feature that does not exist. */
+const LS_AUTO_OPEN = 'turnstone-auto-open', LS_AUTO_ADV = 'turnstone-auto-advance', LS_AUTO_CLOSE = 'turnstone-auto-close';
+/* Two of the three are on by default, and that is deliberate rather than generous:
+   "on" is what the app already did, so a default of "on" preserves every existing
+   queue while giving the switch a real OFF — which is the only direction a switch can
+   add a behaviour to something that already happens. */
+function getAutoOpen() { try { return localStorage.getItem(LS_AUTO_OPEN) !== '0'; } catch (e) { return true; } }
 function getAutoAdvance() { try { return localStorage.getItem(LS_AUTO_ADV) === '1'; } catch (e) { return false; } }
-function renderAutoMenu() {
-  els.miAutoOpen.classList.toggle('checked', getAutoOpen());
-  els.miAutoAdvance.classList.toggle('checked', getAutoAdvance());
+function getAutoClose() { try { return localStorage.getItem(LS_AUTO_CLOSE) !== '0'; } catch (e) { return true; } }
+
+function setAutoSwitch(row, on) { row.setAttribute('aria-checked', on ? 'true' : 'false'); }
+
+/* Read once, at load — and this is a bug fix, not a formality. The switches were always
+   drawn from storage while the *behaviour* kept its in-memory default, so a reload showed
+   "on" over an automation that was off until you toggled it twice. Both existing switches
+   had it; the new one would have inherited it. */
+function applyStoredAutomations() {
+  state.autoOpenOnSelect = getAutoOpen();
+  state.autoAdvance = getAutoAdvance();
+  state.autoCloseOnComplete = getAutoClose();
+  log(`Automations from storage: auto-open=${state.autoOpenOnSelect}, auto-advance=${state.autoAdvance}, auto-close=${state.autoCloseOnComplete}`);
 }
+applyStoredAutomations();
+
+/* Re-rendered whenever the menu opens and whenever a list finishes loading, because one
+   of the three is *not offered* for some lists: a portal list's tab is the portal the
+   user is working in, so closing it on every tick would pull them out of it. Saying so
+   is better than a switch that silently does nothing. */
+function renderAutoRows() {
+  const reason = autoCloseBlockedReason();
+  setAutoSwitch(els.miAutoClose, getAutoClose());
+  setAutoSwitch(els.miAutoOpen, getAutoOpen());
+  setAutoSwitch(els.miAutoAdvance, getAutoAdvance());
+  els.miAutoClose.disabled = !!reason;
+  els.miAutoClose.title = reason || '';
+  const hint = els.miAutoClose.querySelector('.auto-hint');
+  hint.classList.toggle('warn', !!reason);
+  hint.textContent = reason || 'Tabs mode: the tab this row opened closes with it.';
+}
+
+els.miAutoClose.addEventListener('click', () => {
+  const next = !getAutoClose();
+  try { localStorage.setItem(LS_AUTO_CLOSE, next ? '1' : '0'); } catch (e) {}
+  state.autoCloseOnComplete = next;
+  log(`Auto-close-on-complete → ${next}`);
+  toast(next ? 'Completing a task now closes the tab it opened' : 'Tabs stay open when a task is complete');
+  renderAutoRows();
+});
 els.miAutoOpen.addEventListener('click', () => {
   const next = !getAutoOpen();
   try { localStorage.setItem(LS_AUTO_OPEN, next ? '1' : '0'); } catch (e) {}
   state.autoOpenOnSelect = next;
   log(`Auto-open-on-select → ${next}`);
   toast(next ? 'Cards auto-open their link when selected' : 'Auto-open on select is off');
-  renderAutoMenu();
+  renderAutoRows();
 });
 els.miAutoAdvance.addEventListener('click', () => {
   const next = !getAutoAdvance();
@@ -3473,7 +3858,7 @@ els.miAutoAdvance.addEventListener('click', () => {
   state.autoAdvance = next;
   log(`Auto-advance → ${next}`);
   toast(next ? 'Completing a task opens the next one' : 'Auto-advance is off');
-  renderAutoMenu();
+  renderAutoRows();
 });
 els.miColumns.addEventListener('click', () => { closeMenu(); openSettings(); });
 els.miPortal.addEventListener('click', () => {
@@ -3525,6 +3910,13 @@ els.btnColsReset.addEventListener('click', resetColLayout);
 els.settingsCols.addEventListener('change', (e) => {
   const picker = e.target.closest('select[data-colrole]');
   if (picker) { setColumnRole(+picker.dataset.colrole, picker.value); return; }
+  const typeSel = e.target.closest('select[data-coltype]');
+  if (typeSel) { setFieldType(+typeSel.dataset.coltype, typeSel.value); return; }
+  /* The name commits on change — blur or Enter — because a rename re-keys every
+     record remembered for this header (see renameColumn), which is not a thing to
+     do on each keystroke. */
+  const nameIn = e.target.closest('input[data-colname]');
+  if (nameIn) { renameColumn(+nameIn.dataset.colname, nameIn.value); return; }
   const cb = e.target.closest('input[data-colshow]');
   if (!cb) return;
   const c = +cb.dataset.colshow;
@@ -3533,6 +3925,17 @@ els.settingsCols.addEventListener('change', (e) => {
   log(`Column ${c} (${colLabel(c)}) → ${cb.checked ? 'shown' : 'hidden'}`);
   renderCards();
   renderSettings();
+});
+/* The choice list follows the typing, on the cards immediately and in the panel on
+   commit: a dropdown is much easier to get right while you can see it fill in. */
+els.settingsCols.addEventListener('input', (e) => {
+  const optIn = e.target.closest('input[data-coloptions]');
+  if (!optIn) return;
+  setFieldOptions(+optIn.dataset.coloptions, optIn.value, true);
+});
+els.settingsCols.addEventListener('click', (e) => {
+  const seed = e.target.closest('[data-colseed]');
+  if (seed) seedOptions(+seed.dataset.colseed);
 });
 els.settingsPresets.addEventListener('click', (e) => {
   const applyBtn = e.target.closest('[data-preset-apply]');
@@ -3647,7 +4050,12 @@ els.cards.addEventListener('click', (e) => {
   const copyBtn = e.target.closest('.copy[data-copy-col]');
   const toggleBtn = e.target.closest('[data-toggle-col]');
   const urlLink = e.target.closest('.card-url a');
-  if (doneBtn) {
+  const cellBtn = e.target.closest('.cell-btn[data-cell]');
+  if (cellBtn) {
+    /* A button in a choice row: set the cell to that option. Re-renders, which is
+       how the pressed state moves — there is no caret here to lose. */
+    writeCellValue(cellBtn.dataset.cell, cellBtn.dataset.cellvalue);
+  } else if (doneBtn) {
     const i = +doneBtn.dataset.done;
     state.status[i] = 'complete';
     log(`Row ${i} marked complete`);
@@ -3659,18 +4067,19 @@ els.cards.addEventListener('click', (e) => {
     renderCards();
     markDirty();
   } else if (titleBtn) {
-    // Clicking the card opens its link (per current mode) AND expands the card.
+    /* The card is the row's control surface: clicking it always shows the rest of the
+       columns, and opens the link only when that automation is on.
+
+       Until this session both branches of the `if` that used to sit here called
+       openUrlFor, so the switch behind it changed nothing at all — a control with no
+       behaviour, which a ✓ at the far edge of a menu row hides better than a switch
+       labelled with what it does. The default is now ON, which is what that code did
+       anyway, and OFF is a real choice: read a row's columns without a tab opening. */
     const card = titleBtn.closest('.card');
     const i = +card.dataset.rowIndex;
-    log(`Card clicked (rowIndex=${i}) → open + expand`);
-    const wasExpanded = !!state.expanded[i];
+    log(`Card clicked (rowIndex=${i}) → ${state.autoOpenOnSelect ? 'open + expand' : 'expand only'}`);
     state.expanded[i] = true;
-    if (!wasExpanded && state.autoOpenOnSelect) {
-      // Auto-open happens via the expand below; avoid double-open.
-      openUrlFor(i);
-    } else {
-      openUrlFor(i);
-    }
+    if (state.autoOpenOnSelect) openUrlFor(i);
     renderCards();
   } else if (toggleBtn) {
     const i = +toggleBtn.dataset.toggleCol;
@@ -3701,13 +4110,27 @@ els.cards.addEventListener('click', (e) => {
     });
   }
 });
+/* One listener for both kinds of field on a card: the virtual notes box, which is
+   the app's own, and a cell the user has made editable, which belongs to the row.
+   Both are "live" — no re-render, because the caret is in one of them. */
 els.cards.addEventListener('input', (e) => {
   const ta = e.target.closest('textarea[data-notes]');
-  if (!ta) return;
-  const i = +ta.dataset.notes;
-  state.notes[i] = ta.value;
-  log(`Notes changed for row ${i} (${ta.value.length} chars)`);
-  markDirty(); // no re-render — keeps the textarea focused
+  if (ta) {
+    const i = +ta.dataset.notes;
+    state.notes[i] = ta.value;
+    log(`Notes changed for row ${i} (${ta.value.length} chars)`);
+    markDirty(); // no re-render — keeps the textarea focused
+    return;
+  }
+  const field = e.target.closest('.cell-input[data-cell], .cell-area[data-cell]');
+  if (field) writeCellValue(field.dataset.cell, field.value, true);
+});
+/* Committed edits. A dropdown reports through `change` alone; a text field also
+   reports here when it loses focus or the user presses Enter, which is where the
+   card gets re-rendered and the value is normalised for display. */
+els.cards.addEventListener('change', (e) => {
+  const field = e.target.closest('.cell-input[data-cell], .cell-area[data-cell], .cell-select[data-cell]');
+  if (field) writeCellValue(field.dataset.cell, field.value);
 });
 
 
@@ -3719,7 +4142,7 @@ function closeCurrentFile() {
   state.sourceUrl = null; state.data = []; state.hasHeader = false;
   state.urlCol = 0; state.nameCol = -1; state.statusCol = -1; state.notesCol = -1;
   state.status = []; state.notes = []; state.isDirty = false; state.lastSavedAt = null; state.lastSavedWhere = null;
-  state.colOrder = null; state.colHidden = {}; state.expanded = {};
+  state.colOrder = null; state.colHidden = {}; state.colTypes = {}; state.colOptions = {}; state.expanded = {};
   state.sortCol = null; state.sortAsc = true;
   closeAllTabs();
   els.search.value = ''; state.search = '';

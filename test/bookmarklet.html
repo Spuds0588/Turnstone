@@ -214,6 +214,70 @@ async function waitForCounts(w, appRoot, want) {
   return { got: last };
 }
 
+/** The column panel is where the app is edited, and in this edition it lives inside a
+ *  shadow root on a page that is not ours. Every control it builds has to land in that
+ *  root, and the one control that crosses a real boundary — an editable cell — has to
+ *  end up carrying the value a write-back would.
+ *
+ *  It runs in its own freshly-mounted overlay with the vendor sheet as the *first* drop,
+ *  for two reasons. The canonical queue's four columns are all card features, so there
+ *  would be no ordinary data column in it to give an editor to; and a drop is not
+ *  reliable in every position — measured, a second drop in this harness was ignored
+ *  outright by the zero-library build, which went on showing the workbook before it. A
+ *  fresh mount also means nothing the sweep loaded earlier can be mistaken for the file
+ *  under test, which is exactly the trap a shared, always-ten-tasks fixture sets. */
+async function columnChecks(spec, w, appRoot) {
+  try {
+    await dropFixture(w, appRoot, 'sample-vendor-onboarding.csv');
+    /* The sort list is rebuilt from the header row on every load and is always in the
+       DOM, so the vendor sheet's own column names in it are a signal no other fixture
+       shares — unlike the counts, which every fixture lands identically. */
+    const loadedVendor = () => {
+      const opts = [...appRoot.querySelectorAll('#sort-col option')].map((o) => o.textContent);
+      return opts.some((t) => t.startsWith('Onboarding Link'));
+    };
+    for (let i = 0; i < 200 && !loadedVendor(); i++) await sleep(50);
+    if (!loadedVendor()) throw new Error('the vendor sheet never became the loaded file');
+    appRoot.querySelector('#mi-columns').click();
+    await sleep(150);
+    const overlay = appRoot.querySelector('#settings-overlay');
+    const setRows = [...appRoot.querySelectorAll('#settings-cols .set-col')];
+    const features = setRows.filter((r) => r.querySelector('.pos').textContent === 'card feature');
+    note(`${spec.name}: ⚙ Columns opens inside the shadow root, one row per column`,
+      !!overlay && appRoot.contains(overlay) && setRows.length === 5 && features.length === 3
+        && features.every((r) => r.querySelector('select[data-coltype]').disabled),
+      `${setRows.length} rows, ${features.length} card features with the editor off`);
+    const typeSel = appRoot.querySelector('select[data-coltype="3"]');
+    typeSel.value = 'select';
+    typeSel.dispatchEvent(new w.Event('change', { bubbles: true }));
+    await sleep(150);
+    const cell = appRoot.querySelector('article.card .col-row .cell-select');
+    const before = cell ? cell.value : '';
+    /* Any option other than the row's current one: which one is third depends on how the
+       file's own values rank by frequency, and picking by position quietly chose the
+       value that was already there when this check was first written. */
+    const wanted = cell ? ([...cell.options].map((o) => o.value).find((v) => v && v !== before) || '') : '';
+    if (cell) { cell.value = wanted; cell.dispatchEvent(new w.Event('change', { bubbles: true })); }
+    /* The payload is an IIFE, so its own functions are not on the host window and
+       buildExportMatrix() cannot be called from here. Switching the column back to Read
+       only is the stronger evidence anyway: the read-only rendering is built straight out
+       of the row's own cell, so if it now shows the value that was picked — and that
+       value is not the one the file arrived with — the edit reached the row and not just
+       the control on it. */
+    const typeBack = appRoot.querySelector('select[data-coltype="3"]');
+    typeBack.value = '';
+    typeBack.dispatchEvent(new w.Event('change', { bubbles: true }));
+    await sleep(150);
+    const shown = ((appRoot.querySelector('article.card .col-row .cv') || {}).textContent || '').trim();
+    note(`${spec.name}: a cell given an editor becomes a control, and the edit reaches the row`,
+      !!cell && cell.options.length === 4 && !!wanted && shown === wanted && wanted !== before,
+      `a dropdown of ${cell ? cell.options.length : 0} choices took ${before} → ${wanted}; read-only now renders “${shown}”`);
+    appRoot.querySelector('#settings-x').click();
+  } catch (e) {
+    note(`${spec.name}: the column panel inside the shadow root`, false, `threw: ${e.message}`);
+  }
+}
+
 async function sweepVariant(spec) {
   const frame = await freshHost();
   const w = frame.contentWindow;
@@ -241,6 +305,31 @@ async function sweepVariant(spec) {
     (host.shadowRoot.querySelector('.ts-variant') || {}).textContent);
   note(`${spec.name}: it can be closed from the page it took over`, !!host.shadowRoot.getElementById('ts-close'));
 
+  /* The ☰ menu is a panel over the whole app now, and in this edition that means a
+     `position: fixed` element inside a shadow root on somebody else's page — the one
+     layout that could plausibly behave differently here. Measuring it costs a click;
+     assuming it costs a user. */
+  const burger = appRoot.querySelector('#btn-menu');
+  if (burger) {
+    burger.click();
+    await sleep(180);
+    const menuEl = appRoot.querySelector('#menu');
+    const menuBox = appRoot.querySelector('#menu-box');
+    const rect = menuEl.getBoundingClientRect();
+    note(`${spec.name}: ☰ opens a panel over the page, not a dropdown beside a button`,
+      !menuEl.hidden && rect.width >= w.innerWidth - 1 && rect.height >= w.innerHeight - 1
+        && menuBox.getAttribute('role') === 'dialog',
+      `a ${Math.round(rect.width)}×${Math.round(rect.height)} backdrop over a ${w.innerWidth}×${w.innerHeight} host viewport`);
+    const switches = [...appRoot.querySelectorAll('.auto-row')].map((s) => s.getAttribute('aria-checked'));
+    note(`${spec.name}: the automations render as switches inside the shadow root`,
+      switches.length === 3 && switches.every((v) => v === 'true' || v === 'false'), switches.join(' · '));
+    appRoot.querySelector('#menu-close').click();
+    note(`${spec.name}: …and it closes on its own ✕ without touching the host page`,
+      menuEl.hidden && w.document.documentElement.innerHTML.length > 0, 'the host document is still there');
+  } else {
+    note(`${spec.name}: ☰ opens a menu panel`, false, 'no #btn-menu in the app root');
+  }
+
   /* The app's own claim about what this payload can do. */
   const notice = host.shadowRoot.getElementById('cap-notice');
   const noticeText = notice ? notice.textContent : '(no notice)';
@@ -248,6 +337,10 @@ async function sweepVariant(spec) {
   const dz = host.shadowRoot.getElementById('dz-formats');
   note(`${spec.name}: the welcome panel lists exactly the formats it can read`,
     spec.formats.includes(dz ? dz.textContent.trim() : ''), dz ? dz.textContent.trim() : '');
+
+  /* The app's editing surface, in the one layout that could plausibly behave differently
+     here. Before the fixture matrix, so the vendor sheet is this overlay's first load. */
+  await columnChecks(spec, w, appRoot);
 
   /* Every fixture this variant claims. */
   for (const rel of [...NO_WORKBOOK, ...WORKBOOK]) {

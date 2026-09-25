@@ -81,14 +81,47 @@
   #head-save.dirty { color: var(--amber); }
   #head-save.saved { color: var(--green); }
 
-  /* ---------- Hamburger dropdown ---------- */
+  /* ---------- The ☰ menu: a panel over the whole app ----------
+     It used to be a dropdown hanging under the button, which meant it covered the
+     cards it is about on a narrow window and could not show a switch and its
+     explanation without becoming a wall of text in a 260px strip. It is a modal now:
+     the queue dims behind it, the groups sit in two columns when there is room, and
+     the automation switches — the one part of this menu whose *state* matters as much
+     as its label — are real switches instead of a ✓ on the right-hand edge.
+
+     Nothing here is positioned from JavaScript any more, which also retires the last
+     runtime `style` property in the app (see the style-src note further down): the
+     backdrop centers the panel at every width, so no `left` has to be computed. */
   #menu {
-    position: fixed; top: 44px; z-index: 120;
-    width: 260px; max-height: 80vh; overflow-y: auto;
-    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0,0,0,.35); padding: 6px;
+    position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,.55);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
   }
   #menu[hidden] { display: none; }
+  #menu-box {
+    background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    border-radius: 14px; width: min(760px, 96vw); max-height: 88vh; overflow-y: auto;
+    box-shadow: 0 24px 60px rgba(0,0,0,.5);
+  }
+  #menu-head {
+    position: sticky; top: 0; z-index: 1;
+    display: flex; align-items: center; gap: 10px;
+    padding: 13px 16px; border-bottom: 1px solid var(--border);
+    background: var(--panel); border-radius: 14px 14px 0 0;
+  }
+  #menu-head h2 { margin: 0; font-size: 14px; }
+  #menu-head .menu-file {
+    flex: 1 1 auto; min-width: 0; font-size: 11.5px; color: var(--muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  #menu-close {
+    flex: 0 0 auto; width: 26px; height: 26px; border-radius: 7px; cursor: pointer;
+    border: 1px solid var(--border); background: none; color: var(--muted); font-size: 12px;
+  }
+  #menu-close:hover { color: var(--text); border-color: var(--muted); }
+  #menu-body { display: grid; grid-template-columns: 1fr; gap: 0 18px; padding: 8px 10px 12px; }
+  @media (min-width: 680px) { #menu-body { grid-template-columns: 1fr 1fr; } }
+  .menu-group { display: flex; flex-direction: column; gap: 1px; padding-bottom: 8px; }
+  .menu-group.wide { grid-column: 1 / -1; }
   .menu-item {
     display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
     background: none; border: none; color: var(--text); padding: 8px 9px;
@@ -97,10 +130,40 @@
   .menu-item:hover { background: var(--panel-2); }
   .menu-item:disabled { opacity: .4; cursor: default; }
   .menu-item:disabled:hover { background: none; }
-  .menu-item .mi { flex: 0 0 20px; text-align: center; }
-  .menu-sep { height: 1px; background: var(--border); margin: 5px 4px; }
+  /* The glyph behind every label. Monochrome and inherited, so it takes the theme
+     colour and the same weight as the text beside it — see the icon note in the
+     format layer for why these are characters and not pictures. */
+  .menu-item .mi { flex: 0 0 20px; text-align: center; color: var(--muted); font-size: 13px; }
+  .menu-item:hover .mi { color: var(--accent); }
   .menu-label { font-size: 10px; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); padding: 7px 9px 3px; }
   .mode-item.checked::after { content: "✓"; margin-left: auto; color: var(--green); font-weight: 700; }
+
+  /* Switches. An automation is a state, so it gets a control that shows the state:
+     the ✓ used to appear at the far right edge of the row, which is exactly where
+     the eye is not when reading a list of sentences. */
+  .auto-row {
+    display: flex; align-items: flex-start; gap: 11px; width: 100%; text-align: left;
+    background: none; border: none; color: var(--text); padding: 8px 9px;
+    border-radius: 8px; cursor: pointer; font-size: 12.5px; line-height: 1.35;
+  }
+  .auto-row:hover { background: var(--panel-2); }
+  .auto-row:disabled { cursor: default; opacity: .55; }
+  .auto-row:disabled:hover { background: none; }
+  .auto-row .sw {
+    flex: 0 0 auto; position: relative; width: 34px; height: 19px; margin-top: 1px;
+    border-radius: 999px; background: var(--panel-2); border: 1px solid var(--border);
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .auto-row .sw::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px;
+    border-radius: 50%; background: var(--muted);
+    transition: transform .15s ease, background .15s ease;
+  }
+  .auto-row[aria-checked="true"] .sw { background: var(--accent); border-color: var(--accent); }
+  .auto-row[aria-checked="true"] .sw::after { transform: translateX(15px); background: #fff; }
+  .auto-row .auto-text { min-width: 0; }
+  .auto-row .auto-hint { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; }
+  .auto-row .auto-hint.warn { color: var(--amber); }
 
   /* ---------- Split pane: workspace LEFT, sidebar RIGHT (approved deviation) ---------- */
   #app {
@@ -297,6 +360,32 @@
   .col-more:hover { text-decoration: underline; }
   .card.ex .col-more { color: var(--muted); }
 
+  /* Data-column rows that are *editable*: where a column has a field type (⚙
+     Columns), its cell renders as a control instead of text — a short text field,
+     a long one, a dropdown, or a row of buttons. All four are compact enough for a
+     collapsed card (the notes textarea already lives in one), and every one writes
+     into the row's own cell, so an edit leaves through the same writer a status
+     tick does and nothing new had to be added to the export path. */
+  /* `width: 100%` rather than a flex basis: these sit inside `.cv`, which is a
+     plain span, so a flex-grow here would have nothing to grow in. */
+  .col-row .cell-input, .col-row .cell-area, .col-row .cell-select {
+    width: 100%; min-width: 0; background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px; font: inherit; font-size: 11.5px;
+    padding: 3px 6px;
+  }
+  .col-row .cell-area { resize: vertical; min-height: 30px; }
+  .col-row .cell-input::placeholder, .col-row .cell-area::placeholder { color: var(--muted); }
+  .col-row .cell-input:focus, .col-row .cell-area:focus, .col-row .cell-select:focus {
+    outline: none; border-color: var(--accent-dark);
+  }
+  .col-row .cell-btns { display: flex; flex-wrap: wrap; gap: 3px; }
+  .col-row .cell-btn {
+    background: var(--bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 8px; font: inherit; font-size: 11px; cursor: pointer;
+  }
+  .col-row .cell-btn:hover { border-color: var(--accent-dark); }
+  .col-row .cell-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
   /* Column settings overlay */
   #settings-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200;
@@ -305,7 +394,7 @@
   #settings-overlay[hidden] { display: none; }
   #settings-box {
     background: var(--panel); color: var(--text); border: 1px solid var(--border);
-    border-radius: 12px; padding: 18px; width: 400px; max-width: 94vw; max-height: 86vh; overflow-y: auto;
+    border-radius: 12px; padding: 18px; width: 460px; max-width: 94vw; max-height: 86vh; overflow-y: auto;
   }
   #settings-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
   #settings-head h2 { margin: 0; font-size: 15px; }
@@ -316,8 +405,12 @@
     border-radius: 999px; padding: 1px 7px; text-transform: uppercase; letter-spacing: .04em;
   }
   #settings-cols { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
+  /* A column row wraps onto a second line when it carries a choice list: the
+     controls on the first, the choices on the second. One line was already tight
+     once a row had a name field *and* two dropdowns, and an option list squeezed
+     beside them in a 460px panel is unreadable. */
   .set-col {
-    display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+    display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; padding: 6px 8px;
     background: var(--bg); border: 1px solid var(--border); border-radius: 6px; font-size: 12.5px;
   }
   .set-col.fixed { color: var(--muted); }
@@ -328,12 +421,34 @@
   .set-col label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
   .set-col input[type=checkbox] { flex: 0 0 auto; }
   .set-col .pos { color: var(--muted); font-size: 10.5px; white-space: nowrap; }
-  .set-col .cname { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* The name is a field now, not a label: a column called `Column 3`,
+     `Unnamed: 7` or `Summary` you want to call `Task` is the commonest thing in a
+     real export, and until now the only way to change it was a spreadsheet.
+     It commits on blur rather than per keystroke — a rename re-keys everything
+     remembered for this header (see renameColumn), which is not a per-character act. */
+  .set-col .cname {
+    flex: 1 1 92px; min-width: 0; background: none; color: var(--text);
+    border: 1px solid transparent; border-radius: 5px; padding: 2px 4px;
+    font: inherit; font-size: 12.5px; font-weight: 600;
+  }
+  .set-col .cname:hover { border-color: var(--border); }
+  .set-col .cname:focus { outline: none; border-color: var(--accent-dark); background: var(--panel); }
+  .set-col .cname:disabled { font-weight: 400; color: var(--muted); }
   .set-col select {
     flex: 0 0 auto; background: var(--panel); color: var(--text); border: 1px solid var(--border);
     border-radius: 5px; font-size: 11.5px; padding: 2px 4px; font-family: inherit; cursor: pointer;
   }
+  .set-col select:disabled { cursor: default; opacity: .5; }
   .set-col.fixed select { border-color: var(--accent-dark); }
+  .set-col.has-choices select[data-coltype] { border-color: var(--accent-dark); }
+  .set-col .crow2 { flex: 1 1 100%; display: none; align-items: center; gap: 5px; min-width: 0; }
+  .set-col.has-choices .crow2 { display: flex; }
+  .set-col .coptions {
+    flex: 1 1 auto; min-width: 0; background: var(--panel); color: var(--text);
+    border: 1px solid var(--border); border-radius: 5px; font: inherit; font-size: 11px; padding: 3px 6px;
+  }
+  .set-col .coptions:focus { outline: none; border-color: var(--accent-dark); }
+  .set-col .crow2 .icon { flex: 0 0 auto; }
   #settings-presets { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
   .preset-row { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }
   .preset-row .pname { font-weight: 600; }
@@ -357,8 +472,9 @@
      (style-src-attr), which cost the dialogs their whole layout on exactly the
      locked-down sites the bookmarklet exists for — so every rule that used to be
      written into the markup lives here, keyed by id or class. Nothing in the app
-     writes a style attribute any more; the one position it genuinely computes at
-     runtime is the hamburger menu's `left`, which cannot be known ahead of time. */
+     writes a style attribute or a runtime `style` property any more: the ☰ menu used
+     to be the one exception, because a dropdown anchored to a button needs a `left`
+     nobody can know ahead of time. Making it a modal retired that. */
   #mode-picker {
     position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 300;
     display: flex; align-items: center; justify-content: center; padding: 20px;
@@ -476,7 +592,9 @@
   body.has-file #sidebar { display: flex; }
   /* openMenu() already parks the dropdown under the ☰ button; only the width needs
      widening to a narrow panel's measure. */
-  #menu { width: min(280px, calc(100vw - 16px)); }
+  /* A side panel is narrow, so the menu's two-column layout never applies: the rule
+     below keeps the panel inside the panel, and the single column is the default. */
+  #menu-box { width: min(360px, calc(100vw - 24px)); max-height: 92vh; }
   #welcome { padding: 14px; }
   #welcome .box { padding: 20px; }
   @media (max-width: 760px) { #app { grid-template-rows: 1fr; } }

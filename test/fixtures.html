@@ -26,10 +26,10 @@
   .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
   iframe { width: 1100px; height: 760px; border: 1px solid #2c313c; border-radius: 10px; background: #fff; }
   .note { color: #8b93a7; font-size: 12.5px; max-width: 92ch; }
-  ul#refusals, ul#layers, ul#workflows, ul#portal, ul#inbox { max-width: 110ch; padding-left: 20px; }
-  ul#refusals li, ul#layers li, ul#workflows li, ul#portal li, ul#inbox li { margin-bottom: 5px; }
-  ul#workflows code, ul#portal code, ul#inbox code { color: #cfd6e6; }
-  ul#workflows b, ul#portal b, ul#inbox b { color: #fff; }
+  ul#refusals, ul#layers, ul#workflows, ul#portal, ul#inbox, ul#automations, ul#columns { max-width: 110ch; padding-left: 20px; }
+  ul#refusals li, ul#layers li, ul#workflows li, ul#portal li, ul#inbox li, ul#automations li, ul#columns li { margin-bottom: 5px; }
+  ul#workflows code, ul#portal code, ul#inbox code, ul#columns code { color: #cfd6e6; }
+  ul#workflows b, ul#portal b, ul#inbox b, ul#columns b { color: #fff; }
 </style>
 </head>
 <body>
@@ -106,6 +106,29 @@
   so the encoder and the decoder are independent implementations.
 </p>
 <ul id="workspace"></ul>
+
+<h2>The ☰ menu, and the automations behind its switches</h2>
+<p class="note">
+  The menu is a panel over the whole app rather than a dropdown beside a button, and the automations are
+  switches with a sentence under each one. That makes them easier to read and easier to get away with:
+  a switch that looks on and does nothing is worse than a ✓ nobody can see. So each one here is asserted
+  through what it <em>does</em> — and the tab-closing one through the case it deliberately refuses, a list
+  whose every row is worked in the same portal.
+</p>
+<ul id="automations"></ul>
+
+<h2>Columns — order, name, visibility, and cells you can edit</h2>
+<p class="note">
+  The columns are the one part of a list the file does not get to settle finally: a header row reading
+  <code>Column 3</code>, the field you actually update sitting fourth from the left, a notes column you would
+  rather not see at all. So every column gets a row in ⚙ Columns — a drag handle, a visibility box, an
+  editable name, and two dropdowns — and the assertions that matter are the ones that cross a boundary:
+  a rename follows the file out again (the header cell <em>is</em> the name), a column given an editor renders
+  a control instead of text, and what is typed into a cell is what the export writes. The vendor fixture is
+  used here because the canonical queue's four columns are <i>all</i> card features — there is no ordinary
+  data column in it to make editable.
+</p>
+<ul id="columns"></ul>
 
 <h2>The embedded layers — the click has to land somewhere useful</h2>
 <ul id="layers"></ul>
@@ -833,6 +856,292 @@ async function run() {
     }
   } catch (e) {
     extraNote(wsList, false, `workspace-link section threw: ${e.message}`, e.stack);
+  }
+
+  /* ------------------------------------------- the menu and its automations --
+     Each switch is asserted through its behaviour, because a switch is exactly the
+     control that can look right and do nothing. The tab-closing one is asserted
+     through the case it refuses as well as the case it performs. */
+  const autoList = el('automations');
+  const NO_IFRAMES = /^panel-/.test(EDITION);
+  try {
+    /* A known starting point, because every number below is a *count of open tabs* and
+       the section before this one leaves one open on purpose (its ?open=1 link). The
+       switches are persisted preferences, so they are set here rather than inherited:
+       a suite that reads whatever the last run left behind tests the last run. */
+    try {
+      w.localStorage.setItem('turnstone-mode-picked', '1');
+      w.localStorage.setItem('turnstone-auto-close', '1');
+      w.localStorage.removeItem('turnstone-auto-open');
+      w.localStorage.removeItem('turnstone-auto-advance');
+    } catch (e) { /* storage blocked */ }
+    w = await resetApp();
+    await loadInApp(w, 'sample-links.csv');
+    if (typeof w.setOpenMode === 'function') w.setOpenMode('tabs', false);
+
+    const d = () => wsDoc();
+    const byId = (id) => d().getElementById(id);
+    const tabNames = () => [...d().querySelectorAll('#tabbar .tab .tab-title')].map((t) => t.textContent);
+    const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+    const openMenu = async () => { byId('btn-menu').click(); return until(() => !byId('menu').hidden, 2000); };
+    const shutMenu = () => { if (!byId('menu').hidden) byId('menu-close').click(); };
+    const clickTitle = (row) => d().querySelector(`article.card[data-row-index="${row}"]`).querySelector('.card-title').click();
+    const finish = (row) => d().querySelector(`article.card[data-row-index="${row}"]`).querySelector('[data-done]').click();
+
+    /* 1. It is a panel over the app, not a dropdown beside a button. */
+    await openMenu();
+    const overlay = byId('menu'), box = byId('menu-box');
+    const cover = overlay.getBoundingClientRect();
+    const vw = d().documentElement.clientWidth, vh = d().documentElement.clientHeight;
+    extraNote(autoList, box && box.getAttribute('role') === 'dialog' && box.getAttribute('aria-modal') === 'true'
+      && cover.width >= vw - 1 && cover.height >= vh - 1,
+      `the ☰ menu opens as a modal over the whole app — a <b>${Math.round(cover.width)}×${Math.round(cover.height)}</b> backdrop over a ${vw}×${vh} viewport, <code>role="dialog" aria-modal="true"</code>`);
+
+    /* 2. Three switches, each with a state and a sentence. */
+    const rows = [...d().querySelectorAll('.auto-row')];
+    const shaped = rows.length === 3 && rows.every((r) => r.getAttribute('role') === 'switch'
+      && /^(true|false)$/.test(r.getAttribute('aria-checked') || '')
+      && ((r.querySelector('.auto-hint') || {}).textContent || '').trim().length > 24);
+    extraNote(autoList, shaped,
+      `all three automations are switches with a state and an explanation — ${rows.map((r) => `${r.id.replace('mi-auto-', '')}=${r.getAttribute('aria-checked')}${r.disabled ? ' (off the table)' : ''}`).join(' · ')}`);
+
+    /* 3. Escape closes it and hands focus back to the button that opened it. */
+    d().dispatchEvent(new (wsWin().KeyboardEvent)('keydown', { key: 'Escape', bubbles: true }));
+    await until(() => overlay.hidden, 1500);
+    extraNote(autoList, overlay.hidden && d().activeElement && d().activeElement.id === 'btn-menu',
+      'Escape closes it and puts focus back on the ☰ button rather than at the top of the document');
+
+    if (NO_IFRAMES) {
+      /* The panel opens real browser tabs, so there is no iframe for a completed row
+         to close. The switch has to say *that* rather than the portal reason, which is
+         what a port that inherited the web app's sentence would get wrong. */
+      await openMenu();
+      const panelClose = byId('mi-auto-close');
+      extraNote(autoList, panelClose.disabled && /edition/i.test(panelClose.querySelector('.auto-hint').textContent),
+        `this edition opens real browser tabs, so the tab-closing switch is off with that reason rather than the portal one — <i>${panelClose.querySelector('.auto-hint').textContent.slice(0, 96)}</i>`);
+      shutMenu();
+      extraNote(autoList, true, 'the tab-closing automation is asserted where there are iframes to close (the web app, the standalone build) — this edition documents that it has none');
+    } else {
+      /* 4. auto-open: OFF means reading a card is not opening its row. */
+      await openMenu();
+      byId('mi-auto-open').click();
+      const storedOff = wsWin().localStorage.getItem('turnstone-auto-open') === '0';
+      shutMenu();
+      clickTitle(0);
+      await pause(400);
+      const row0 = d().querySelector('article.card[data-row-index="0"]');
+      extraNote(autoList, storedOff && tabNames().length === 0 && row0.classList.contains('ex'),
+        `with <b>auto-open</b> off, clicking a card reads it (${row0.classList.contains('ex') ? 'expanded' : 'not expanded'}) and opens nothing (${tabNames().length} tabs) — the switch has a behaviour behind it`);
+      await openMenu();
+      byId('mi-auto-open').click();
+      const backOn = byId('mi-auto-open').getAttribute('aria-checked') === 'true'
+        && wsWin().localStorage.getItem('turnstone-auto-open') === '1';
+      shutMenu();
+      extraNote(autoList, backOn && tabNames().length === 0,
+        '…and switching it back on stores that too, so the choice outlives the session');
+
+      /* 5. auto-close: the tab that row opened goes with it, and only that one.
+            Rows come from the DOM rather than from hard-coded indices — three rows of
+            the canonical fixture arrive already complete, so they are hidden, and a
+            card that is not on screen cannot be clicked (the first run of this check
+            learned that the direct way). */
+      const visibleRows = () => [...d().querySelectorAll('article.card')].map((c) => +c.dataset.rowIndex);
+      const rowA = visibleRows()[0], rowB = visibleRows()[1];
+      clickTitle(rowA);
+      await until(() => tabNames().length === 1, 2500);
+      const firstTitle = tabNames()[0];
+      clickTitle(rowB);
+      await until(() => tabNames().length === 2, 2500);
+      extraNote(autoList, tabNames().length === 2,
+        `two rows are open in tabs, rows ${rowA} and ${rowB} — <i>${tabNames().join('</i>, <i>')}</i>`);
+      finish(rowA);
+      await until(() => tabNames().length === 1, 2500);
+      extraNote(autoList, tabNames().length === 1 && tabNames()[0] !== firstTitle,
+        `completing a task closes <b>its</b> tab and leaves the other alone — <i>${firstTitle}</i> gone, <i>${tabNames()[0]}</i> still open`);
+
+      /* 6. auto-advance: completing one closes its tab and opens the next row. */
+      await openMenu(); byId('mi-auto-advance').click(); shutMenu(); await pause(100);
+      const secondTitle = tabNames()[0];
+      finish(rowB);
+      await until(() => tabNames().length === 1 && tabNames()[0] !== secondTitle, 3000);
+      extraNote(autoList, tabNames().length === 1 && tabNames()[0] !== secondTitle,
+        `with <b>auto-advance</b> on, finishing that task closes its tab and opens the next incomplete row — <i>${tabNames()[0]}</i>`);
+      await openMenu(); byId('mi-auto-advance').click(); shutMenu(); await pause(100);
+
+      /* 7. Off, the tab stays put — the automation is the whole difference. */
+      await openMenu(); byId('mi-auto-close').click(); shutMenu(); await pause(100);
+      const rowC = visibleRows()[0];
+      clickTitle(rowC);
+      await until(() => tabNames().length === 2, 2500);
+      const openBefore = tabNames().length;
+      finish(rowC);
+      await pause(500);
+      extraNote(autoList, tabNames().length === openBefore,
+        `with <b>close-on-complete</b> off, the tab stays open (<b>${openBefore}</b> still there after finishing row ${rowC}) — the switch is the difference between the two behaviours, not decoration`);
+      await openMenu(); byId('mi-auto-close').click(); shutMenu(); await pause(100);
+    }
+
+    /* 8. The exception, stated: a portal list's tab is the portal, not the row. */
+    wsWin().localStorage.setItem('turnstone-mode-picked', '1');
+    w = await resetApp();
+    await loadInApp(w, 'sample-portal-tickets.csv');
+    if (await until(() => d().getElementById('portal-modal'), 2000)) {
+      const input = d().getElementById('portal-input');
+      input.value = 'https://portal.example.com/incident/{Ticket}';
+      input.dispatchEvent(new (wsWin().Event)('input', { bubbles: true }));
+      d().getElementById('portal-use').click();
+      await until(() => !d().getElementById('portal-modal'), 2000);
+    }
+    await openMenu();
+    const portalClose = byId('mi-auto-close');
+    const portalHint = (portalClose.querySelector('.auto-hint') || {}).textContent || '';
+    /* Two reasons a tab must not be closed exist, and an edition that only ever shows
+       one of them has to show the right one: the panel has no iframes at all, so it
+       answers with the edition's reason even for a portal list. */
+    extraNote(autoList, portalClose.getAttribute('aria-checked') === 'true' && portalClose.disabled
+      && (NO_IFRAMES ? /edition/i.test(portalHint) : /portal/i.test(portalHint)),
+      NO_IFRAMES
+        ? `…and the reason it gives is the edition's rather than the portal's, which is the honest one there — <i>${portalHint.slice(0, 104)}</i>`
+        : `a list with no links of its own offers the same switch <b>off the table, with the reason</b> — <i>${portalHint.slice(0, 104)}</i>`);
+    shutMenu();
+    if (!NO_IFRAMES) {
+      clickTitle(+d().querySelector('article.card').dataset.rowIndex);
+      await until(() => tabNames().length === 1, 2500);
+      const composed = d().querySelector('article.card .card-url a');
+      finish(+d().querySelector('article.card').dataset.rowIndex);
+      await pause(450);
+      extraNote(autoList, tabNames().length === 1,
+        `…and completing a row there leaves the portal tab open (<a href="${composed.getAttribute('href')}">${composed.textContent.slice(0, 34)}</a>) — closing it would pull the user out of the system they are working in`);
+    }
+
+    /* Leave the profile as it was found: these are persisted preferences and the two
+       other suites in this repo run against the same origin. */
+    wsWin().localStorage.setItem('turnstone-auto-close', '1');
+    wsWin().localStorage.removeItem('turnstone-auto-open');
+    wsWin().localStorage.removeItem('turnstone-auto-advance');
+  } catch (e) {
+    extraNote(autoList, false, `menu/automation section threw: ${e.message}`, e.stack);
+  }
+
+  /* ------------------------------------------------- columns and editable cells --
+     The column panel is asserted across its boundaries rather than around its markup,
+     because those are the places a control like this looks right and is decoration:
+     a rename has to reach the header cell that gets exported, a column given an editor
+     has to replace the cell's link, and a typed value has to be what the export writes.
+     The vendor fixture is used because the canonical queue's four columns are *all*
+     card features — there is no ordinary data column in it to make editable. */
+  const colList = el('columns');
+  try {
+    const d = () => wsDoc();
+    const byId = (id) => d().getElementById(id);
+    const change = (elm, value, ev = 'change') => { elm.value = value; elm.dispatchEvent(new (wsWin().Event)(ev, { bubbles: true })); };
+    const rowFor = (c) => d().querySelector(`#settings-cols .set-col[data-col="${c}"]`);
+    const firstCard = () => d().querySelector('article.card');
+    const cardIdx = () => +firstCard().dataset.rowIndex;
+    const cellLabels = () => [...d().querySelectorAll('article.card .col-row .ck')].map((e) => e.textContent);
+    const openPanel = () => byId('mi-columns').click();
+    const shutPanel = () => { if (!byId('settings-overlay').hidden) byId('settings-x').click(); };
+    const fieldStore = () => { try { return JSON.parse(wsWin().localStorage.getItem('turnstone-col-fields') || '{}'); } catch (e) { return {}; } };
+    const wipeColStores = () => { try { ['turnstone-col-fields', 'turnstone-col-presets', 'turnstone-col-roles'].forEach((k) => wsWin().localStorage.removeItem(k)); } catch (e) {} };
+
+    /* A clean profile, because all of this is persisted and the reload below inherits
+       whatever the sections before it left behind. */
+    wipeColStores();
+    try { wsWin().localStorage.setItem('turnstone-mode-picked', '1'); } catch (e) {}
+    w = await resetApp();
+    await loadInApp(w, 'sample-vendor-onboarding.csv');
+    openPanel();
+
+    /* 1. Every column has a row, and a card feature is marked as one rather than
+          quietly declining to be edited. */
+    const rows = [...d().querySelectorAll('#settings-cols .set-col')];
+    const features = rows.filter((r) => r.querySelector('.pos').textContent === 'card feature');
+    const draggable = rows.filter((r) => r.draggable);
+    extraNote(colList, rows.length === 5 && features.length === 3 && draggable.length === 2
+      && features.every((r) => r.querySelector('select[data-coltype]').disabled),
+      `all <b>${rows.length}</b> columns have a row: <b>${features.length}</b> are card features with the editor dropdown switched off rather than silently declining, and the <b>${draggable.length}</b> ordinary data columns — <i>${draggable.map((r) => r.querySelector('.cname').value).join('</i>, <i>')}</i> — are draggable`);
+
+    /* 2. The position numbers count the sequence a card actually shows. */
+    const positions = draggable.map((r) => r.querySelector('.cname').value + ' ' + r.querySelector('.pos').textContent);
+    extraNote(colList, positions.join(' · ') === 'Owner #1 · Contact #2',
+      `their positions read <b>${positions.join('</b> · <b>')}</b> — two columns in the order the card puts them, rather than “#4” of a five-number sequence nobody can see`);
+
+    /* 3. A dropdown seeds itself from the column's own values, most common first. */
+    change(d().querySelector('select[data-coltype="3"]'), 'select');
+    const seeded = typeof w.fieldOptions === 'function' ? w.fieldOptions(3) : [];
+    const cardSelect = firstCard().querySelector('.col-row .cell-select');
+    extraNote(colList, seeded.length === 3 && !!cardSelect && cardSelect.options.length === 4,
+      `choosing <b>Dropdown</b> seeds the choices from the column's own values — <i>${seeded.join('</i>, <i>')}</i> — and that cell becomes a control holding the row's own value (<code>${cardSelect ? cardSelect.value : '—'}</code>)`);
+
+    /* 4. Editing it writes into the row — and the export is what carries it out. */
+    change(cardSelect, 'R. Haddad');
+    const exported = w.buildExportMatrix()[cardIdx() + 1][3];
+    extraNote(colList, exported === 'R. Haddad',
+      `picking a different value writes it into the row itself, so it is the <b>export</b> that carries it (row ${cardIdx()}, column 4 = <code>${exported}</code>) — no second store to go stale`);
+
+    /* 5. A button array is the same thing as a row of pills. */
+    change(d().querySelector('select[data-coltype="3"]'), 'buttons');
+    const pills = [...firstCard().querySelectorAll('.col-row .cell-btn')];
+    const pressed = pills.filter((b) => b.classList.contains('on')).map((b) => b.textContent);
+    const pill = pills.find((b) => b.textContent === 'M. Lindqvist');
+    if (pill) pill.click();
+    const afterClick = String(w.buildExportMatrix()[cardIdx() + 1][3]);
+    extraNote(colList, pills.length === 3 && pressed.join('') === 'R. Haddad' && afterClick === 'M. Lindqvist',
+      `<b>Buttons</b> renders the same choices as pills with the row's value pressed (<i>${pressed.join('')}</i>), and clicking one sets the cell — <code>${afterClick}</code>`);
+
+    /* 6. A text field is a field, not a re-render: the caret and the node survive. */
+    change(d().querySelector('select[data-coltype="4"]'), 'long');
+    const area = firstCard().querySelector('.col-row .cell-area');
+    if (area) area.focus();
+    change(area, 'called Tue, chasing the PO', 'input');
+    const sameNode = area && firstCard().querySelector('.col-row .cell-area') === area;
+    extraNote(colList, !!area && d().activeElement === area && sameNode
+      && String(w.buildExportMatrix()[cardIdx() + 1][4]) === 'called Tue, chasing the PO',
+      `a <b>long text</b> cell is a textarea that takes a real edit without the card being rebuilt under it — the focus and the same DOM node both survive the keystroke, and the row still ends up in the export`);
+
+    /* 7. A rename is the header cell, so it reaches everything at once — and the
+          records saved under the old header signature move with it. */
+    const storeBefore = Object.keys(fieldStore());
+    change(d().querySelector('input[data-colname="3"]'), 'Assigned to');
+    const storeAfter = Object.keys(fieldStore());
+    const label3 = typeof w.colLabel === 'function' ? w.colLabel(3) : '';
+    const sortTexts = [...byId('sort-col').options].map((o) => o.textContent);
+    const sortHit = sortTexts.find((t) => t.startsWith('Assigned to'));
+    extraNote(colList, label3 === 'Assigned to' && cellLabels().includes('Assigned to') && !!sortHit
+      && storeBefore.length === 1 && storeAfter.length === 1 && storeAfter[0] !== storeBefore[0],
+      `a rename <i>is</i> the header cell, so it arrives everywhere at once — <code>Owner</code> → <code>Assigned to</code> on the card, as <i>${sortHit || 'missing'}</i> in the sort list, and in the file on export — and the editors saved under the old header signature <b>moved with it</b> instead of being orphaned (${storeAfter[0] === storeBefore[0] ? 'left behind' : 're-keyed'})`);
+
+    /* 8. Hiding takes a column off the cards without touching the data. */
+    const hide = d().querySelector('input[data-colshow="4"]');
+    hide.checked = false;
+    hide.dispatchEvent(new (wsWin().Event)('change', { bubbles: true }));
+    const afterHide = w.cardColumns();
+    extraNote(colList, afterHide.join(',') === '3',
+      `unticking a column takes it off the cards (<code>[${afterHide.join(', ')}]</code>) and leaves the cell where it was — hiding is a view, never an edit`);
+
+    /* 9. Dragging one row onto another reorders the cards. */
+    const unhide = d().querySelector('input[data-colshow="4"]');
+    unhide.checked = true;
+    unhide.dispatchEvent(new (wsWin().Event)('change', { bubbles: true }));
+    const dt = new (wsWin().DataTransfer)();
+    const drag = (elm, type) => elm.dispatchEvent(new (wsWin().DragEvent)(type, { bubbles: true, cancelable: true, dataTransfer: dt }));
+    drag(rowFor(4), 'dragstart');
+    drag(rowFor(3), 'dragover');
+    drag(rowFor(3), 'drop');
+    const order = w.cardColumns();
+    extraNote(colList, order.join(',') === '4,3' && cellLabels()[0] === 'Contact',
+      `dragging <i>Contact</i> above <i>Owner</i> reorders the cards — <code>[${order.join(', ')}]</code>, and the first data row now reads <b>${cellLabels()[0]}</b>`);
+
+    /* 10. Reset restores the file's own arrangement and deletes what was stored. */
+    byId('btn-cols-reset').click();
+    const cleared = { order: w.cardColumns(), cell: !!firstCard().querySelector('.cell-input, .cell-area, .cell-select, .cell-btn'), store: Object.keys(fieldStore()).length };
+    extraNote(colList, cleared.order.join(',') === '3,4' && !cleared.cell && cleared.store === 0,
+      `“Reset columns” puts the file's own order back (<code>[${cleared.order.join(', ')}]</code>), removes the controls (${cleared.cell ? 'one survived' : 'none left'}) and <b>deletes</b> the stored record rather than merely forgetting it (${cleared.store} left behind)`);
+
+    shutPanel();
+    wipeColStores();
+  } catch (e) {
+    extraNote(colList, false, `column section threw: ${e.message}`, e.stack);
   }
 
   /* ---------------------------------------------------------------- report -- */

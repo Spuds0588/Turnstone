@@ -66,30 +66,64 @@
       <span id="head-name"><span class="no-file">No file loaded</span></span>
       <span id="head-save"></span>
     </div>
-    <nav id="menu" hidden>
-      <button class="menu-item" id="mi-open"><span class="mi">📂</span> Open file…</button>
-      <button class="menu-item" id="mi-open-link"><span class="mi">📥</span> Open a workspace link…</button>
-      <button class="menu-item" id="mi-restore" hidden><span class="mi">↺</span> Restore last file</button>
-      <button class="menu-item" id="mi-close" disabled><span class="mi">✕</span> Close current file</button>
-      <button class="menu-item" id="mi-link" disabled><span class="mi">🔗</span> Copy share link</button>
-      <button class="menu-item" id="mi-build"><span class="mi">🧩</span> Build a share link…</button>
-      <div class="menu-sep"></div>
-      <div class="menu-label">Opening links</div>
-      <button class="menu-item mode-item" data-mode="tabs"><span class="mi">🗂</span> Real browser tabs</button>
-      <div class="menu-sep"></div>
-      <button class="menu-item" id="mi-portal"><span class="mi">🏛</span> Portal link template…</button>
-      <button class="menu-item" id="mi-paste"><span class="mi">📋</span> Paste a list…</button>
-      <div class="menu-sep"></div>
-      <div class="menu-label">Automation</div>
-      <button class="menu-item toggle-item" id="mi-auto-open"><span class="mi">⚡</span> Open link when card is selected</button>
-      <button class="menu-item toggle-item" id="mi-auto-advance"><span class="mi">⏭</span> Auto-open next after completing</button>
-      <div class="menu-sep"></div>
-      <button class="menu-item" id="mi-columns"><span class="mi">⚙</span> Columns &amp; presets…</button>
-      <button class="menu-item" id="mi-export-csv" disabled><span class="mi">⬇</span> Export CSV</button>
-      <button class="menu-item" id="mi-export-xlsx" disabled><span class="mi">⬇</span> Export XLSX</button>
-      <button class="menu-item" id="mi-install" hidden><span class="mi">⤓</span> Install app</button>
-      <button class="menu-item" id="mi-theme"><span class="mi">◐</span> <span id="mi-theme-label">Light mode</span></button>
-    </nav>
+    <div id="menu" hidden>
+      <div id="menu-box" role="dialog" aria-modal="true" aria-labelledby="menu-title">
+        <div id="menu-head">
+          <h2 id="menu-title">Menu</h2>
+          <span class="menu-file" id="menu-file"></span>
+          <button id="menu-close" title="Close (Esc)">✕</button>
+        </div>
+        <div id="menu-body">
+          <div class="menu-group">
+            <div class="menu-label">The list</div>
+            <button class="menu-item" id="mi-open"><span class="mi">▤</span> Open file…</button>
+            <button class="menu-item" id="mi-open-link"><span class="mi">⇢</span> Open a workspace link…</button>
+            <button class="menu-item" id="mi-restore" hidden><span class="mi">↺</span> Restore last file</button>
+            <button class="menu-item" id="mi-close" disabled><span class="mi">✕</span> Close current file</button>
+            <button class="menu-item" id="mi-paste"><span class="mi">⇲</span> Paste a list…</button>
+          </div>
+          <div class="menu-group">
+            <div class="menu-label">Share it</div>
+            <button class="menu-item" id="mi-link" disabled><span class="mi">⧉</span> Copy share link</button>
+            <button class="menu-item" id="mi-build"><span class="mi">⇱</span> Build a share link…</button>
+          </div>
+          <div class="menu-group">
+            <div class="menu-label">Opening links</div>
+            <button class="menu-item mode-item" data-mode="tabs"><span class="mi">❐</span> Real browser tabs</button>
+          </div>
+          <div class="menu-group">
+            <div class="menu-label">The list's shape</div>
+            <button class="menu-item" id="mi-portal"><span class="mi">◫</span> Portal link template…</button>
+            <button class="menu-item" id="mi-columns"><span class="mi">⚙</span> Columns &amp; presets…</button>
+          </div>
+          <div class="menu-group wide">
+            <div class="menu-label">Automation</div>
+            <button class="auto-row" id="mi-auto-close" role="switch" aria-checked="true">
+              <span class="sw" aria-hidden="true"></span>
+              <span class="auto-text">Close the tab a task opened, once it is complete
+                <span class="auto-hint" id="mi-auto-close-hint">Tabs mode: the row's own tab closes with it.</span></span>
+            </button>
+            <button class="auto-row" id="mi-auto-open" role="switch" aria-checked="false">
+              <span class="sw" aria-hidden="true"></span>
+              <span class="auto-text">Open the link when a card is selected
+                <span class="auto-hint">A clicked card opens its row and shows its columns. Off, clicking a card only reads it.</span></span>
+            </button>
+            <button class="auto-row" id="mi-auto-advance" role="switch" aria-checked="false">
+              <span class="sw" aria-hidden="true"></span>
+              <span class="auto-text">Open the next task after completing one
+                <span class="auto-hint">Wraps to the top; says so when the queue is finished.</span></span>
+            </button>
+          </div>
+          <div class="menu-group wide">
+            <div class="menu-label">This app</div>
+            <button class="menu-item" id="mi-export-csv" disabled><span class="mi">↧</span> Export CSV</button>
+            <button class="menu-item" id="mi-export-xlsx" disabled><span class="mi">↧</span> Export XLSX</button>
+            <button class="menu-item" id="mi-install" hidden><span class="mi">⤓</span> Install app</button>
+            <button class="menu-item" id="mi-theme"><span class="mi">◐</span> <span id="mi-theme-label">Light mode</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div id="filters">
       <input type="search" id="search" placeholder="Search tasks…" autocomplete="off">
       <div id="filter-row">
@@ -110,11 +144,22 @@
 <div id="settings-overlay" hidden>
   <div id="settings-box">
     <div id="settings-head">
-      <h2>Task card columns</h2>
+      <h2>Columns</h2>
       <button class="icon" id="settings-x" title="Close">✕</button>
     </div>
-    <p class="hint">Drag to reorder · untick to hide. The dropdown flags what a column <em>is</em>: Turnstone picks the link column from the values themselves — a page, an <code>@address</code> or a phone number all count — so if it ever guesses wrong, or your links are bare <code>example.com</code>, set <b>URL</b> here and it sticks for this file. Addresses and numbers anywhere on a card are clickable on their own, through MailLayer and PhoneLayer. Changes apply live.</p>
+    <p class="hint"><b>Order, name and visibility.</b> Drag a row by ⋮⋮ to move a column, untick it to take it
+      off the cards, and type over its name to rename it — the name <em>is</em> the file's header cell, so a
+      rename is written back when you export. The role dropdown says what a column <b>is</b>: Turnstone picks
+      the link column from the values themselves — a page, an <code>@address</code> or a phone number all
+      count — so if it ever guesses wrong, or your links are bare <code>example.com</code>, set <b>URL</b>
+      here and it sticks for this file. Addresses and numbers anywhere on a card stay clickable on their own,
+      through MailLayer and PhoneLayer.</p>
     <div id="settings-cols"></div>
+    <p class="hint"><b>Editing.</b> The last dropdown gives a column a control on every card — a short or a
+      long text field, a dropdown, or a row of buttons — for the columns you update as you work. A dropdown's
+      choices start from the column's own values (the ↧ button) and are yours to edit after that; whatever
+      you type into a cell is written into that row, and leaves with the file on export. Columns marked
+      <em>card feature</em> already have a control of their own.</p>
 
     <h3 class="set-h">Portal link template <span class="set-opt">optional</span></h3>
     <p class="hint">For lists where nothing in the file is a link because the work happens in one portal. Name the
@@ -139,14 +184,14 @@
     </div>
     <div id="settings-presets"></div>
     <div class="srow">
-      <button class="btn" id="btn-cols-reset">Reset to file order</button>
+      <button class="btn" id="btn-cols-reset" title="Back to the file's own order, with nothing hidden and no editors">Reset columns</button>
     </div>
   </div>
 </div>
 
 <div id="mobile-gate" hidden>
   <div class="modal-box">
-    <div class="gate-icon" aria-hidden="true">🖥️</div>
+    <div class="gate-icon" aria-hidden="true">▭</div>
     <h2 class="modal-title">Turnstone is a desktop app</h2>
     <p class="modal-sub">Mobile isn't supported. Open Turnstone on a desktop — or on a device and window sized like one.</p>
     <p class="gate-note">This device reports a touch-first pointer at <span id="gate-w">0</span>×<span id="gate-h">0</span>px. On touch, file picking, drag-and-drop and save-back are unreliable — expect a broken workspace.</p>

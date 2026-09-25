@@ -103,6 +103,11 @@ non-event for it.
 | Structured data **against the page it is on** — every marked-up answer appears on the page, every question the page asks is in the markup, every `HowTo` step says what the page says | Node | nothing renders JSON-LD, so prose and markup drifting apart is invisible in a browser and complete to a machine; the same script that writes the crawl files owns the check |
 | The landing page's **prose budget** (1,000 words, no negotiation) | Node | a sales page grows one honest sentence at a time; the number is the only thing that ever pushed back |
 | That the pages which explain agents say the true thing — an extension panel takes a file and cannot be driven | Node | a documented limitation that quietly disappears from a page is a regression no browser shows you |
+| The **☰ menu as a modal** and the three **automation switches** behind it — the backdrop measured against the viewport, `role="dialog"`, Escape closing it and handing focus back to the button, and each switch asserted through what the *next* click does (a card expands with **0** tabs open, one tab is gone and the other is not, the tab is still there) | browser | every one of these is a state machine over real clicks, and half of what it asserts is an *absence* — which is exactly the case a switch can look right and be wrong about |
+| The two lists that are **refused** the close automation, and the sentence they are refused with | browser | a portal list's tab is the portal the user is working in, and the panel edition has no iframes at all: an edition that inherited the wrong reason would read as deliberate |
+| The **column panel** — a row per column, card features marked and un-editable, position numbers counting what a card shows, drag-to-reorder moving the cards, hide leaving the data alone, and reset restoring the file's order | browser | every one is a drag, a tick or a dropdown over a rendered card, and the one that matters most — a rename — changes storage keys, which is invisible until the file is opened again |
+| **Renaming a column** and the records that follow it: the card label, the sort list, the header cell an export carries, and the flags/editors/preset saved under the old header signature | browser | a rename re-keys four stores; a unit test of the rename would not notice that the fifth thing was orphaned |
+| An **editable cell** — Dropdown and Buttons seeded from the column's own values, an edit in the row rather than in the control, and the value arriving in `buildExportMatrix()` | browser | the control and the data are two different things, and only the export proves which one was changed |
 
 Two note-worthy properties of the workspace-link tests. The payloads in the browser sweep are
 built by **the harness**, not by the app, so the encoder and the decoder are independent
@@ -110,6 +115,16 @@ implementations — a round trip through one implementation only ever proves it 
 itself. And the Node suite attacks the format: a 4,000-row list is compressed and then cut at
 nineteen points, asserting that not one cut yields a *different* list quietly. Anything less
 would leave the one failure mode that looks entirely normal uncovered.
+
+Both menu checks are asserted in the bookmarklet harness too, inside the shadow root the payload
+mounts into, because a modal is the one control that can be right in the app and wrong in a
+`position: fixed` overlay that is not in the host page's coordinate space. The column panel is
+swept there for the same reason — it is the app's editing surface, and every control it builds
+has to land in that root. That harness mounts it in a **fresh overlay with the vendor sheet as
+the first drop**, deliberately: the canonical queue's four columns are all card features, so
+there would be no ordinary data column in it to edit, and a second drop in that harness was
+measured to be ignored outright by the zero-library build, which went on showing the workbook
+before it.
 
 `test/run.js` also guards the things a format test cannot see: that every `FORMAT_INFO` entry
 and every extension/content-type alias still resolves, that the write-back rule holds (CSV/TSV/

@@ -97,7 +97,9 @@ css += `
   body.has-file #sidebar { display: flex; }
   /* openMenu() already parks the dropdown under the ☰ button; only the width needs
      widening to a narrow panel's measure. */
-  #menu { width: min(280px, calc(100vw - 16px)); }
+  /* A side panel is narrow, so the menu's two-column layout never applies: the rule
+     below keeps the panel inside the panel, and the single column is the default. */
+  #menu-box { width: min(360px, calc(100vw - 24px)); max-height: 92vh; }
   #welcome { padding: 14px; }
   #welcome .box { padding: 20px; }
   @media (max-width: 760px) { #app { grid-template-rows: 1fr; } }
@@ -156,6 +158,22 @@ els.tabbar.addEventListener('click', (e) => {
   activateTab(id);
 });
 `, '', 'tab bar listener');
+
+/* The close-a-completed-row's-tab automation has no equivalent here, and it is worth
+   saying why rather than deleting the switch: the panel opens REAL browser tabs, and a
+   tab in the user's own window is theirs to close. So the function becomes a no-op and
+   the reason is the one the switch shows — the same switch, off, with the truth in it. */
+js = patch(js, /function closeTabForCompletedRow\(i\) \{[\s\S]*?\n\}\n/,
+`function closeTabForCompletedRow(i) {
+  /* No iframe to close: this edition opens real browser tabs. */
+  return null;
+}
+`, 'auto-close function');
+js = patch(js, /function autoCloseBlockedReason\(\) \{[\s\S]*?\n\}\n/,
+`function autoCloseBlockedReason() {
+  return 'Not in this edition: the panel opens real browser tabs, and a tab in your own window is yours to close.';
+}
+`, 'auto-close reason');
 
 /* The first-run picker asks a question that has one answer here. */
 js = patch(js, '  showModePicker(true);',
@@ -246,6 +264,8 @@ if (winOpens !== 1) throw new Error(`expected exactly 1 window.open (the bridge'
 for (const dead of ['openInIframe', 'renderTabbar', 'activateTab(', 'closeTab(', 'tabTitle']) {
   if (js.includes(dead)) throw new Error(`the iframe workspace survived: ${dead}`);
 }
+if (!js.includes('No iframe to close')) throw new Error('the auto-close function was not reduced to a no-op');
+if (!js.includes('a tab in your own window is yours to close')) throw new Error('the panel does not say why auto-close is unavailable');
 if (!js.includes('function closeAllTabs()')) throw new Error('the closeAllTabs shim is missing');
 if (/addEventListener\('beforeunload'/.test(js)) throw new Error('a beforeunload handler survived patching');
 for (const gone of ['buildManifest', 'ICON_192', 'serviceWorker', 'ICON_512_PNG', 'STANDALONE_BUILD', 'editionsHint', 'editions-hint']) {
@@ -257,12 +277,12 @@ if (!js.includes('openBrowserTab(url, i)')) throw new Error('openUrlFor was not 
 /* ------------------------------------------------------------- markup ----- */
 
 /* Relabel and prune the open-mode menu: one mode means one item. */
-markup = patch(markup, '<button class="menu-item mode-item" data-mode="tabs"><span class="mi">🗂</span> Tabs (iframes)</button>',
-  '<button class="menu-item mode-item" data-mode="tabs"><span class="mi">🗂</span> Real browser tabs</button>',
+markup = patch(markup, '<button class="menu-item mode-item" data-mode="tabs"><span class="mi">❐</span> Tabs (iframes)</button>',
+  '<button class="menu-item mode-item" data-mode="tabs"><span class="mi">❐</span> Real browser tabs</button>',
   'tabs menu item');
-markup = patch(markup, '      <button class="menu-item mode-item" data-mode="newtab"><span class="mi">↗</span> New browser tab</button>\n', '', 'newtab menu item');
-markup = patch(markup, '      <button class="menu-item mode-item" data-mode="newwin"><span class="mi">◱</span> New popup window</button>\n', '', 'newwin menu item');
-markup = patch(markup, '      <button class="menu-item" id="mi-mode-help"><span class="mi">❔</span> Which should I pick?</button>\n', '', 'mode-help menu item');
+markup = patch(markup, '            <button class="menu-item mode-item" data-mode="newtab"><span class="mi">↗</span> New browser tab</button>\n', '', 'newtab menu item');
+markup = patch(markup, '            <button class="menu-item mode-item" data-mode="newwin"><span class="mi">◱</span> New popup window</button>\n', '', 'newwin menu item');
+markup = patch(markup, '            <button class="menu-item" id="mi-mode-help"><span class="mi">?</span> Which should I pick?</button>\n', '', 'mode-help menu item');
 
 /* The edition pointer's target is not packaged, and the panel is one of the editions. */
 markup = patch(markup, /          <p class="help" id="editions-hint" hidden>[\s\S]*?<\/p>\n/,

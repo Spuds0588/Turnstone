@@ -333,6 +333,12 @@
   .value-grid .box code { overflow-wrap: anywhere; }
   .value-grid .box.lead { grid-column: 1 / -1; display: flex; gap: 1.3rem; align-items: flex-start; border-color: rgba(122,162,255,.28); }
   .value-grid .box.lead .feature-icon { margin: 0; }
+  /* Monochrome glyphs rather than platform emoji, and the same family the app's own
+     menu uses: an emoji is a different drawing on every OS, cannot take the theme's
+     accent colour, and reads as a chat reaction rather than as chrome. */
+  .feature-icon {
+    color: var(--accent); font-size: 1.75rem; line-height: 1; margin-bottom: .9rem;
+  }
   @media (max-width: 700px) { .value-grid { grid-template-columns: 1fr; } .value-grid .box.lead { flex-direction: column; gap: 0; } }
   .box {
     background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.09); border-radius: 20px;
@@ -450,7 +456,7 @@
     <p class="section-sub">Your list can be a mess upstream. Your side of it doesn't have to be.</p>
     <div class="value-grid" style="margin-top:2.6rem;text-align:left">
       <div class="box lead">
-        <div class="feature-icon">🧩</div>
+        <div class="feature-icon" aria-hidden="true">▤</div>
         <div>
           <h3>Whatever the list looks like</h3>
           <p>Six systems, a chain of forwards, a sheet kept by hand — it doesn't matter. Your side is cards
@@ -459,24 +465,24 @@
         </div>
       </div>
       <div class="box">
-        <div class="feature-icon">🔒</div>
+        <div class="feature-icon" aria-hidden="true">∅</div>
         <h3>No account, nobody to ask</h3>
         <p>One person can start today: no sign-up, no seat licence, no IT ticket, no manager sign-off.</p>
       </div>
       <div class="box">
-        <div class="feature-icon">💾</div>
+        <div class="feature-icon" aria-hidden="true">⌂</div>
         <h3>All local — nothing is uploaded</h3>
         <p>There is no server to upload to. Your browser reads your file and writes your ticks and notes back
            into that same file.</p>
       </div>
       <div class="box">
-        <div class="feature-icon">🪟</div>
+        <div class="feature-icon" aria-hidden="true">❐</div>
         <h3>The tools you already have</h3>
         <p>Pages open beside the list instead of in fifteen tabs, and an address or a number opens your
            webmail or web phone — not a desktop app you don't have.</p>
       </div>
       <div class="box">
-        <div class="feature-icon">🤖</div>
+        <div class="feature-icon" aria-hidden="true">⇢</div>
         <h3>Or let an agent hand you the list</h3>
         <p>Your assistant finds or writes it and gives you one link. It opens ready to work, and the rows
            travel inside the link rather than through a server. <a href="workspace-link.html">How that works</a>.</p>

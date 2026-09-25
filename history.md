@@ -1,5 +1,94 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-25 — Columns you can arrange, and cells you can edit
+
+**Request:** you cannot re-order columns, hide them or rename them — give the panel proper controls. And add options for editing other columns: dropdowns, arrays of buttons, editable text fields of a short and a long variety.
+
+### Two of those four already worked, which is its own finding
+
+Reordering (drag) and hiding (untick) were both there, and the panel said so in one line of prose. The other two were absent: the name was a `<span>`, and every cell on a card was read-only text. That gap is the more interesting one, because the app *does* write back — `buildExportMatrix()` copies `state.data` and overlays Status/Notes — so what was missing was not machinery but a way to reach the matrix from the interface. The panel is now a real column manager: one row per column with a drag handle, a visibility box, a **name field**, a role dropdown and an **editor dropdown**, plus a second line holding the choice list when the editor needs one.
+
+### Renaming is the header cell, not an alias
+
+A display-only relabel was the cheap option and the wrong one. The header row is what gets exported, what a portal template's `{Column}` names, and what the sort dropdown lists — a second private name for the same column would be a worse lie than the original. So the header cell changes. That has a consequence worth naming, because it is invisible until the file is opened again: **everything remembered about a list is keyed by its header signature** — the column flags, the presets, the portal template, and now the editors — so a rename orphans the lot in one keystroke. `rekeySignature()` moves all four records to the new key (the column *indices* do not move, which is why nothing inside them needs renumbering), and the live template's `{Old name}` placeholders are rewritten too, or every card in that list would silently stop composing a link. Renaming is refused on a headerless list, because there is no header cell to rename — the same rule presets already had.
+
+### Four ways to edit a cell, and the default stays read-only
+
+⚙ Columns gives a non-role column one of **Text**, **Long text**, **Dropdown** or **Buttons**; Read only is the default and stays the default deliberately. Turning every cell of every column into a field would make a queue you are only reading look like one you are expected to maintain. The four cover the shapes a list actually has: a stage, an owner, a next action, a date.
+
+Two decisions carry the feature. First, **a dropdown's choices are seeded from the column's own values, most common first** (one click, capped at 24 — a column with 200 distinct values is not a dropdown), because a control that arrives empty is not an empty control, it is a broken one; the list is editable afterwards, and a preset carries it. Second, **the row's own value is always an option** even when the list has moved on, so a control can never be blind to what the file says — and the edit goes **into the row's cell**, not into a side store. That last one is what makes the rest add up: an edited cell is exported by the path a status tick already uses, is searchable immediately (`row.join(' ')`), sorts with the column, and survives the reload guard for free. Typing does not re-render the card under the caret (`live` writes skip it); a dropdown or a button does, because that is how its own pressed state is redrawn. Role columns are refused an editor with a reason — they are card features with controls of their own — and a hidden column is un-hidden when it is given one, since an editor nobody can reach is not an editor.
+
+Editors also ride inside a saved preset, and **Reset columns** now clears order, visibility *and* editors and deletes the stored record rather than merely forgetting it — a reset that a reload could undo would not be a reset.
+
+### The tests found three things the code did not
+
+1. **`buildExportMatrix()` is not reachable in the bookmarklet.** The payload is an IIFE, so its functions never land on the host window, and the assertion that an edit reaches the data threw. The replacement is better evidence than the original: switch the column back to **Read only** and check what the card renders, because read-only markup is built straight out of the row's own cell. If it now shows the value that was picked — and that value is not the one the file arrived with — the edit reached the row and not just the control.
+2. **A second drop is not reliable in that harness.** The column checks originally used the canonical queue, immediately discovered that all four of its columns are card features (so there was nothing to edit), and dropped the vendor sheet instead. Measured: the zero-library build **went on showing the workbook before it** and never took the drop, while the same code worked for the other two variants. The checks now run in a **fresh overlay with the vendor sheet as the first drop**, which removes the question rather than papering over it.
+3. **A wait on the shared target proves nothing.** Every fixture in that sweep lands *10 tasks · 3 complete · 7 cards*, so waiting for those counts returns instantly against whatever was loaded before — which is how one check came to measure six columns of an invoice workbook while believing it read the vendor sheet. It now waits for the vendor sheet's own column names in the sort list, which no other fixture shares. The same trap is why the fixtures page's own column block derives its row indices from the DOM.
+
+A smaller one, found by reading the panel rather than a test: the position numbers counted **all** columns, so the first ordinary data column of a five-column sheet read `#4`. They now count the sequence a card actually shows — two columns, `#1` and `#2`.
+
+### Verified
+
+| Suite | Before | After |
+| --- | --- | --- |
+| `node test/run.js` | 435 | **436** (the cell-link assertion now pins the editable case too) |
+| `test/fixtures.html`, `app.html` / standalone | 78 | **88** (10 checks, the vendor fixture) |
+| `test/fixtures.html`, `panel-test` / `panel-csp` | 73 | **83** (10 checks) |
+| `test/bookmarklet.html` | 90 | **99** (the panel and an edited cell, inside the shadow root, per variant) |
+
+All four browser sweeps re-run against the built artifacts — 88/88 for `app.html`, 88/88 for the standalone **from a bare directory**, 83/83 for both panel editions, 99/99 for the bookmarklet — plus `build-site.js`, `build-standalone.js`, the extension build, the bookmarklet build and `make-fixtures.js` all `--check` green, and the ten `data-size-fallback` slots rewritten after the rebuild (the chore that catches a stale number on a guide page). Sizes: `app.html` 267.2 → **290.0 KB**, standalone 1256.4 → **1279.2 KB**, extension dist 1293.8 → **1318.2 KB**, bookmarklet **295.8 KB / 305.4 KB / 1241.9 KB** — and the guide pages, which quote those in rounded form, moved from `1.23 / 1.24 MB` to **`1.25 / 1.26 MB`**.
+
+## 2026-09-25 — The menu becomes a room, and a finished task takes its tab with it
+
+**Request:** three things. Marking a task complete should auto-close the iframe tab it opened — *unless* the list has no links of its own — and that should be an automation the user can switch. The **☰ menu should open as a modal over the whole app** instead of a dropdown file menu. And the emoji should go, replaced with something brand-consistent — likely unicode — without bloating the bookmarklets with assets.
+
+### The menu was a 260px dropdown doing a worksheet's job
+
+It was a `<nav>` hanging under the button, and its position was computed at open time from the button's own box (`els.menu.style.left = …`) — which meant it covered the cards it is *about* the moment the window was narrow, and it could not show a switch with a sentence under it without becoming a wall of text in a strip. It is now `#menu`: `position: fixed; inset: 0` over a `rgba(0,0,0,.55)` backdrop, with the app dimmed behind a `#menu-box` of `min(760px, 96vw)` and 88vh, a sticky header carrying the file name and a ✕, and a body that is a grid — one column, two at ≥680px. The eleven items were regrouped by what they are *for* rather than by what they open: **The list** · **Share it** · **Opening links** · **The list's shape** · **Automation** (full width — it is the group whose rows are sentences) · **This app**. Because nothing is positioned from JavaScript any more, this retired the last runtime `style` write in the app, which the CSP comment beside it now records. Escape closes it and focus goes back to the ☰ button.
+
+The panel edition needed a smaller room: `ports/extension/build.js` patches `#menu-box` to `min(360px, calc(100vw - 24px))` with a 92vh cap, because a side panel is already a narrow window and a 760px dialog in it is not a dialog.
+
+### Three switches, and the reason one of them is deliberately on by default
+
+`.auto-row` is a real `role="switch"` with `aria-checked`, drawn as a 34×19 pill whose knob translates 15px — a control that *shows* a state, where the app used to print a ✓ at the far right edge of the row, which is precisely where the eye is not when it is reading a list of sentences. Each row carries a one-line `.auto-hint` that says what it does, not what it is called.
+
+All three now default **on**, and that is a decision rather than generosity: "on" is what the app already did, so a default of on preserves every existing queue and gives the switch one honest direction — OFF. (`auto-advance`, which predates this session, still defaults off.) `auto-close` is on because "a feature behind a switch nobody opens is a feature that does not exist".
+
+### A tab must not always be closed, and saying so is the feature
+
+`autoCloseBlockedReason()` has one line today — a **portal list**, where every row composes into the one shared system the whole list keys into, so its tab is the portal the user is working *in* and closing it on every tick would pull them out. That list gets the switch **disabled, with the reason printed under it** rather than a switch that silently does nothing.
+
+A second reason exists for a different edition: the extension panel opens real browser tabs, and a tab in the user's own window is theirs to close. The port therefore rewrites both functions — `closeTabForCompletedRow` becomes a documented `return null` — and the build **asserts the panel's own sentence**, because the failure mode here is a port inheriting the web app's portal wording and saying something false.
+
+### Four bugs, all of them the kind a switch exposes
+
+1. **Auto-open-on-select had never done anything.** The card-click handler read `if (!wasExpanded && state.autoOpenOnSelect) { openUrlFor(i); } else { openUrlFor(i); }` — both branches identical, with a comment claiming it avoided a double-open. It is `if (state.autoOpenOnSelect) openUrlFor(i);` now, and the card's tooltip follows the switch. The bug was invisible for exactly as long as the default was ON, which is the argument for making the default's opposite reachable.
+2. **`modalOpen` was a false positive on the app's own menu.** `!!document.querySelector(sel)` matched the always-present hidden `#menu`, so the portal prompt and the global paste confirmation were deferred forever waiting on a modal that was never coming. It is visibility-aware now — `hidden`, computed `display`, computed `visibility`.
+3. **Storage showed a state the behaviour did not have.** The switches were drawn from `localStorage` while the running code kept its in-memory default, so a reload rendered "on" over an automation that was off until it was toggled twice. Both pre-existing switches had it; the new one would have inherited it. `applyStoredAutomations()` reads all three at load.
+4. **Focus came back to nowhere.** Remembering `document.activeElement` fails under a programmatic `.click()`, where it is `body`; `closeMenu()` focuses the ☰ button outright.
+
+### Characters, not pictures: the icon policy
+
+Emoji were the wrong tool for one reason that has nothing to do with taste: they render as a different artwork on every OS, they arrive in their own colour, and they cannot take the theme. The replacement is the smallest thing that can work — **monochrome characters from text-presentation ranges**, which inherit the theme colour and the weight of the text beside them, render identically everywhere, and load nothing. That last point is what keeps the bookmarklet payload honest: a font or an SVG sprite would be bytes in every variant, and the app's whole claim is that it is a single file.
+
+What each glyph now says: **▤** open file · **⇢** open workspace link · **↺** restore · **✕** close · **⇲** paste · **⧉** copy share link · **⇱** build share link · **❐** tabs · **↗** new browser tab · **◱** new popup · **?** mode help · **◫** portal template · **⚙** columns · **↧** CSV/XLSX export · **⤓** install · **◐** theme · **⌫** delete a preset. The card's URL glyphs keep ✉ and ☎ and ↗, because there they *name the kind of link* rather than decorate a command — and the homepage's five feature icons are now ▤ ∅ ⌂ ❐ ⇢ in the accent colour.
+
+A new Node check scans `app.html`, `turnstone-standalone.html` and `index.html` for the emoji ranges, excluding the lines that parse *user files* — the completion vocabularies have to keep accepting ✅ and ✔ so a spreadsheet that uses them still reads as done. It found one stray: a `✔` in a card-rendering comment.
+
+### Verified
+
+| Suite | Before | After |
+| --- | --- | --- |
+| `node test/run.js` | 432 | **435** (the icon scan) |
+| `test/fixtures.html`, `app.html` / standalone | 67 | **78** (11 checks) |
+| `test/fixtures.html`, `panel-test` / `panel-csp` | 67 | **73** (6 — no iframes to close) |
+| `test/bookmarklet.html` | 81 | **90** (the modal + switches, inside the shadow root) |
+
+All four browser sweeps were re-run against the built artifacts, not the source: 78/78 for `app.html`, 78/78 for the standalone **from a bare directory**, 73/73 for `panel-test.html` and `panel-csp.html`, 90/90 for the bookmarklet. The browser checks derive their row indices from the DOM rather than hard-coding them — three rows of the canonical fixture arrive already complete, so the first version of the auto-close check clicked a card that was not on screen. Sizes after the rebuild: `app.html` 267.2 KB, standalone 1256.4 KB, extension 1293.8 KB, bookmarklet 272.2 / 281.8 / 1218.4 KB. `build-site.js`, `build-standalone.js`, `ports/extension/build.js`, `ports/bookmarklet/build.js` and `make-fixtures.js` all `--check` green.
+
+**The chore worth naming:** rebuilding an artifact changes its byte size, so the `data-size-fallback` text on `versions.html`, `standalone.html` and `extension.html` — what a reader with JavaScript off and most crawlers actually see — goes stale, and `build-site.js` fails with the two numbers side by side. It has to be rewritten to match `site.js`'s own formatting after every rebuild. That is the check working, not a nuisance: the previous release had those numbers a whole version out.
+
 ## 2026-09-25 — One spine, and a mock that survives being stacked
 
 **Request:** the desktop formatting on the homepage was off; drop the big logo above the headline (the nav already has it); fix what else is wrong; push.

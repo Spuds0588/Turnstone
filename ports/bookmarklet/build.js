@@ -111,7 +111,8 @@ js = patch(js, 'document.documentElement.dataset.theme', 'THEME_ROOT.dataset.the
    two single-point patches rather than a count of appendChild calls that grows
    every time a modal is added. */
 js = patch(js, 'const mountPoint = () => document.body;', 'const mountPoint = () => ROOT;', 'modal mount point');
-js = patch(js, 'const modalOpen = (sel) => !!document.querySelector(sel);', 'const modalOpen = (sel) => !!ROOT.querySelector(sel);', 'modal-open probe');
+js = patch(js, 'const modalOpen = (sel) => [...document.querySelectorAll(sel)].some((el) => {',
+  'const modalOpen = (sel) => [...ROOT.querySelectorAll(sel)].some((el) => {', 'modal-open probe');
 /* Pastes are the app's, not the page's: scoped to the overlay, so copying a
    sentence on somebody else's site never raises Turnstone's "load this list?"
    prompt — the same reason dragover/drop are scoped above. */

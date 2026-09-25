@@ -799,7 +799,12 @@ const loadFixture = async (name) => {
 
     const app = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
     ok('addresses and numbers in any column are links, not just the link column',
-      app.includes('a.cell-link') && /const kind = c === state\.urlCol \? null : linkKindOf\(raw\)/.test(app));
+      app.includes('a.cell-link') && /const kind = \(type \|\| c === state\.urlCol\) \? null : linkKindOf\(raw\)/.test(app));
+    /* …and a column the user has given an editor wins over that: the cell becomes a
+       control, not a link. Both halves matter — an editable column that still wrapped
+       its value in an anchor would intercept the click the control needs. */
+    ok('…unless the column is editable, where a control stands in for the link',
+      /const body = type \? cellEditor\(c, i, raw, type\)/.test(app));
   }
 
   if (runs('site')) {
@@ -950,6 +955,22 @@ const loadFixture = async (name) => {
     eq('the only off-origin URL in any artifact is MailLayer\'s two blocked icons', remote.length, 2);
     ok('…and the CSP refuses images from anywhere off-origin',
       /img-src[^;]*'self'/.test(app) && !/img-src[^;]*https:/.test(app));
+
+    /* ---------- icons: characters, not pictures ---------------------------- */
+    /* The app's chrome is monochrome glyphs from the text-presentation ranges, and
+       that is three properties at once: they take the theme's colour, they are the
+       same drawing on every OS, and they cost nothing in a bookmarklet whose smallest
+       variant is its selling point. An emoji has none of them and is the easy thing to
+       reach for, so the rule is asserted here rather than remembered. Two places
+       legitimately carry emoji-presentation characters — the completion vocabularies,
+       which have to parse whatever a user's own file says — so those lines are set
+       aside before the scan. */
+    const EMOJI = /[\u{1F000}-\u{1FAFF}\u2705\u2714\u2611\u26A1\u23ED\u2B07\u2754\uFE0F]/gu;
+    for (const file of ['app.html', 'turnstone-standalone.html', 'index.html']) {
+      const src = decode(file).split('\n').filter((l) => !/COMPLETE_RE|DONE_DECOR_RE/.test(l)).join('\n');
+      const found = [...new Set([...src.matchAll(EMOJI)].map((m) => m[0]))];
+      ok(`${file} uses a character where a picture would do as well`, found.length === 0, found.slice(0, 6).join(' '));
+    }
   }
 
   /* ------------------------------------------------------------------ report --- */
