@@ -1,5 +1,31 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-25 — One spine, and a mock that survives being stacked
+
+**Request:** the desktop formatting on the homepage was off; drop the big logo above the headline (the nav already has it); fix what else is wrong; push.
+
+### The page had four different left edges
+
+Measured at a 1426px viewport, four "content widths" were in play: the nav, value cards and footer at **1140**, the product mock and the three steps at **980**, the FAQ rows at **820**, and the prose measures at 760–840. Every one of those numbers is defensible alone (an 80-character measure is right for an answer) and together they read as four designs stacked on one screen — the mock was inset 80px inside the cards below it for no reason a reader could infer. The rule now is one line in the stylesheet: **panels and the mock are the width of the container; prose keeps its own measure.** The mock, the steps and the FAQ rows went to 1140; the FAQ *answer* is capped at 92ch so the row can be full-width without the text following it.
+
+### The mock was a 2px sliver on every phone
+
+With the two panes stacked (`max-width: 760px`), the workspace pane measured **69px tall and its framed page 2px**. Not a styling wobble — the frame's only children are a tab bar and an absolutely-positioned overlay, so in one column it had *no content height* to take and collapsed to its border. Every phone, and every narrow desktop window, was shown a browser chrome with nothing in it. `min-height: 210px` on the frame fixes it, and it is the kind of defect only stacking reveals: at 1440px the side pane's three cards were 360px tall and silently held the frame open.
+
+The white void above the fake site's content had the same root — a fixed 360px body with ~120px of skeleton in it, so the taller the pane the emptier the page looked. The mock is now a real page that fills its frame: a gradient band and two tiles on a flex column. At 390px it is a band and two tiles; at 1440px the same two elements stretched, which is also the honest picture — the app does not change, the room around it does. (It is still pure CSS: this page runs under `default-src 'none'` and loads nothing, including for decoration.)
+
+### The logo
+
+The 64px mark above the headline is gone, so the first thing on the page is the sentence rather than the brand — the nav keeps it, top-left, where a wordmark is expected. Nothing was lost from the head: `og:image:alt` still describes the mark, and the favicon and icon set are untouched.
+
+| Width | Result |
+| --- | --- |
+| 1440px | nav, mock, cards, steps, FAQ rows all at 143–1283; no overflow |
+| 768px | mock keeps both panes (418/270) and stays legible |
+| 390px | panes stack; framed page 210px instead of 2px; no overflow |
+
+`build-site.js` green (link graph, JSON-LD/page parity, **915 words of visible prose** against the 1,000 budget), four `--check`s green, **432 Node assertions** green.
+
 ## 2026-09-25 — The landing page says three things, and only three
 
 **Request:** the hero and the sales pitch were too much; the message is a **“dumb” list in, a smart workspace out**, **no account**, and **all local**.
