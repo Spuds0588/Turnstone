@@ -76,9 +76,12 @@
       queue, starts one if there is none, or waits for the panel to next open if it was shut.</li>
     <li><strong>The same sidebar the web app has:</strong> cards, ✓ Complete / ↺ Incomplete, notes, search,
       sorting, column presets, exports, and the file-round-trip resume.</li>
-    <li><strong>Takes a file from anywhere:</strong> drop a CSV, XLSX, DOCX, Markdown or JSON list on the
-      panel, or choose it with the file dialog. The panel is file-based rather than URL-based, which is the
-      shape you want when the list comes from a script, an export, or an AI assistant.</li>
+    <li><strong>Takes a list from a file or a link.</strong> Drop a CSV, XLSX, DOCX, Markdown or JSON list on
+      the panel, choose it with the file dialog, or paste a
+      <a href="workspace-link.html">workspace link</a> — the list is carried inside the link, so nothing is
+      fetched and nothing is uploaded. A link arrives one of two ways: into the field on the panel's first
+      screen, or through <strong>☰ → Open a workspace link…</strong>, which works while another list is
+      already open.</li>
     <li><strong>Real write-back when you pick a file</strong> (Chromium), same as the web app — and exports
       land in your Downloads folder through the browser's own download API.</li>
   </ul>
@@ -96,13 +99,11 @@
     <li><strong>Bulk-import a whole site.</strong> It queues links one at a time, as you right-click them. It
       does not crawl a page looking for links — feed it a CSV/XLSX export instead.</li>
     <li><strong>Be driven by an AI agent.</strong> An agent can hand you the list — a <code>.csv</code>,
-      <code>.tsv</code> or <code>.xlsx</code> file you drop on the panel — but it cannot work the panel for
-      you. Doing that would take its own Chrome with this extension loaded and a panel open, which a coding
-      agent in a sandbox, a headless browser or on another machine does not have; and this panel has no
-      address bar, so a <a href="workspace-link.html">workspace link</a> has nowhere to arrive. Agent-built
-      links belong in the <a href="web-app.html">web app</a>, the
-      <a href="standalone.html">standalone build</a> or the <a href="bookmarklet.html">bookmarklet</a> —
-      anything with an address bar. Agent-built <em>files</em> work here, as they do everywhere.</li>
+      <code>.tsv</code> or <code>.xlsx</code> file you drop on the panel, or a
+      <a href="workspace-link.html">workspace link</a> you paste in (or open from the ☰ menu) — but it cannot
+      work the panel <em>for</em> you. Doing that would take its own Chrome with this extension loaded and a
+      panel open, which a coding agent in a sandbox, a headless browser or on another machine does not have.
+      So the hand-off is one-way by nature: the agent produces the list, and you open it.</li>
   </ul>
 
   <h2>Install it — load unpacked</h2>

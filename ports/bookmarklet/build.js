@@ -171,11 +171,14 @@ markup = patch(markup, 'src="assets/logo-light.svg"', `src="${svgUri(path.join(R
 markup = patch(markup, 'or browser storage.', 'or, in this build, this tab only — export to keep your work.', 'autosave copy');
 markup = patch(markup, '<button class="btn" id="btn-test-csv"', '<button class="btn" hidden id="btn-test-csv"', 'test-CSV button');
 markup = patch(markup, '<button class="btn" id="btn-test-xlsx"', '<button class="btn" hidden id="btn-test-xlsx"', 'test-XLSX button');
-/* The deep-link paragraph describes a ?file= URL — which an overlay on somebody
-   else's page has no way to be launched with, since the query string belongs to the
-   host page. Asserted rather than a bare replace: a silent no-op here would ship an
-   overlay advertising a parameter it does not have. */
-markup = patch(markup, /<p class="help">Any public link-list URL works[\s\S]*?<\/p>\n?/, '', 'URL-help paragraph');
+/* The paragraph promises a `?file=` URL and a fetch — neither of which an overlay on
+   somebody else's page can rely on, since the query string belongs to the host page
+   and its CSP governs what may be fetched. The replacement keeps the half that IS
+   true here and is worth knowing: a shared link carries its list inside it, so it
+   needs nothing fetched at all. Asserted rather than a bare replace: a silent no-op
+   here would ship an overlay advertising a parameter it does not have. */
+markup = patch(markup, /<p class="help">A public link-list URL works[\s\S]*?<\/p>\n?/,
+  '          <p class="help">A <b>shared link</b> works here — one that carries the list inside it needs nothing fetched, which is the only kind that can be relied on from a page this overlay does not own.</p>\n', 'URL-help paragraph');
 if (/(src|href)="(assets|vendor)\//.test(markup)) throw new Error('markup still references files on disk');
 
 /* ---------------------------------------------------------- variants ------ */

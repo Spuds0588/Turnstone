@@ -1,5 +1,44 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-25 — The panel gets a door for a link, and the field nobody had wired
+
+**Request, in two parts:** take the master/product document out of the repository and ignore it (it is planning material, not product); then keep going.
+
+### 1. Planning documents are not published
+
+The V1 specification is now `git rm --cached` — out of tracking, still on disk where planning happens — and a new `.gitignore` covers it plus any successor (`PRD-*.md`, `planning/`, `notes/`) and tool scratch (`.freebuff/`, editor directories, `.DS_Store`). The file says all of that above the rules, and deliberately does **not** grow into a second ignore-everything list: this repository commits its generated artifacts on purpose (the standalone build, the port payloads, the fixtures, the crawl files), because a single-file app and a drag-install bookmarklet only work if the bytes are in the repo. What is ignored is *planning*, which is a different category from *build output*.
+
+README's Docs list and layout lost their references to it, and `agents.md` now says "the original specification (kept off this repository on purpose)" instead of pointing at a file the reader cannot open. The dozens of `PRD Task 4.1` comments in `app.html` stay: they are design anchors into a document that still exists locally, and renaming them would churn every artifact for no information.
+
+### 2. The extension can be handed a link, and it found a dead button
+
+A browser side panel has no address bar, so a `#zdata=` link had nowhere to arrive — which the previous session documented across four pages rather than fixed. Now there are two doors: the field on the panel's first screen, and **☰ → Open a workspace link…**, a dialog that works *while another list is already open*, which is the case that matters ("Sam sent me another queue" is exactly when one is).
+
+Deciding whether a pasted string is a link or a file is the load-bearing part, and it is a rule rather than a guess, because a wrong answer is a `fetch` of a workspace link — which returns HTML or nothing:
+
+1. A **`zdata` payload anywhere** is unambiguous: nothing else spells a URL parameter that way.
+2. A payload in the **fragment** is unambiguous too, and for a reason worth writing down — a fragment is never sent to a server, so it *cannot* be file URL arguments. `outreach.csv#data=…` can only be about a handed-over list, on any host.
+3. A **`?data=` in a query string** is genuinely ambiguous — plenty of file endpoints take `?data=…` — so it counts only on one of our own pages (same origin, path ending `.html` or the directory root). That is the tooling case, where something can only append a query.
+
+Twenty assertions cover it in Node, including the negatives that matter: a plain `.csv` URL stays a file, and a `?data=` on somebody else's host does too. The dialog has no clipboard auto-read, on purpose: a permission prompt that appears because you opened a menu is a prompt people learn to dismiss.
+
+**The bug underneath:** the welcome panel's URL field had *no handler at all*. The Load button and the Enter key were both dead — and nothing noticed, because every sweep drives files through the drop zone and text through a paste, and neither had ever typed into that row. Both are wired now, and the browser sweep covers all three arrivals (field + button, bare `#zdata=…` tail + Enter, and the ☰ dialog including a paste that is *not* a link being refused with a reason).
+
+### 3. What rebuilding cost, and what caught it
+
+Adding to `app.html` changes every artifact that inlines it, so all three builds were regenerated — and both port builds refused on their first run, which is exactly what their anchor assertions are for: the extension's *deep links* sentence and the bookmarklet's `?file=` help paragraph had each been reworded by the app-side change, and a build that patched by luck would have shipped a stale sentence or a payload that silently no longer matched. Each patch was rewritten to say something true for its own edition: the panel's copy now names the two paste doors, and the bookmarklet's paragraph is about a **shared link**, the one kind an overlay on somebody else's page can rely on because it needs nothing fetched.
+
+The rebuild moved every size, and the no-JavaScript fallback check written two turns ago caught **all eight** stale numbers on the two pages that print one (`252 KB` → `260 KB`, `1.21 MB` → `1.22 MB`, `1.17 MB` → `1.18 MB`) before any of them reached a reader — the number a reader with JavaScript off and most crawlers actually see, and therefore the one nobody ever notices going stale. That check has now paid for itself twice in one session.
+
+`sw.js` was deliberately **not** version-bumped, and that is a decision rather than an oversight: its fetch handler is network-first for navigations, so anyone online gets the newly deployed `app.html` on their first load, and the version constant exists to invalidate *old caches* when the precache **list** changes — not when a file already on it does. This change adds no new precached file; the dialog and the router live inside `app.html`.
+
+| Check | Result |
+| --- | --- |
+| `node test/run.js` | **432 passed, 0 failed** (20 new: the link-or-file rule) |
+| `test/fixtures.html` | **67 per edition** — `app.html`, the standalone *from a bare directory*, `panel-test.html`, `panel-csp.html` |
+| `test/bookmarklet.html` | **81/81** — unchanged, re-run because the payload changed |
+| `build-site.js --check`, the three build `--check`s, `make-fixtures.js --check` | all green |
+
 ## 2026-09-25 — Three items in the bar, the docs brought up to the code, and the first push
 
 **Request, in three parts:** the top bar on the sales page carries too much — Home, versions and launch is the whole of it, with the editions *semi hidden* (reachable by the intended path rather than advertised); the Markdown in the repo has to be true; and the tested work goes to production.

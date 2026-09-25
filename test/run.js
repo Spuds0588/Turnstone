@@ -66,7 +66,7 @@ function loadApp() {
     + '  looksLikeEml, looksLikeLabel, looksLikeLabelRow, plausibleList,\n'
     + '  parseEmlText, bytesToBinary, decodeQuotedPrintable, splitMimeParts, mimeHeaderFields, charsetDecode,\n'
     + '  bytesToBase64Url, base64UrlToBytes, deflateRawBytes, inflateRawBytes,\n'
-    + '  inlineParamsFrom, decodeInlineList, buildInlineLink, inlineDigest, fnv1a32,\n'
+    + '  inlineParamsFrom, decodeInlineList, buildInlineLink, inlineDigest, fnv1a32, workspaceLinkFrom,\n'
     + '  INLINE_MAX_BYTES, INLINE_WARN_BYTES,\n'
     + '  HAS_XLSX, HAS_XLSX_WRITE, HAS_INFLATE, HAS_DOMPARSER, HAS_ZIP,\n'
     + '};';
@@ -438,6 +438,47 @@ const loadFixture = async (name) => {
     eq('a leading `?` or `#` is optional either way', api.inlineParamsFrom('link=x', '#open=1').open, '1');
     eq('an empty URL yields nothing rather than throwing', Object.keys(api.inlineParamsFrom('', '')).length, 0);
     eq('unrelated hash content is not mistaken for a list', api.inlineParamsFrom('', '#section-3').data, undefined);
+
+    /* --- link or file? The decision that picks "read our own fragment" over
+       "make a network request", and the one a wrong answer makes visible: fetch
+       a workspace link and you get a page of HTML, or nothing at all. --------- */
+    const ours = 'https://example.test/turnstone/app.html';
+    const asLink = (s) => { const r = api.workspaceLinkFrom(s); return r.ok ? `ok:${Object.keys(r.params).sort().join(',')}` : `no:${r.why}`; };
+    ok('a full workspace link is recognised', api.workspaceLinkFrom(`${ours}#zdata=AAAA&sum=2.x`).ok);
+    eq('…and its parameters come through, checksum included',
+      asLink(`${ours}#zdata=AAAA&sum=2.x`), 'ok:sum,zdata');
+    ok('the plain encoding is recognised too', api.workspaceLinkFrom(`${ours}#data=Name%2CURL`).ok);
+    eq('…with any extra parameters alongside it',
+      asLink(`${ours}#data=a%2Cb&link=https%3A%2F%2Fp%2F%7BT%7D&open=1`), 'ok:data,link,open');
+    /* Copied on its own is a normal way to pass one on: nobody selects the app URL
+       when a chat client has already turned it into a hyperlink. */
+    ok('a bare fragment is read as the fragment it is', api.workspaceLinkFrom('#zdata=AAAA').ok);
+    ok('…and so is a payload with no punctuation in front of it at all', api.workspaceLinkFrom('zdata=AAAA').ok);
+    ok('…and one prefixed with a stray `?`', api.workspaceLinkFrom('?data=a%2Cb').ok);
+    /* A fragment is never sent to a server, so it cannot be a file URL's arguments:
+       whatever host it is on, a payload in it can only be about a handed-over list. */
+    ok('a fragment payload counts even on somebody else\'s host',
+      api.workspaceLinkFrom('https://files.example.com/outreach-q2.csv#data=a%2Cb').ok);
+    /* …whereas `?data=` in a query string really is ambiguous, so it needs two
+       signals to be believed: our own origin, and a path we ship. */
+    ok('the query-string form is accepted on a page of ours', api.workspaceLinkFrom(`${ours}?data=a%2Cb`).ok);
+    ok('…including the directory root', api.workspaceLinkFrom('https://example.test/turnstone/?data=a%2Cb').ok);
+    ok('…and the standalone build', api.workspaceLinkFrom('https://example.test/turnstone/turnstone-standalone.html?data=a').ok);
+    ok('but a `?data=` on a file endpoint stays a file',
+      !api.workspaceLinkFrom('https://example.test/turnstone/export.csv?data=a%2Cb').ok);
+    ok('…and so does one on somebody else\'s host',
+      !api.workspaceLinkFrom('https://files.example.com/report.html?data=a%2Cb').ok);
+    /* A file URL must keep going to `fetch` — that is what this rule protects. */
+    ok('a plain file URL is not a workspace link', !api.workspaceLinkFrom('https://example.test/turnstone/sample-links.csv').ok);
+    ok('…nor is a bare file name', !api.workspaceLinkFrom('sample-links.xlsx').ok);
+    ok('…nor this page with no payload on it', !api.workspaceLinkFrom(`${ours}?file=q.csv`).ok);
+    ok('an empty string says so instead of opening anything', /nothing to open/.test(api.workspaceLinkFrom('   ').why));
+    ok('a stray paste is told what is missing',
+      /#zdata=/.test(api.workspaceLinkFrom('hello, is this the right list?').why));
+    ok('…and a file URL is told it is a file, not a bug',
+      /link to a file/.test(api.workspaceLinkFrom('https://example.test/x.csv').why));
+    ok('a `#zdata=` with an empty payload is not accepted as a link',
+      !api.workspaceLinkFrom(`${ours}#zdata=`).ok);
 
     /* --- decoding -------------------------------------------------------- */
     eq('a plain payload comes back as text', (await api.decodeInlineList({ data: 'a,b\n1,2' })).text, 'a,b\n1,2');
@@ -838,8 +879,12 @@ const loadFixture = async (name) => {
       /A data or spreadsheet file/.test(versions));
     ok('…and the extension page says the same thing in its own words',
       /Be driven by an AI agent/.test(decode('extension.html')));
+    const llms = decode('llms.txt');
     ok('…and llms.txt sends an agent to the right edition',
-      /file-based/.test(decode('llms.txt')) && /Do not try to drive the extension/.test(decode('llms.txt')));
+      /Open a workspace link/.test(llms) && /What you cannot do is \*drive\* the extension/.test(llms),
+      'llms.txt names the panel\'s doors and says driving it is not one of them');
+    ok('…and tells it to hand over a link or a file, rather than assume either',
+      /as a link, or as a file when the user prefers/.test(llms) && /Never assume you can work their queue/.test(llms));
 
     /* Every executable inline script in the app parses. The slice at the top of this
        file proves the *format layer* parses, but the boot code and the interface live

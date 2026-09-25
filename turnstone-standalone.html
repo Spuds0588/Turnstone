@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   Turnstone — standalone BETA build.
-  Generated 2026-09-25T14:34:31.294Z from app.html @ d8f0dc9 + uncommitted changes.
+  Generated 2026-09-25T15:46:42.741Z from app.html @ f01c61b + uncommitted changes.
 
   Self-contained by construction: the app shell, PapaParse, SheetJS, the MailLayer
   and PhoneLayer embeddings, and the logo artwork are all inlined above, and the app
@@ -551,10 +551,13 @@
             spreadsheet — and press <kbd>Ctrl</kbd>+<kbd>V</kbd> (<kbd>⌘</kbd>+<kbd>V</kbd>) anywhere in Turnstone.</p>
           <p id="cap-notice" hidden></p>
           <div class="row">
-            <input type="text" id="url-input" placeholder="…or paste a link-list URL" spellcheck="false">
+            <input type="text" id="url-input" placeholder="…or paste a file URL, or a shared link" spellcheck="false">
             <button class="btn" id="btn-load-url">Load</button>
           </div>
-          <p class="help">Any public link-list URL works (host must allow CORS). Deep-link support: <code>?file=&lt;url&gt;</code> or <code>?url=&lt;url&gt;</code>; add <code>&amp;open=1</code> to auto-open the first task.</p>
+          <p class="help">A public link-list URL works here (its host must allow CORS) — and so does a
+            <b>shared link</b>, one that already carries the list inside it, which fetches nothing at all.
+            Deep links: <code>?file=&lt;url&gt;</code>, <code>?url=&lt;url&gt;</code>,
+            <code>#zdata=…</code>; add <code>&amp;open=1</code> to auto-open the first task.</p>
           <p class="or">or try it with sample data</p>
           <div class="row">
             <button class="btn" id="btn-demo" title="Load the small built-in demo list">Demo list</button>
@@ -582,6 +585,7 @@
     </div>
     <nav id="menu" hidden>
       <button class="menu-item" id="mi-open"><span class="mi">📂</span> Open file…</button>
+      <button class="menu-item" id="mi-open-link"><span class="mi">📥</span> Open a workspace link…</button>
       <button class="menu-item" id="mi-restore" hidden><span class="mi">↺</span> Restore last file</button>
       <button class="menu-item" id="mi-close" disabled><span class="mi">✕</span> Close current file</button>
       <button class="menu-item" id="mi-link" disabled><span class="mi">🔗</span> Copy share link</button>
@@ -1855,7 +1859,7 @@ const els = {
   fileInput: $('#file-input'), dropzone: $('#dropzone'), btnDemo: $('#btn-demo'),
   dzFormats: $('#dz-formats'), capNotice: $('#cap-notice'),
   btnMenu: $('#btn-menu'), menu: $('#menu'), headName: $('#head-name'), headSave: $('#head-save'),
-  miOpen: $('#mi-open'), miRestore: $('#mi-restore'), miClose: $('#mi-close'), miLink: $('#mi-link'), miBuild: $('#mi-build'),
+  miOpen: $('#mi-open'), miOpenLink: $('#mi-open-link'), miRestore: $('#mi-restore'), miClose: $('#mi-close'), miLink: $('#mi-link'), miBuild: $('#mi-build'),
   miColumns: $('#mi-columns'), miExportCsv: $('#mi-export-csv'), miExportXlsx: $('#mi-export-xlsx'),
   miInstall: $('#mi-install'), miTheme: $('#mi-theme'), miThemeLabel: $('#mi-theme-label'),
   miAutoOpen: $('#mi-auto-open'), miAutoAdvance: $('#mi-auto-advance'),
@@ -3228,6 +3232,62 @@ function inlineParamsFrom(search, hash) {
   return into(into({}, search), hash);
 }
 
+/** Is this pasted text a **workspace link** — a list already inside a URL — or a
+    plain URL for a file to fetch? The answer decides whether the app reads its own
+    fragment or makes a network request, so it follows a rule rather than a guess:
+
+      1. A `zdata` payload **anywhere** is unambiguous. Nothing else in the world
+         spells a URL parameter that way; it is this app's own name for it.
+      2. A payload in the **fragment** is also unambiguous, and for a reason worth
+         writing down: a fragment is never sent to a server, so it cannot be a file
+         URL's arguments. `x.csv#data=…` can only be about a list someone handed over.
+      3. A `data` payload in the **query string** is genuinely ambiguous — plenty of
+         file endpoints take `?data=…` — so it counts only when the URL is one of our
+         own pages: same origin, path ending in `.html` (or the directory root). That
+         is the tooling case, where something can only append a query string.
+
+    Pure string work, so the Node suite tests it without a browser — and every
+    refusal carries a reason, because "why didn't my link open?" deserves an answer
+    rather than a silent fetch of something that was never a file. */
+function workspaceLinkFrom(text) {
+  const raw = String(text || '').trim();
+  if (!raw) return { ok: false, why: 'there was nothing to open' };
+
+  /* A bare `#zdata=…` or `zdata=…` — copied on its own, which is a normal way to
+     pass one on — is read as the fragment it is. */
+  const bare = /^(zdata|data|sum|format|name|link|open)=/i.test(raw.replace(/^[#?]+/, ''));
+  let url, frag = '', query = '';
+  try {
+    url = bare ? new URL(location.href) : new URL(raw, location.href);
+  } catch (e) {
+    return { ok: false, why: 'that is not a link' };
+  }
+  if (bare) frag = raw.replace(/^[#?]+/, '');
+  else { frag = String(url.hash || '').replace(/^#/, ''); query = String(url.search || '').replace(/^\?/, ''); }
+
+  const fromFrag = inlineParamsFrom('', frag);
+  const fromQuery = inlineParamsFrom(query, '');
+  const params = inlineParamsFrom(query, frag);          // fragment wins, as everywhere else
+  const payload = (fromFrag.zdata || fromQuery.zdata || '').trim();
+  const plain = (fromFrag.data || fromQuery.data || '').trim();
+
+  if (payload) return { ok: true, params, where: fromFrag.zdata ? 'the fragment' : 'the query string' };
+  if (plain && fromFrag.data) return { ok: true, params, where: 'the fragment' };
+
+  /* The tooling case: `?data=` on one of our own pages. A `.csv` or `.json` endpoint
+     with a `data` parameter is a file, and stays one. */
+  const ours = !bare && url.origin === location.origin
+    && (/\/$/.test(url.pathname) || /\.html?$/i.test(url.pathname));
+  if (plain && fromQuery.data && ours) return { ok: true, params, where: 'the query string of one of our own pages' };
+
+  /* Nothing to open — but *which* nothing matters to the caller: a file URL should
+     still go down the fetch path, while a stray paste should say what was missing. */
+  const looksLikeUrl = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) || /^\//.test(raw) || /^[\w.-]+\.[a-z]{2,}/i.test(raw);
+  return looksLikeUrl
+    ? { ok: false, why: 'that is a link to a file, not a link that carries the list itself' }
+    : { ok: false, why: 'no list is carried in that text — a workspace link has a #zdata=… (or #data=…) part' };
+}
+
 /** Decode whichever encoding the link used. Returns { text, encoding, bytes }.
     Throws a message meant for the user, because the usual failure here is a link
     that a chat client truncated, and "the list is incomplete" is the thing they
@@ -3935,6 +3995,62 @@ function portalEditorMarkup(ns) {
   </div>`;
 }
 
+/* -------------------------- Open a workspace link ------------------------ */
+/* The receiving end of the share-link path, and the one door a **side panel** has
+   for a list it did not get from a file: a Chrome side panel has no address bar, so
+   a `#zdata=` link posted into it has nowhere to arrive. The welcome panel's field
+   does this too, but it is hidden the moment a list is loaded — and "Sam sent me
+   another queue" is exactly the moment one is already open.
+
+   Nothing here reads the clipboard by itself: a read needs a permission prompt, and
+   a prompt that appears because you opened a menu is a prompt people learn to
+   dismiss. Pasting into the field is the whole interaction. */
+function showOpenLink() {
+  const overlay = document.createElement('div');
+  overlay.id = 'openlink-modal';
+  overlay.innerHTML = `
+    <div class="modal-box" style="width:min(620px,94vw)">
+      <h3 class="modal-title">Open a workspace link</h3>
+      <p class="modal-sub">A workspace link has the list <b>inside it</b> — nothing is fetched and nothing
+        is uploaded. Paste the whole link, or just the part from the <code>#</code> onwards.</p>
+      <input type="text" id="ol-input" class="portal-input" spellcheck="false" autocomplete="off"
+             placeholder="https://spuds0588.github.io/Turnstone/app.html#zdata=…">
+      <p class="portal-preview" id="ol-hint">A link that carries a list has <code>#zdata=</code> (compressed) or
+        <code>#data=</code> (plain text) in it.</p>
+      <div class="srow">
+        <button class="btn primary" id="ol-open">Open it</button>
+        <button class="modal-cancel" id="ol-cancel">Cancel</button>
+      </div>
+    </div>`;
+  mountPoint().appendChild(overlay);
+  const input = overlay.querySelector('#ol-input');
+  const hint = overlay.querySelector('#ol-hint');
+  const close = () => overlay.remove();
+  const attempt = async () => {
+    const raw = input.value.trim();
+    if (!raw) { hint.textContent = 'Paste a link first.'; input.focus(); return; }
+    const look = workspaceLinkFrom(raw);
+    if (!look.ok) { hint.textContent = `Not a workspace link: ${look.why}.`; return; }
+    hint.textContent = 'Opening…';
+    try {
+      await loadInlineWorkspace(look.params);
+      close();
+    } catch (e) {
+      /* Left open on purpose: the message usually tells you the link was cut short,
+         and the obvious next move is to paste the corrected one right here. */
+      err('Workspace link could not be opened from the dialog', e);
+      hint.textContent = e.message;
+    }
+  };
+  overlay.querySelector('#ol-open').onclick = attempt;
+  overlay.querySelector('#ol-cancel').onclick = close;
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') attempt();
+    if (e.key === 'Escape') close();
+  });
+  input.focus();
+}
+
 /* -------------------------- Build a share link --------------------------- */
 /* The other half of the paste path. Paste takes a list *from* somewhere; this
    hands one *to* somewhere as a single URL, which is the thing an agent needs — it
@@ -4348,6 +4464,23 @@ async function loadInlineWorkspace(raw) {
      a person distrust the number. */
   toast(`Opened a shared workspace — ${cardCount()} task${cardCount() === 1 ? '' : 's'} read from the link`, 'success');
   scheduleSave(0);
+}
+
+/** One entry point for "somebody handed me a string": open the list inside a
+    workspace link, or fetch the file the URL points at. The routing rule is
+    `workspaceLinkFrom` (pure, tested in Node); this is only the dispatch, so the
+    welcome panel's field, the ☰ menu item and the deep-link paths all behave the
+    same way. Throws whatever the loader throws — callers own the message. */
+async function openPastedSource(raw) {
+  const look = workspaceLinkFrom(raw);
+  if (look.ok) {
+    log(`Pasted a workspace link (the list is in ${look.where}) → opening it rather than fetching anything`);
+    await loadInlineWorkspace(look.params);
+    return 'link';
+  }
+  log(`Not a workspace link (${look.why}) → treating it as a file URL`);
+  await loadFromUrl(raw);
+  return 'file';
 }
 
 /** Load a remote file from ?file=/?url= param or the welcome-panel input. */
@@ -5162,6 +5295,7 @@ els.miClose.addEventListener('click', () => { closeMenu(); closeCurrentFile(); }
    a local pick, a dropped file, a paste, a database hand-off — has no address, so
    the list itself goes in the fragment (`#zdata=`), carrying the statuses and notes
    entered so far. Both open the same workspace; the second one needs no server at all. */
+els.miOpenLink.addEventListener('click', () => { closeMenu(); showOpenLink(); });
 els.miBuild.addEventListener('click', () => { closeMenu(); showBuildLink(); });
 els.miLink.addEventListener('click', async () => {
   closeMenu();
@@ -5237,6 +5371,22 @@ els.fileInput.addEventListener('change', async () => {
   els.fileInput.value = '';
   if (f) await loadFromFileObject(f, null);
 });
+/* The welcome panel's field, which had **no handler at all** — the button and the Enter
+   key were both dead, and nothing tested either (the sweeps drive files and pastes, not
+   this row). It takes a file URL *or* a workspace link now, and the routing rule decides
+   which: a link that carries the list is opened, anything else is fetched. */
+const submitWelcomeField = async () => {
+  const raw = els.urlInput.value.trim();
+  if (!raw) { toast('Paste a file URL or a shared link first', 'error'); els.urlInput.focus(); return; }
+  try {
+    await openPastedSource(raw);
+  } catch (e) {
+    err('The welcome field could not open what was pasted', e);
+    toast(`That could not be opened: ${e.message}`, 'error');
+  }
+};
+els.btnLoadUrl.addEventListener('click', submitWelcomeField);
+els.urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitWelcomeField(); });
 els.btnDemo.addEventListener('click', loadDemo);
 els.settingsX.addEventListener('click', closeSettings);
 els.settingsOverlay.addEventListener('click', (e) => { if (e.target === els.settingsOverlay) closeSettings(); });

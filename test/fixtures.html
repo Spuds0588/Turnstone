@@ -771,6 +771,66 @@ async function run() {
     extraNote(wsList, ws.total === 4,
       `changing the fragment of an already-open page loads the new workspace (was <b>${before}</b>, now <b>${ws.total}</b> tasks) instead of silently doing nothing`,
       JSON.stringify(ws));
+
+    /* -------------------------------------- a link that arrives by hand -----
+       The two ways a link can arrive without an address bar, which is the whole
+       point for a side panel: pasted into the welcome field, or pasted into
+       ☰ → Open a workspace link…. Both went through the same dead end before —
+       the field had no handler at all, and the menu item did not exist. */
+    const linkUrl = `${APP}#zdata=${z}&sum=${sumOf(csv)}`;
+    const clickIn = (id) => wsDoc().getElementById(id).click();
+    const setIn = (id, v) => {
+      const n = wsDoc().getElementById(id);
+      n.focus();
+      n.value = v;
+      return n;
+    };
+
+    w = await bootWithFragment('');
+    await waitForApp(el('app'));
+    extraNote(wsList, !!wsDoc().getElementById('welcome') && !wsDoc().getElementById('welcome').hidden,
+      'a fresh boot with no payload still shows the welcome screen, so the field below is reachable');
+    setIn('url-input', linkUrl);
+    clickIn('btn-load-url');
+    ws = await waitForRows(10);
+    extraNote(wsList, ws.total === 10 && ws.done === 3,
+      `a workspace link pasted into the welcome field opens the list inside it — <b>${ws.total}</b> tasks, <b>${ws.done}</b> complete, nothing fetched`,
+      JSON.stringify({ ws, toast: wsToast() }));
+
+    /* The bare form, which is what you get when a chat client has already turned the
+       link into a hyperlink and you select only the tail of it. */
+    w = await bootWithFragment('');
+    await waitForApp(el('app'));
+    const bare = setIn('url-input', `#zdata=${z}&sum=${sumOf(csv)}`);
+    bare.dispatchEvent(new (wsWin().KeyboardEvent)('keydown', { key: 'Enter', bubbles: true }));
+    ws = await waitForRows(10);
+    extraNote(wsList, ws.total === 10,
+      `…and so does the bare <code>#zdata=…</code> tail, submitted with Enter rather than the button — <b>${ws.total}</b> tasks`,
+      JSON.stringify({ ws, toast: wsToast() }));
+
+    /* The menu path: the one that works while another list is already open, which is
+       exactly when a second link tends to arrive. */
+    w = await bootWithFragment('');
+    await waitForApp(el('app'));
+    clickIn('btn-menu');
+    const menuOpen = !wsDoc().getElementById('menu').hidden && !!wsDoc().getElementById('mi-open-link');
+    clickIn('mi-open-link');
+    const dialog = wsDoc().getElementById('openlink-modal');
+    extraNote(wsList, menuOpen && !!dialog,
+      'the ☰ menu offers <b>Open a workspace link…</b>, and it opens a dialog rather than a browser prompt');
+    if (dialog) {
+      setIn('ol-input', 'see attached');
+      clickIn('ol-open');
+      await until(() => /Not a workspace link/i.test((wsDoc().getElementById('ol-hint') || {}).textContent || ''), 2000);
+      extraNote(wsList, /Not a workspace link/i.test((wsDoc().getElementById('ol-hint') || {}).textContent || ''),
+        `…a paste that is not one is refused in the dialog with a reason — <i>${((wsDoc().getElementById('ol-hint') || {}).textContent || '').slice(0, 80)}</i>`);
+      setIn('ol-input', linkUrl);
+      clickIn('ol-open');
+      ws = await waitForRows(10);
+      extraNote(wsList, ws.total === 10 && !wsDoc().getElementById('openlink-modal'),
+        `…and a real one loads <b>${ws.total}</b> tasks and closes the dialog behind it`,
+        JSON.stringify({ ws, toast: wsToast() }));
+    }
   } catch (e) {
     extraNote(wsList, false, `workspace-link section threw: ${e.message}`, e.stack);
   }

@@ -47,7 +47,9 @@ CSV, TSV, XLSX, XLS, XLSM, XLSB, ODS, DOCX (Word tables), Markdown (task lists a
 
 ## Which edition to hand it to
 
-A workspace link is opened by **anything with an address bar**: the web app (`app.html`), the standalone single-file build, or the bookmarklet. The **Chrome extension** is file-based and takes a list as a **data file** — CSV, TSV or XLSX — which the user drops on its side panel. Do not try to drive the extension: a side panel is worked by a person in a real Chrome window, and an agent in a sandbox, a headless browser or on another machine has no such panel. If the user wants the extension, produce the file; if they want a link, target `app.html`.
+Every edition reads a workspace link: the web app (`app.html`), the standalone single-file build and the bookmarklet open one from a URL, and the **Chrome extension** takes one pasted into its side panel — either into the field on its first screen, or through **☰ → Open a workspace link…**, which works while another list is open. A **data file** (CSV, TSV, XLSX) works on the extension too.
+
+What you cannot do is *drive* the extension: a side panel is worked by a person in a real Chrome window, and an agent in a sandbox, in a headless browser or on another machine has no such panel. So hand the list over — as a link, or as a file when the user prefers — and the user opens it. Never assume you can work their queue.
 
 ## Files
 

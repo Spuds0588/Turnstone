@@ -35,7 +35,7 @@ which artifact that is is a query parameter — the same page, pointed somewhere
 | Edition | Under test | Invocation |
 | --- | --- | --- |
 | Web app | `app.html`, the canonical source | `test/fixtures.html` (defaults) |
-| Standalone | `turnstone-standalone.html` **alone in a directory** | copy `test/fixtures.html`, the standalone and every `sample-links.*` into an empty folder, serve *that* folder, open `fixtures.html?app=turnstone-standalone.html&fixtures=./` |
+| Standalone | `turnstone-standalone.html` **alone in a directory** | copy `test/fixtures.html`, the standalone and **every** `sample-*` file into an empty folder (`cp turnstone-standalone.html test/fixtures.html sample-* /tmp/ts-bare/` — `sample-links.*` alone is not enough, the sweep also opens the workflow, portal and email fixtures), serve *that* folder, open `fixtures.html?app=turnstone-standalone.html&fixtures=./` |
 | Extension | `ports/extension/dist/panel-test.html` (chrome-API mock) and `panel-csp.html` (the real extension CSP) | `?app=../../ports/extension/dist/panel-test.html&fixtures=../` — then the same with `panel-csp.html`, which sweeps every format *and* both layer pickers under `script-src 'self'; object-src 'self'` |
 | Bookmarklet | `ports/bookmarklet/dist/turnstone-bookmarklet-{csv,core,full}.txt`, decoded and `eval`ed | `test/bookmarklet.html` |
 | Any edition without the layers | the same sweep, told so | add `&expectLayers=0` |
@@ -97,6 +97,8 @@ non-event for it.
 | Paste — the confirmation, the `text/html` preference, and the pastes that must be refused | browser | it needs a real `ClipboardEvent` and `DataTransfer` |
 | Workspace-link **encoding** — base64url, raw deflate, the checksum, the size guards, every fixture carried in a URL and returned byte-for-byte | Node | no DOM, and a truncation sweep over 19 cut points is exactly the kind of thing no human should run by hand |
 | Workspace **links arriving** — the boot path, a portal template beside the payload, a bad checksum and a truncated payload, `?data=`, and a second link delivered by a fragment change | browser | it is a *navigation*, and the fragment case is the one that does not reload the page |
+| Workspace **links handed over by hand** — pasted into the welcome field, submitted with Enter, and pasted into ☰ → *Open a workspace link…* (including a paste that is not one being refused with a reason) | browser | the two doors a side panel has, plus the field that had no handler at all until this was written |
+| **Link or file?** — `zdata` anywhere, a payload in the fragment, and the same in a query string only on our own pages | Node | pure string work, and a wrong answer here is a `fetch` of a workspace link, which returns HTML or nothing |
 | The site — sitemap, robots, canonicals, structured data, markdown twins, `og:image`, and every link in `llms.txt` | Node | these are filesystem facts, and `assets/build-site.js` is imported rather than re‑implemented |
 | Structured data **against the page it is on** — every marked-up answer appears on the page, every question the page asks is in the markup, every `HowTo` step says what the page says | Node | nothing renders JSON-LD, so prose and markup drifting apart is invisible in a browser and complete to a machine; the same script that writes the crawl files owns the check |
 | The landing page's **prose budget** (1,000 words, no negotiation) | Node | a sales page grows one honest sentence at a time; the number is the only thing that ever pushed back |

@@ -268,9 +268,11 @@ markup = patch(markup, '      <button class="menu-item" id="mi-mode-help"><span 
 markup = patch(markup, /          <p class="help" id="editions-hint" hidden>[\s\S]*?<\/p>\n/,
   '', 'edition pointer markup');
 
-/* The deep-link sentence describes a URL a side panel does not have. */
-markup = patch(markup, 'Deep-link support: <code>?file=&lt;url&gt;</code> or <code>?url=&lt;url&gt;</code>; add <code>&amp;open=1</code> to auto-open the first task.',
-  'Paste the address of a list shared as a web file.', 'deep-link sentence');
+/* The deep-link sentence describes URLs a side panel does not have — but the panel
+   *can* take a workspace link, which is the one door it has for a list that did not
+   arrive as a file, so the replacement says that rather than saying nothing. */
+markup = patch(markup, 'Deep links: <code>?file=&lt;url&gt;</code>, <code>?url=&lt;url&gt;</code>,\n            <code>#zdata=…</code>; add <code>&amp;open=1</code> to auto-open the first task.',
+  'A <b>workspace link</b> works here too: paste it above, or use <b>☰ → Open a workspace link…</b> — a side panel has no address bar to type one into.', 'deep-link sentence');
 
 /* ---------------------------------------------------------- page shell ---- */
 
