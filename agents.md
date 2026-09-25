@@ -1,22 +1,72 @@
 # agents.md — AI Developer Context & Rules
 
-If you are an AI agent assisting with Project Turnstone, you must strictly adhere to the following rules.
+If you are an AI agent working on Project Turnstone, adhere to the following. The rules are
+written for the project as it actually is today, not as the original spec imagined it — where
+the two disagree, this file and [`README.md`](README.md) win.
 
 ## Context
 
-Project Turnstone is a vanilla JS single-page application that acts as a split-pane task manager. It reads local/remote CSV/XLSX files, populates a sidebar of task cards, loads URLs into tabbed iframes, and automatically saves progress back to the user's filesystem or browser storage.
+Turnstone is a zero-backend, vanilla-JS, single-page application that turns a list (a spreadsheet,
+CSV, JSON, Markdown, Word table, XML feed, saved email, a paste, or a list carried in a URL) into a
+workspace: task cards with statuses and notes on one side, the pages themselves on the other, with
+progress saved back into the file the user started with.
 
-**Approved deviation from the PRD (2026-09-22):** The sidebar sits on the **RIGHT** side of the screen; the tabbed iframe workspace is on the LEFT. All other PRD behavior stands.
+- **`app.html` is the application** — one file, no build step, no framework, no runtime dependency
+  that is not vendored. The original spec called it `index.html`; that name now belongs to the
+  **sales/landing page** of the site.
+- **The site** is the surrounding static pages (`versions.html` and one page per edition,
+  `workspace-link.html`, `index.html`), plus the agent-facing files `llms.txt`, the `.md` twins,
+  `sitemap.xml` and `robots.txt`.
+- **`ports/`** holds the other editions (bookmarklet, Chrome extension, Tauri). Each is *generated*
+  from `app.html` by its own `build.js`, which patches the seams and asserts every anchor.
+- **`test/`** holds the three suites; `assets/` holds the generators (fixtures, icons, social card,
+  site artifacts).
+
+**Approved deviation from the PRD (2026-09-22):** the sidebar sits on the **RIGHT** side of the
+screen; the tabbed iframe workspace is on the **LEFT**. All other PRD behaviour stands.
 
 ## Development Rules
 
-1. **Strictly Vanilla:** Do not introduce bundlers (Webpack, Vite), frameworks (React, Vue), or TypeScript. Stick to pure HTML, CSS, and JS in a single `index.html` file (or linked `.js`/`.css` if file size exceeds reasonable limits).
-2. **YAGNI (You Aren't Gonna Need It):** Prefer simple one-liners and native JS methods over complex abstractions.
-3. **No Backends:** This is a zero-server application. Everything lives in the browser and the user's local filesystem.
-4. **Iframe Awareness:** Always assume iframes might fail to load due to CORS/`X-Frame-Options`. Provide secondary `<a target="_blank">` escape hatches for all links.
-5. **Persistence Handling:**
-   * Chromium: Store the `FileSystemFileHandle` in IndexedDB. Remember to request `verifyPermission()` on reload.
-   * Fallback: Track an `isDirty` boolean. If `isDirty` is true and File System Access API is not active, trigger `event.preventDefault()` on `beforeunload`.
-6. **Extensive Console Logging:** Every major action, state change, file read, file write, and caught error MUST have a descriptive `console.log()`.
-7. **Code Output:** When outputting code, output the FULL file contents. Do not use snippets like `// ... rest of code`. The PM needs to copy-paste the entire file to test.
-8. **Pushback:** If the PM asks to bypass Iframe CORS headers in the web version, push back and remind them that this is impossible in standard browsers and is explicitly slated for the V2 Electron/Extension phase.
+1. **Strictly vanilla, one file.** No bundlers, frameworks, TypeScript or new runtime dependencies
+   in `app.html`. Anything that has to be a library is **vendored** under `vendor/`, hashed in
+   [`vendor/README.md`](vendor/README.md), and copied byte-for-byte into each port. **Never a CDN**:
+   the app's CSP declares `default-src 'none'`, and an off-origin subresource is both a policy
+   violation and a broken promise. `test/run.js` asserts there is no remote `src` anywhere.
+2. **YAGNI.** Prefer a native method and a plain function over an abstraction. The app is deliberately
+   one long, commented file.
+3. **No backend, nothing uploaded.** Everything happens in the browser and in the user's own files.
+   No telemetry, no analytics, no accounts, and never a network call the user did not ask for.
+4. **Iframes fail, by design and often.** Assume `X-Frame-Options`/CORS may block any page: every link
+   needs a new-tab and a popup escape hatch, and a composed portal link must behave exactly like a
+   real one.
+5. **The user's file is sacred.** Write-back is debounced and silent in Chromium, falls back to an
+   export elsewhere, and never rewrites a document the app only reads (`.md` is read-only on purpose).
+   Track `isDirty` honestly — a `beforeunload` prompt that fires over saved work is a bug.
+6. **`app.html` is the source; everything else is generated.** Never hand-edit
+   `turnstone-standalone.html`, `ports/*/dist/`, `sample-links.*`, `sitemap.xml`, `robots.txt`,
+   `assets/sizes.json` or `assets/og-image.png`. Regenerate with the script named in
+   [`README.md`](README.md) → *Repository layout*, and run its `--check`.
+7. **Structured data must say what the page says.** Nothing renders JSON-LD, so prose and markup
+   drifting apart is invisible in a browser and total to a machine. `assets/build-site.js` compares
+   every marked-up answer to the page and every `HowTo` step to its heading — keep them in step, and
+   keep the landing page inside its **1,000-word prose budget** (the check says *cut something*
+   rather than offering a number to raise).
+8. **The editions are reached through the versions page.** The top bar is deliberately three items
+   (Home · All versions · Launch app) and is asserted; footers carry the full list for anyone who
+   would rather not walk the path.
+9. **Test before you claim.** `node test/run.js` (fast, DOM-free, slices the format layer out of the
+   real `app.html`), then the browser sweeps when the format layer, the layers or a port changed,
+   then every build's `--check` and `node assets/make-fixtures.js --check`. The suites and what each
+   one is for are in [`test/README.md`](test/README.md) and [`testing-notes.md`](testing-notes.md).
+10. **Write it down.** A change to behaviour, a reversed decision, or a limit discovered in testing
+    belongs in [`history.md`](history.md) (why, with the measurement that proved it) and
+    [`todo.md`](todo.md) (done, or still open). Documentation that drifts is worse than none.
+11. **Console logging:** useful `console.log`/`console.warn` on boot, state changes, file read/write
+    and caught errors — enough to debug a report from someone else's machine, not a running diary.
+12. **Pushback.** If asked to bypass iframe CORS/`X-Frame-Options` in the web edition, say plainly
+    that no browser allows it and point at the [Tauri port](ports/tauri/) or the
+    [Chrome extension](extension.html). If asked to add WebAssembly (OCR, a local model), say that
+    this app's CSP refuses `wasm` and that the deliberate decision, with reasoning, is in
+    [`todo.md`](todo.md) — and that the paste path already handles those inputs exactly.
+13. **Output complete files.** When handing code back, give the whole file or the whole replacement
+    block, never `// ... rest of code`.

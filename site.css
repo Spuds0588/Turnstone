@@ -63,11 +63,15 @@ nav.topnav a.go {
   padding: 5px 10px; border-radius: 8px; border: 1px solid transparent; white-space: nowrap;
 }
 nav.topnav a.go:hover { background: var(--accent-dim); border-color: rgba(122,162,255,.35); }
-/* Two rows instead of one crowded line: brand, then the links. */
+/* Two rows instead of one crowded line: brand, then the links. The bar is only three
+   items wide now, so the spacer that used to separate them is gone and the launch link
+   is pushed to the right of its own row instead — otherwise it sits shoulder to shoulder
+   with "All versions" on a phone, which reads like a fourth menu item. */
 @media (max-width: 700px) {
   nav.topnav .inner { gap: 4px; padding: 10px 16px; }
   nav.topnav .brand { flex: 1 1 100%; margin-right: 0; }
   nav.topnav .spacer { display: none; }
+  nav.topnav a.go { margin-left: auto; }
   nav.topnav a.link, nav.topnav a.go { padding: 5px 8px; font-size: 12.5px; }
 }
 
@@ -143,6 +147,11 @@ td code, p code, li code, th code { background: var(--panel-2); border-radius: 4
 table.situation col.w-sit { width: 38%; }
 table.situation col.w-use { width: 24%; }
 table.situation col.w-why { width: 38%; }
+/* The agent table on the versions page: edition, what can be handed to it, what it
+   still cannot do. Text-heavy on the right, so the first column stays narrow. */
+table.situation col.w-ed { width: 17%; }
+table.situation col.w-can { width: 41%; }
+table.situation col.w-cant { width: 42%; }
 table.spec col.c-ed { width: 15%; }
 table.spec col.c-num { width: 15%; }
 table.spec col.c-ins { width: 15%; }

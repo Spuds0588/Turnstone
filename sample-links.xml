@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- A feed-shaped link list: the importer should tabulate the repeated <item>
-     elements (title/link/notes) into one row each. -->
+<!-- A feed-shaped link list — the same ten tasks as sample-links.csv, so every
+     importer can be checked against one shared target: 10 cards, 4 columns in the
+     order Name / URL / Status / Notes, 7 visible and 3 already complete.
+
+     Child elements (not attributes) carry the columns, and their order is the CSV's
+     column order, which is what makes this fixture comparable with the others. The
+     importer tabulates the repeated <item> elements into one row each. -->
 <rss version="2.0">
   <channel>
     <title>Turnstone sample link list (RSS)</title>
@@ -9,51 +14,61 @@
     <item>
       <title>Apple Newsroom</title>
       <link>https://www.apple.com/newsroom/</link>
+      <status>incomplete</status>
       <notes>Q3 earnings page</notes>
     </item>
     <item>
       <title>BBC Homepage</title>
       <link>https://www.bbc.com/</link>
+      <status>complete</status>
       <notes></notes>
     </item>
     <item>
       <title>Changelog Nightly</title>
       <link>https://changelog.com/nightly</link>
+      <status>incomplete</status>
       <notes>Skip the archive pages</notes>
     </item>
     <item>
       <title>Comma, Inc. Blog</title>
       <link>https://example.com/comma-blog</link>
-      <notes>Note with, commas, and "quotes"</notes>
+      <status>complete</status>
+      <notes>Note with, commas, and &quot;quotes&quot;</notes>
     </item>
     <item>
       <title>Demo Domain</title>
       <link>https://example.com/</link>
+      <status>incomplete</status>
       <notes></notes>
     </item>
     <item>
       <title>GitHub Trending</title>
       <link>https://github.com/trending</link>
+      <status>incomplete</status>
       <notes>Check weekly</notes>
     </item>
     <item>
       <title>Hacker News</title>
       <link>https://news.ycombinator.com/</link>
+      <status>complete</status>
       <notes>Blocked in iframes — use ↗</notes>
     </item>
     <item>
       <title>Sheets Example</title>
       <link>https://example.com/sheet-demo</link>
+      <status>incomplete</status>
       <notes></notes>
     </item>
     <item>
       <title>Turnstone Repo</title>
       <link>https://github.com/</link>
+      <status>incomplete</status>
       <notes></notes>
     </item>
     <item>
       <title>Wikipedia Portal</title>
       <link>https://www.wikipedia.org/</link>
+      <status>incomplete</status>
       <notes></notes>
     </item>
   </channel>

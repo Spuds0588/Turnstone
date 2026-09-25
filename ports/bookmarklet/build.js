@@ -100,9 +100,22 @@ let js = appJs;
 
 /* Element lookups and theme now scope to the overlay. */
 js = patch(js, 'const $ = (sel) => document.querySelector(sel);', 'const $ = (sel) => ROOT.querySelector(sel);', 'element lookup helper');
-js = patch(js, 'document.documentElement.dataset.theme', 'THEME_ROOT.dataset.theme', 'theme root', 3);
-/* Overlays the app appends to<body> belong in the shadow root (they must sit above the app). */
-js = patch(js, 'document.body.appendChild(overlay);', 'ROOT.appendChild(overlay);', 'overlay append', 2);
+/* Every theme read in the app must come from the shadow root, not the host page:
+   applyTheme writes it, currentTheme() reads it back for the per-link layer hints. */
+js = patch(js, 'document.documentElement.dataset.theme', 'THEME_ROOT.dataset.theme', 'theme root', 4);
+/* Modal overlays belong in the shadow root (they must sit above the app), and the
+   periodic "is a modal already open?" question has to be asked there too — in a
+   shadow root the host document's querySelector cannot see our own overlays, so an
+   unscoped probe would always answer "no modal" and let a paste prompt open on top
+   of an open prompt. The app does both through one named helper each, so this is
+   two single-point patches rather than a count of appendChild calls that grows
+   every time a modal is added. */
+js = patch(js, 'const mountPoint = () => document.body;', 'const mountPoint = () => ROOT;', 'modal mount point');
+js = patch(js, 'const modalOpen = (sel) => !!document.querySelector(sel);', 'const modalOpen = (sel) => !!ROOT.querySelector(sel);', 'modal-open probe');
+/* Pastes are the app's, not the page's: scoped to the overlay, so copying a
+   sentence on somebody else's site never raises Turnstone's "load this list?"
+   prompt — the same reason dragover/drop are scoped above. */
+js = patch(js, "document.addEventListener('paste', onPaste, true);", "ROOT.addEventListener('paste', onPaste, true);", 'paste listener');
 /* Drag targets move from the host page's document to the app viewport, so the
    handlers disappear with the overlay instead of hijacking the page's own drops. */
 js = patch(js, "document.addEventListener('dragover'", "ROOT.addEventListener('dragover'", 'dragover listener');
@@ -114,8 +127,23 @@ js = patch(js, "document.addEventListener('drop'", "ROOT.addEventListener('drop'
 js = patch(js, 'const STANDALONE_BUILD = false;', 'const STANDALONE_BUILD = true;', 'service-worker gate');
 js = patch(js, 'const SESSION_ONLY = false;', 'const SESSION_ONLY = true;', 'session-only storage flag');
 
-/* The host page's own ?file= must never be read as ours. */
-js = patch(js, "const fileParam = params.get('file') || params.get('url');", 'const fileParam = null;   // bookmarklet: the host page\'s query string is not ours to read', 'deep-link param');
+/* The host page's own URL must never be read as ours — not its query string, and not
+   its fragment. Both are now read by the app in one place (`inlineParamsFrom`), so
+   this is one patch instead of a list that grows every time a parameter is added. */
+js = patch(js, "const params = new Map(Object.entries(inlineParamsFrom(location.search, location.hash)));",
+  'const params = new Map();   // bookmarklet: the host page\'s URL is not ours to read', 'URL parameter source');
+js = patch(js, "const p = inlineParamsFrom('', location.hash);",
+  'const p = {};   // bookmarklet: not the host page\'s fragment either', 'hashchange param source');
+/* "Open it here" sets the current address to the built link. Here that would rewrite
+   the address of somebody else's page, so the bookmarklet opens it as a new tab. */
+js = patch(js, "location.hash = built.url.slice(built.url.indexOf('#'));",
+  "window.open(built.url, '_blank', 'noopener');", 'open-built-link action');
+
+/* A share link has to open a real app, and in the bookmarklet `location` is somebody
+   else's site — so the two places that build one from the current address are pointed
+   at the hosted app instead. Without this, copying a share link from a bookmarklet
+   produced a URL on the host page that opened nothing. */
+js = patch(js, '${location.origin}${location.pathname}', "'https://spuds0588.github.io/Turnstone/app.html'", 'share-link base', 2);
 
 /* PWA + unload machinery is host-page behaviour, not overlay behaviour: an
    install prompt or a "you have unsaved changes" dialog on someone else's page
@@ -129,6 +157,7 @@ js = patch(js, /\/\* ------------------------------ PWA plumbing ---------------
 js = patch(js, '/* PRD Task 4.4: strict beforeunload guard in fallback/remote modes. */\nwindow.addEventListener(\'beforeunload\', (e) => {\n  if (state.mode && state.mode !== \'fs\' && state.isDirty) {\n    warn(\'beforeunload blocked: unexported changes in fallback mode\');\n    e.preventDefault();\n    e.returnValue = \'\'; // required for Chrome\n    return \'You have unexported changes. Export CSV/XLSX before leaving.\';\n  }\n});\n',
   '/* beforeunload guard removed in the bookmarklet build: leaving a page is the host\n   page\'s business, and our state is session-only by design anyway. */\n', 'beforeunload guard');
 if (/document\.documentElement/.test(js)) throw new Error('a documentElement reference survived patching');
+if (/location\.(search|hash)/.test(js)) throw new Error("the host page's URL is still being read");
 if (/addEventListener\('beforeunload'/.test(js)) throw new Error('a beforeunload handler survived patching');  if (!js.includes('ROOT.querySelector')) throw new Error('element lookups were not scoped to the overlay');
 if (!js.includes('const SESSION_ONLY = true;')) throw new Error('session-only storage flag was not set');
 

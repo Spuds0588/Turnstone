@@ -1,5 +1,298 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-25 — Three items in the bar, the docs brought up to the code, and the first push
+
+**Request, in three parts:** the top bar on the sales page carries too much — Home, versions and launch is the whole of it, with the editions *semi hidden* (reachable by the intended path rather than advertised); the Markdown in the repo has to be true; and the tested work goes to production.
+
+### 1. The bar is three items, and now it is asserted
+
+Home · All versions · **Launch app →**. The four edition pages are reached the way the page already sets up — hero → *Find your version* → the edition that fits — and every page's footer still lists all of them for anyone who would rather not walk the path. That is what "semi hidden" means here: not gone, not competing with the two things a visitor actually needs.
+
+Applied site-wide rather than to the landing page alone, because a nav that changes shape between pages is worse than either version. The guide pages lose their own link from the bar with it — the page's `<h1>` and the `BreadcrumbList` already say where you are.
+
+The rule is checked, not remembered: `build-site.js` reads each page's `<nav class="topnav">` and refuses anything whose `.link`/`.go` hrefs are not exactly `index.html versions.html app.html`. A top bar that lists every page of a site is a table of contents, and it grows back one "useful link" at a time.
+
+### 2. The Markdown was not true, and the numbers were the worst of it
+
+A grep for `KB`/`MB` across the repo's Markdown found the README quoting a **1.07 MB** standalone (it is 1.21 MB), a bookmarklet table from two releases ago (`~176 KB` / `~186 KB` / `~1.12 MB` against today's **252 KB / 261 KB / 1.17 MB**), the bookmarklet's own README repeating those same numbers, and the extension page quoting "13 files of its own" when the build says 15.
+
+Worse than any of those: the **fallback text** on the guide pages — the size and version printed when JavaScript is off, which is what a reader without scripts and most crawlers actually see. `site.js` rewrites those numbers from `assets/sizes.json` on load, which is exactly why nobody notices the fallback going stale: it is invisible in a browser with scripts on, and it was a whole release behind. `build-site.js` now computes what `site.js` would print (same formatter, same 1024 thresholds) and fails if a page's fallback disagrees with the artifact — the *one* place where a stale number is both real and permanently invisible.
+
+Two documentation files were also describing a different project. `agents.md` still said the app was a single `index.html` and listed CDN dependencies — the app is `app.html` and a CDN reference violates its own `default-src 'none'` policy, so an agent following that file would have written a policy violation. It is rewritten against the repository as it is: the file map, the generated-not-hand-edited rule, the CSP, the prose budget, the structured-data parity rule, the three suites, and the two things to push back on (iframe CORS, WebAssembly). `PRD-Turnstone.md` is now marked up front as **the frozen V1 specification**, naming the two places it would mislead a reader (`index.html`, CDN dependencies), and its §4 — which was a stale duplicate of the rules — now points at `agents.md` instead of contradicting it. README's Docs list and layout were corrected with them, and `workspace-link.html` was missing from the layout entirely.
+
+### 3. Verification, then the first push to production
+
+Everything below was run against the tree as committed: `node test/run.js` **411 passed, 0 failed**; `node assets/make-fixtures.js --check`; `assets/build-site.js --check` (crawl files, canonicals, structured data against the page, nav shape, size fallbacks, prose budget); and the three build `--check`s — standalone, bookmarklet, extension. The browser sweeps were re-run for the editions they cover, and the changed pages were checked at 1280px and 375px.
+
+This is the first push of the entire v0.13/v0.14 line — workspace links, the portal lists, the fixture generator, the four editions' rebuilds, the site — to `main`, which is what GitHub Pages serves. Every earlier session ended with the work uncommitted by design; this one does not.
+
+## 2026-09-25 — The sales page, cut to five reasons, and what an agent cannot be handed
+
+**Request, in two parts:** the versions page has to say plainly that a Chrome extension panel cannot be driven by a coding agent (an agent has no such browser); and the sales page is too verbose — lead with the five reasons people actually adopt this.
+
+### 1. The five reasons, and a budget so there are still five
+
+The page had grown the way sales pages grow: every claim was true, every claim got a paragraph, and the ones that mattered were buried among them. It is now built around the five arguments that carry it — **a modern workspace however messy the upstream process** (rows with no links included), **nothing to roll out and nobody to ask**, **it fits the browser, webmail and web phone already in use**, **you end at the file you started with, updated**, and **let your agent hand you the list**. Five cards, not seven: the one-click/undo/presets detail moved to the app's own page, where a person who wants features is already looking.
+
+Layout follows the argument. The first card states the whole point, so it spans the row with its icon beside the text; the other four pair off beneath it. Five equal columns would have squeezed each claim into ~200px of prose, and a 3+2 grid leaves a hole.
+
+What keeps it short is `assets/build-site.js`: **the landing page has a 1,000-word budget of visible prose** (it is at 978), and the check says *cut something* rather than handing back a number to raise. Prose is authored, so this is a tripwire rather than a generator — but it is the tripwire that would have caught the growth in the first place.
+
+### 2. Structured data has to say what the page says — and it didn't
+
+Google and every answer engine ask for markup whose content matches the page, and nothing renders JSON-LD, so a page whose prose was rewritten while its markup was not looks perfect in a browser and is wrong to every machine that reads it. That is precisely the failure mode of keeping two copies of the same sentences in one file — which is what an `FAQPage` is.
+
+So `build-site.js` now reads the edited page and asserts, for every page with markup: every marked-up answer must appear **on the page**, every question asked on the page must be **in the markup**, and every `HowTo` step must say what the page says. The comparison deletes whitespace and treats a `<code>` tag in the middle of a sentence as nothing, because the same sentence is wrapped one way in HTML and another in JSON — but punctuation is compared exactly, which is the part that catches drift.
+
+It found real drift on the first run: `workspace-link.html`'s FAQ markup was a **second, older copy** of its own visible questions (four in the markup, five on the page, none of them worded the same). Two fixes, both worth having on their own: the markup now names the page's own five questions with the page's own answers, and the *build a link* recipe became a visible numbered list of four steps — the JSON-LD `HowToStep` texts and the visible steps are now the same four sentences.
+
+The check was verified by breaking it: changing one word of one visible answer in `index.html` fails `build-site.js --check` with *"the marked-up answer … is not on the page"*, and restoring the file passes.
+
+### 3. A phone-width bug that measuring found and reading would not
+
+At 375px the new value grid's column measured **416px inside a 361px viewport**. A grid item's automatic minimum size is its *min-content* width, and the one long unbreakable token on the page — the portal template `https://portal.example.com/ticket/{Ticket}` — set it. The page's own `overflow-x: clip` then hid the damage rather than showing it, so nothing looked wrong until it was measured. `min-width: 0` on the cards and `overflow-wrap: anywhere` on inline code fix it; the old page had the same defect in its "no links at all" card.
+
+### 4. What an agent can and cannot be handed
+
+This is a limit of browser side panels, not of Turnstone, and the versions page now says so where the choice is made: **the web app, standalone build and bookmarklet open a link; the extension takes a file**. An agent that has found or generated a list should give you a CSV, TSV or XLSX for the extension — and a workspace link for anything with an address bar. Driving the panel would need its own Chrome with the extension loaded and a panel open, which a coding agent in a sandbox, in a headless browser, or on another machine does not have; and a side panel has no address bar for a `#zdata=` link to arrive through. The same fact is now in the extension's own *what it does not do* list, in a new `llms.txt` section that sends an agent to the right edition, and in the rewritten `index.html.md` twin.
+
+Nothing in the app changed for this, because nothing in the app was wrong: the panel has always taken a file, and the missing piece was saying so.
+
+### 5. One bug in the checking code itself
+
+`main()` destructured the check result without `landingWords`, so the writer crashed *after* the file was written — `--check` passed and the build script itself exited 1. Worth recording because it is the shape of mistake to expect: the new number was wired into `check()` and referenced in `main()` without going through the destructuring that connects them.
+
+| Suite | Before | Now |
+| --- | --- | --- |
+| `node test/run.js` | 407 | **411 passed** — four new assertions that the agent/extension limitation stays said, on the versions page, the extension page and `llms.txt` |
+| `assets/build-site.js --check` | link graph | **+ FAQ/HowTo parity, + the landing-page prose budget** |
+| browser | — | the trimmed page, the agent table and the extension page checked at 1280px and 375px: no horizontal overflow anywhere, tables stack, the value grid is one column on a phone |
+
+All three build `--check`s pass, the site artifacts were rewritten, and nothing is committed.
+
+## 2026-09-25 — A list inside a link, and the site made legible to agents
+
+**Request, in two parts:** SEO/AEO work on the sales page, and a way for a *web LLM* — a Claude agent, or anything else that has found or generated a list — to set up a workspace and hand over the link, so the list can simply be worked.
+
+Those two asks turn out to be one feature seen from two sides. For an agent to hand over a workspace, the workspace has to be something a URL can carry; and for a site to be legible to answer engines, it has to say precisely what it is in a form a machine reads. Both are about a URL doing real work.
+
+### 1. Workspace links — the list goes in the fragment, and that is the whole design
+
+`app.html#zdata=<payload>&sum=<length>.<hash>` opens a ready-to-work queue with no file, no fetch and no server involved. `#data=` is the same list as percent-encoded text, for the small case and for anyone writing one by hand.
+
+Putting the payload in the **fragment** rather than the query string is not a stylistic choice, and it has two independent justifications. A fragment is never sent to a server, so a list of client names handed over this way does not land in GitHub's access logs — which matters more than usual for an app whose entire claim is that nothing is uploaded. And a query string is part of the HTTP request line, which is size-limited: nginx's default 8 KB header buffer answers anything longer with a `414`, so a long `?data=` would be refused by the host before any of our code ran. A fragment escapes that limit entirely. Both facts were checked rather than assumed, and `?data=` is still read for tooling that can only append a query.
+
+The encoder picks whichever form is genuinely shorter. On ten rows the deflate header costs more than it saves, so a small list stays readable text and a long one is compressed — machine work and human work getting different encodings because they have different needs.
+
+### 2. The checksum, and the failure mode that made it necessary
+
+A link that loses its tail is the normal way this breaks: chat clients wrap and trim long URLs, mail clients mangle them, and a post can cut one in half. So truncation had to be *detected*, not hoped against.
+
+It was not, at first. A truncated payload in a browser threw `Failed to fetch` — the engine's wording for a `Response` whose body stream errored, which tells a person nothing — so the message was rewritten to say what actually happened. But the deeper problem is that a deflate stream cut at a **block boundary** inflates *without error at all*, producing a shorter list that looks completely normal. Nothing else in this codebase fails that way, and a silently short queue is the worst thing the app could hand someone.
+
+So every link we build now carries `sum=<length>.<fnv1a32>` — twelve characters of URL that buy the ability to say *this link is not what was sent*. The suite attacks it directly: a 4,000-row list compressed, then cut at nineteen points, asserting that **not one** cut yields a different list quietly (each must either be refused or come back byte-identical). A link *without* a checksum is still opened, because a person typing `#data=` cannot compute one and refusing their link would be pedantry.
+
+### 3. Two bugs the browser found that the Node suite could not
+
+The first: my own test was wrong in a way that looked like a pass. I loaded a deliberately truncated link, the app reported ten tasks, and I nearly wrote it up as *"truncation is silently accepted — here is the bug"*. It was not: navigating from `app.html#A` to `app.html#B` is a **same-document** navigation. The script never re-runs, the old page was still on screen, and the success I was reading was the previous load's leftover toast. The real bug was underneath it — **editing the address bar to a second workspace link did nothing at all**. A `hashchange` listener now opens the new workspace, and the sweep tests exactly that path (fragment-only navigation, counters before and after).
+
+The second: the bookmarklet runs inside somebody else's page, so `location` there is *their* address. Building a share link from it produced a URL on the host page that opened nothing, and the new "Build a link" panel's *Open it here* would have rewritten the host page's fragment. The build now refuses to emit a payload that reads `location.search`/`location.hash` at all (asserted, like the existing `documentElement` guard), points both share-link builders at the hosted app, and opens the built link in a new tab. An anchor assertion in that same build is what surfaced it: renaming one line in `app.html` failed the build loudly, which is the entire reason those assertions exist.
+
+### 4. The sales page, for people and for answer engines
+
+The page already had `SoftwareApplication` and `FAQPage` structured data. What it did not have was a social image, so every link posted into Slack, Teams or LinkedIn rendered as a bare line of text — the one moment a page has to look like a product. `assets/build-og-image.js` now generates a 1200×630 card by **reusing the icon rasterizer and PNG encoder**, which meant splitting those out of `build-icons.js` behind a `require.main` guard rather than writing a second copy of both. The card carries no text, deliberately: drawing a wordmark would mean hand-authoring glyph outlines, and every platform renders `og:title` and `og:description` as real text beside the image anyway.
+
+Structured data was also extended — `WebPage` with `speakable`, a `HowTo` for the three ways in, four more FAQ entries matching questions that are actually visible on the page, and `softwareVersion`, `license`, `codeRepository` and `isAccessibleForFree` on the application node. Then every guide page got a `WebPage` + `BreadcrumbList` block, because a page with none is invisible to a rich result.
+
+### 5. `llms.txt` is the agent half of the same idea
+
+`llms.txt` follows the v2 proposal — H1, blockquote summary, detail sections, then H2 sections holding markdown lists of links — and carries the complete workspace-link specification, so an agent that reads one file can build a working link without fetching anything else. `index.html.md` and `workspace-link.html.md` are the Markdown twins the proposal asks for, advertised with `rel="alternate" type="text/markdown"`, and both pages point at the map with `rel="describedby"`.
+
+`assets/build-site.js` generates `sitemap.xml` and `robots.txt` (deriving the page list from the directory, so adding a page is all it takes to have it listed) and then checks the whole agent-facing graph as **filesystem facts**: every page's canonical is its own, every advertised markdown twin exists, every link in `llms.txt` resolves, every `og:image` resolves, and every JSON-LD block parses. That check found four real things on its first run — `app.html` and the generated standalone had no canonical at all, `index.html` advertised a markdown twin that had not been written yet, and the standalone was about to inherit `app.html`'s canonical, which is the one way a canonical tag does active harm. The standalone build now rewrites both its canonical and its structured-data URL, and `test/run.js` imports the same checks rather than keeping a second opinion about what a page is.
+
+### 6. Numbers
+
+| Suite | Before | Now |
+| --- | --- | --- |
+| `node test/run.js` | 389 | **405 passed** — 55 for the link codec, plus a new section for the site itself |
+| `test/fixtures.html` | 52 | **61 passed** on `app.html`, the standalone *from a bare directory*, `panel-test.html` and `panel-csp.html` |
+| `test/bookmarklet.html` | 81 | **81 passed** — unchanged, and re-run because the payload changed |
+
+A workspace link opened in the standalone makes **zero** network requests from the app frame, which is the feature stated as a measurement. All four build `--check`s pass, and the three browser sweeps were re-run against every edition after the fixture family was regenerated.
+
+One thing was left undone on purpose: `sample-links.xlsx`'s Hacker News note now matches its ten sibling containers, but the fixture's *page* exclusion list and the new canonical checks are asserted in two places (`assets/build-site.js` and `test/run.js`) — the second imports the first, so they cannot drift, but a reader looking for "what counts as a page" should know the answer lives in the build script.
+
+## 2026-09-25 — One definition for the whole fixture family
+
+**Request:** follow-up on the note the last session ended with — *"rather than keep hand-maintaining eleven files that are supposed to be the same queue, a single generator could emit the whole family from one definition, making drift like that xlsx note structurally impossible."*
+
+So `assets/make-fixtures.js` now emits **every fixture in the repo** — the canonical queue and the workflow family both — and `assets/make-sample-docx.js` and `assets/make-workflows.js` are gone. The canonical list is declared once, as `HEADERS` and `ROWS`, and eleven renderers turn it into a CSV, a TSV, JSON, an RSS-shaped XML feed, an HTML table, a hand-written XLSX, a hand-written DOCX, a task list, a pipe table and the two contact lists.
+
+By the time I did this I had already been asked twice about one inconsistency — the xlsx Hacker News note missing the `— use ↗` the other containers carry — and the generator found a **second, larger instance I had missed**: `sample-links-email.csv` and `sample-links-phone.csv`, the two fixtures written by hand *most recently*, had also lost it. That is the whole argument in one example. Drift is not a risk of hand-kept files; it is what hand-kept files do, and it shows up first in the newest ones.
+
+### Proving the regeneration safe rather than assuming it
+Nothing in the repo asserted fixture *bytes* — the suites assert detection and the shared target — so regeneration was safe in principle. "In principle" is not a reason to overwrite twenty files, so the output was compared against the pre-generator copies file by file:
+
+| Fixture | Result |
+| --- | --- |
+| `sample-links.tsv`, `.html`, `.md`, `-table.md` | **byte-identical** — the strongest available evidence that the definition is faithful |
+| `sample-links.json` | structurally identical; only pretty-printing differs |
+| `sample-links.xml` | differs in one comment |
+| `sample-links.docx` | 1,359 vs 1,361 b — the trailing paragraph names this script instead of the old one |
+| `sample-links.xlsx` | **2,102 vs 17,881 b** — the hand-written ZIP writer replaced SheetJS's, which is the point of writing it |
+| the three CSVs | **CRLF** now, plus the recovered note |
+
+The three byte-identical files are the ones that matter: two of them (`.html`, `-table.md`) had *regressed* in the first draft of the generator, and both were real bugs in it rather than acceptable churn. The HTML renderer was escaping `"` as `&quot;` in **text nodes**, where a quote is not special — only inside an attribute value is it — so `escText` was split out from `esc` and the file came back exact. The markdown table renderer built rows as `| ${cells.join(' | ')} |`, which turns an empty trailing cell into `|  |`; the original hand-typed file had `| |`, and a padded-per-cell join reproduces it.
+
+The CSV line-ending change is deliberate, not incidental: `Papa.unparse` emits `\r\n`, so a CRLF fixture now survives an export/write-back round trip **byte-for-byte**, which an LF one never could. And the XLSX shrinking by 88% is a real improvement in what the fixture proves: a workbook a script wrote itself, with no library in the loop, is now read correctly by the vendored SheetJS *and* by the app — the two directions are finally independent.
+
+`node assets/make-fixtures.js --check` exits non-zero if any fixture in the tree differs from what the definition produces, so the drift this work was about cannot return. It joins the three build `--check`s as something to run before a release.
+
+## 2026-09-25 — Real queues, portal lists, and the four ways a list arrives
+
+**Request, in five parts:** (1) research the kinds of list admin and white-collar work actually produces, find or generate examples, and check the workflows really work; (2) support lists with **no links at all**, where every row is worked inside one portal — either a fixed address or one composed from the row's own values; (3) assess whether OCR and a small local model should be added for "badly formatted lists"; (4) support **email files**; (5) support **pasting a list** in.
+
+The uncomfortable finding first: the fixture family could not answer question (1) at all. All eleven files were *one list*, whose link column was a page in a column called `URL`. So the two features built most recently — an address list and a call list as legal link columns — had no end-to-end test, and nothing in the repo could tell you whether a service-desk export would survive contact with it.
+
+### 1. The workflow family — `assets/make-workflows.js` (9 new fixtures; that script is now folded into `assets/make-fixtures.js` — see the entry above)
+Six lists assembled from the recurring shapes of back-office work — a service-desk queue, a hand-kept triage sheet, an accounts-payable workbook, a vendor onboarding tracker, a compliance renewals register, a meeting action log — plus three ways a queue arrives with no file at all. Each is awkward the way the real thing is: **the identifier column comes first and the title sits in the middle**, statuses are spelled the way the system spells them, money is a real number, and four of them hold no link anywhere.
+
+Making them work found three genuine detector bugs:
+
+- **Money was read as a phone number.** `12480.75` has seven digits, so `isPhoneValue` accepted it — and one such cell was enough to score the column as a link column, which meant the file was never recognized as link-free and its rows never got the portal prompt. A decimal amount is now excluded by shape (one dot and a short fraction, or a thousands separator), while `555.123.4567`, `+44 20 7946 0958` and a bare 7-digit number are all still numbers.
+- **Status columns were not found.** `Stage` (vendor trackers, pipelines) and `Phase`, `Progress`, `Result`, `Outcome`, `Disposition` are the same column as `Status`, and a list whose status column is not recognized loses every tick the user made in the system it came from.
+- **The title column was lost to the identifier beside it.** A header row of `Ticket, Summary, …` titled every card `INC0041821`. `HEADER_NAME_RE` now knows the words trackers actually use (`Summary`, `Item`, `Vendor`, `Candidate`, …) and `HEADER_ID_RE` marks the ones that find a row rather than describe it.
+
+Two of those bugs also hid a subtler one — **a link-free list could not be recognized as having a header row at all**, because the old heuristic needed a link *below* the first row to call it a header, which a portal export can never supply. A first row that reads entirely as labels, over rows that do not, now counts.
+
+### 2. Portal lists — a URL composed from the row
+Four of the new fixtures are queues: rows of ticket numbers, invoice IDs and vendor names that all live inside one system. That is the shape the app previously had nothing to say about — detection correctly found no link and then the list was simply dead.
+
+- `?link=` / the **Portal link template** field / the prompt that appears on a link-free list: one address, typed once, remembered per column layout like a preset, and shareable in a URL: `?file=queue.csv&link=https://portal.example.com/incident/{Ticket ID}`.
+- `{Column}` is replaced from that row and **percent-encoded** (what a path segment or query value needs); `{Column|raw}` splices verbatim; `{0}` addresses a column by position so a headerless file still works.
+- A template with **no placeholders** gives every card the same address — the literal "all the work is in one portal" case — and the card is then labelled with the portal host instead of repeating a long URL ten times.
+- Safety is one gate: `applyUrlTemplate` returns a URL only if the result is `http(s)`, so no template can produce a `javascript:` or `data:` link. An **empty value in a path** (as opposed to in a query) produces no link at all, because `/incident/` is a link to the wrong page.
+- The field offers the file's own columns as clickable chips and previews the first card's composed URL live, so a template never has to be guessed at.
+
+One bug this found, and it was a bad one: `String(undefined)` from a missing localStorage entry leaked into `state.linkTemplate` on **every ordinary list**, and the URL builder dutifully composed `https://undefined` for every row. It surfaced in the browser sweep as the page navigating away to a host that does not exist.
+
+### 3. Email — `.eml` / `.mht`, in both shapes a queue arrives
+A forward is how a queue usually arrives, and two shapes matter: the list is a **table in the body**, and the payload is **the sheet attached**.
+
+MIME is walked properly rather than string-matched: the boundary tree (nested `multipart/alternative` inside `multipart/mixed`), folded headers, `base64` and `quoted-printable`, and a declared charset decoded as bytes through `TextDecoder`. Everything works in "binary string" space — one representation from the raw file down to the part bodies — which is what makes the decoders correct rather than lucky. A part whose filename maps to a format we can read is handed **back to the ordinary detector**, so a forwarded `approvals.csv` opens as a CSV and a forwarded workbook would open as a workbook.
+
+`.mht`/`.mhtml` are the same container, so one parser reads a page saved from a portal that has no export button. Detection is by extension, by `message/rfc822`, and by **shape** — a header block of at least two known `Field: value` lines terminated by a blank line with something after it — which needed care: a two-line file whose first line contains a colon is a data row, not a message, and claiming it would have replaced a CSV with *"this email has no list in it"*.
+
+Two failure modes are refused rather than guessed at, and both are the "confidently wrong" kind this app exists to avoid: a **prose body** is not a list however comma-shaped it looks, and a plain-text body has to be *rectangular* to count. Splitting "Shi,\n\nThe queue for this week's run is attached. Ten items, four of them" on commas yields rows of wildly different lengths — and the lenient test called it a list.
+
+### 4. Paste a list
+The shortest path there is: copy a table out of a portal, a mail client or a spreadsheet and press Ctrl+V. The clipboard carries both `text/html` (the real markup) and tab-separated `text/plain`, and the HTML one wins when it holds a table.
+
+Nothing loads without confirmation — a preview shows the rows it understood and the count — because a paste that turns out to be a sentence must never silently replace the queue you are working through. That is also why the same rectangular rule applies here, and why a paste into a text field, or anywhere in the app that is not the overlay, is left alone. In the bookmarklet the listener is scoped to the overlay, so copying a sentence on somebody else's site cannot raise our prompt.
+
+### 5. OCR and a 45M-parameter local model: measured, and recommended against
+This was asked as a question and it has a measured answer, so it is recorded rather than guessed at. Both options are WebAssembly, and this app's own Content-Security-Policy refuses WebAssembly outright. Demonstrated with the app's byte-identical policy:
+
+```
+instantiate: BLOCKED → CompileError: Refused to compile or instantiate WebAssembly module
+because 'unsafe-eval' is not an allowed source of script in the following Content Security
+Policy directive: "script-src 'self' 'unsafe-inline' file:"
+```
+
+So tesseract.js (~7 MB of core plus trained data) or `needle-rs` (600 KB of WASM plus a 13.7 MB model) would each cost the directive that makes this app's "no remote code, no eval" claim credible — for inputs that are rare in this domain and that the paste path already handles **exactly** rather than approximately (copying a table out of a portal gives us its real markup; a screenshot gives us pixels). The full reasoning, including the size and quality numbers and what would have to be true to revisit it, is in [`todo.md`](todo.md).
+
+### 6. A real bug the browser sweep found in reload handling
+In fallback mode `saveNow()` deliberately left `state.isDirty` true after a successful snapshot, "until exported". Two consequences: the status line said **● unsaved** about work that had just been written, and the `beforeunload` guard was *permanently armed*, so every reload and every tab close raised a *"you have unexported changes"* confirm. The harness hit it as a hung navigation — the iframe's `src` and its document's URL disagreed, which is what a blocked `beforeunload` looks like from outside. A prompt that always fires is one people learn to click through, which is how a guard stops protecting the one case it exists for. `persistSessionSnapshot()` now reports whether the snapshot landed, and dirty reflects *that* — so a build with no durable storage (the bookmarklet's throwaway origin) still keeps its guard armed, which is right there.
+
+### 7. Suites, and the numbers
+| Suite | Before | Now |
+| --- | --- | --- |
+| `node test/run.js` | 196 | **332 passed** — new sections for workflows, portal composition, email MIME, plus the money/status/title regressions |
+| `test/fixtures.html` | 22 | **52 passed** — on `app.html`, the standalone from a bare directory, `panel-test.html` and `panel-csp.html` |
+| `test/bookmarklet.html` | 64 | **81 passed** — the new fixtures in all three variants, including `.eml` in the zero-library one |
+
+Every new fixture lands the shared target in every edition that can read it, which is why the existing assertions could be extended rather than rewritten. Two engine differences were found and handled rather than papered over: **Node's `windows-1252` decoder returns U+0092 where a browser returns U+2019** (Outlook's curly quote), so the Node suite asserts the byte survives the round trip and the browser sweep asserts the quote; and the standalone was confirmed, in a directory with nothing but itself beside it, to register **zero** service workers — which resolves the anomaly the previous session left open (it had been serving a directory that happened to contain `sw.js`).
+
+No new dependencies were added for any of this. Email is `atob` + `TextDecoder` + the HTML parser that was already there; portal templates are string composition; the paste path reuses the format layer. `app.html` is **223.4 KB**, the standalone **1212.5 KB**, the bookmarklet **227.9 / 237.6 / 1174.1 KB**, the extension **1223.4 KB** shipped (**1247.0 KB** with the two test harnesses and the Chrome mock, which is what the build's own table totals and what an unpacked install actually holds) — all three builds pass `--check`.
+
+## 2026-09-25 — Every format, in production, in every edition — and the three suites that keep it that way
+
+**Request:** "Test everything in production and add any necessary test files to the repo for all the intended supported formats. Fix any bugs found."
+
+What that turned into is the difference between *having tested* the format layer and *being able to*. The app had nine fixtures and no automated way to run them; four editions had never been swept at all; the two embedded layers had been verified once, by hand, in one build. So this is three suites and two new fixtures, and the honest part is that the suites found more in the harnesses than in the app — which is itself worth recording.
+
+### 1. `node test/run.js` — the fast layer (196 assertions, ~1 s)
+No framework, no dependencies: the suite slices the detection-and-parsing layer **out of the real `app.html`** and evaluates it with the vendored PapaParse and SheetJS, so an anchor that moves fails the suite loudly instead of testing a stale copy. It asserts every `FORMAT_INFO` row, every extension and content-type alias, the shared target for every DOM-free fixture, generated `xls`/`xlsm`/`xlsb`/`ods` workbooks (no four more binaries in the repo root), the DOCX container, the sniffer's four "must not steal" cases, both markdown shapes, the value predicates, link-column scoring and the refusals. What it cannot reach — HTML, XML, DOCX→matrix — needs `DOMParser`, and the split is deliberate rather than a hole.
+
+### 2. `test/fixtures.html` — one sweep, every edition (22 checks)
+Every fixture is loaded through the **real app in an iframe** and asserted against the app's own rendered counters and cards, not its internals: `#count-total`, `#count-done`, `article.card`. The edition under test is a query parameter, so the same page sweeps `app.html`, the extension's `panel-test.html` **and its `panel-csp.html`** (which passes all 22 under the extension's own `script-src 'self'; object-src 'self'` — every format and both pickers, no inline script, no console output), and the standalone build: `?app=turnstone-standalone.html&fixtures=./` from a directory containing nothing else. That last one is the only way to prove the offline build, and it now also proves it requests **nothing**: `performance.getEntriesByType('resource')` is empty and the log says `Service worker skipped (standalone single-file build)` with `sw.js` a 404 beside it.
+
+### 3. `test/bookmarklet.html` — the edition nobody had swept (64 checks)
+The bookmarklet has no URL, no reachable internals and no ownership of the page it runs on, so it gets its own harness: each variant's `dist/*.txt` is fetched, its `javascript:` URL **decoded exactly as a browser decodes a bookmark**, and the payload evaluated inside a throwaway empty page. From then on nothing is stubbed — files arrive through the real `drop` path as real `File` objects, and every assertion reads the overlay's shadow DOM. The result is a complete variant × format matrix: the `csv` payload reads CSV, TSV, JSON, XML, HTML, DOCX, Markdown and both contact lists; `core` adds XLSX; `full` matches. Each variant's promise is checked against the capability notice **it prints itself** (`CSV-only build` / `Read-only workbooks` / `Plain email and phone links`), and the `csv` variant is made to drop a workbook and prove it refuses *by name* — `XLSX needs workbook support, which this build does not include` — rather than rendering an empty queue.
+
+Three things only this harness could check, and all three pass: a host page that already has its own `XLSX` and `Papa` keeps **exactly those** after a `full` payload has run; `✕ Close` restores the page's `documentElement.innerHTML` byte-for-byte; and a second run refuses (`already running`) instead of stacking overlays.
+
+### 4. Two fixtures nothing was testing: the link column itself
+Every fixture had a URL column — a *page*. The MailLayer/PhoneLayer work added two more supported kinds of link column (an address list, a call list) and there was no fixture for either, so the two features most recently built were the two with no end-to-end test. `sample-links-email.csv` and `sample-links-phone.csv` fix that: same ten tasks, same four columns, but the link column **is** the address, and in the phone version it is a number in six international formats. Both land the shared target, both make the card link resolve to `mailto:`/`tel:` with the ✉/☎ glyph instead of ↗, and both are precached by `sw.js` — which they were not before, so until now an offline user could not open them at all.
+
+### 5. The layers, clicked
+Rendering a `mailto:` anchor is not the feature; the feature is that clicking it opens a provider picker. The sweep now clicks the rendered anchors and asserts both that the picker appeared **and** that the click was intercepted — a mailto: that opens MailLayer *and* still hands the link to the OS is a bug this would catch. It needed the right instrument: **MailLayer listens on `document` in the capture phase and calls `stopPropagation()`**, so a bubble-phase probe never runs and the first version of this check reported "opened but still left to the browser" while the picker was plainly on screen. One spy per phase, registered after the layer's own, reads `defaultPrevented` in both cases. The other-column rule — an address or number in *any* column is a link, without flagging it in Settings first — is checked on a synthesized five-column matrix, along with the app's own `data-phonelayer-theme` / `data-phonelayer-color` stamping and the rule that **only a page** carries `target="_blank"`.
+
+### Bugs found, and one honest caveat
+The app's own defects had already surfaced earlier in this push (`formatHints`'s `{1,5}` extension regex made `.markdown` and `.ndjson` unreachable; `HAS_ZIP` conflated "can inflate" with "can parse XML"; `sample-links.xml` was feed-shaped and had never carried a status column). What the new suites added was a real `sw.js` gap — the two new fixtures were not precached — and two **harness** traps that are worth more than they cost, because both would have produced confident, wrong passes:
+- **A cross-realm `ArrayBuffer` is not `instanceof ArrayBuffer`.** SheetJS decides "is this a ZIP?" that way, so a workbook fetched in the parent frame and handed to the app read as 33 rows of `PK\u0003\u0004…` binary text — identical bytes, identical sha256, wrong answer. Both sweeps now fetch inside the frame they are testing.
+- **A `fetch` in a document that is then discarded never settles.** `resetApp()` originally polled for "a window that has `parseDetected`" — but `contentWindow` keeps its identity across a same-frame navigation, so it returned the document it was leaving and then awaited a promise that could never resolve. It now waits on the iframe's **`load` event** and confirms the new query string before proceeding. The sweep hung with no error until this was understood.
+
+The caveat is the one already documented and deliberately unchanged: MailLayer's picker fetches Gmail/Outlook icons from `upload.wikimedia.org`, `img-src 'self'` refuses them, and the buttons show text only. The suite asserts the policy stays that way — the only off-origin URL in any artifact is those two icons, and the CSP still has no `img-src https:` — so "make the picker pretty" cannot quietly win later.
+
+### Housekeeping
+- New: `test/run.js`, `test/fixtures.html`, `test/bookmarklet.html`, `test/README.md`, `sample-links-email.csv`, `sample-links-phone.csv`. `sw.js` precaches the two new fixtures; `README.md`, `testing-notes.md` (rewritten around the fixture family and a per-edition matrix) and this log updated.
+- Sizes after the rebuild: `app.html` **174.5 KB**, standalone **1163.6 KB**, bookmarklet `csv` **177.3** / `core` **186.9** / `full` **1123.5 KB**, extension **1174.6 KB** of shipped files. All three builds pass `--check`.
+- How to run all of it, and what "production" means for each edition, is [`test/README.md`](test/README.md).
+
+## 2026-09-25 — Desktop-only by design, columns named by their values, and two more kinds of link
+
+**Request, in three parts:** (1) Turnstone is a desktop product — a phone must be told so, not handed a broken workspace. (2) Stop guessing the URL column from header names; choose it from the **values**, and let the user flag a column in Settings so the choice sticks. (3) Add **DOCX** import plus **MailLayer** (emails) and **PhoneLayer** (phones) embedding to the web, standalone and extension editions.
+
+### 1. A desktop-only gate that says why
+`pointer: coarse` **and** `hover: none` — a touch-first primary pointer — raises `#mobile-gate`: a full-screen overlay reusing the app's own `.modal-box`, naming the pointer it detected and the window size (`805×858` in the test), with a **Continue anyway** escape hatch for someone deliberately using a tiny screen, and a `matchMedia` change listener plus `resize`/`orientationchange` so rotating a tablet or docking a keyboard re-evaluates it live. The bar is deliberately pointer-based, not width-based: **touch laptops keep a fine pointer and pass, the extension's side panel passes, and a narrow desktop window passes** — the layout is built to work narrow, so width would have produced false positives. Verified in-browser both ways: hidden on this desktop (`coarse=false, hover:none=false`), and shown after monkey-patching `matchMedia` to report a coarse pointer, then dismissed by its own button.
+
+### 2. The link column comes from the values now, and Settings can overrule it
+Header names are a guess about someone else's spreadsheet; the cells are evidence. `isUrlValue` decides from the value alone — a scheme (`https://…`) or a bare domain, with a `FILE_EXT_TLDS` set so `setup.exe` and `notes.txt` stay filenames instead of becoming "links" — and `analyzeMatrix` now **scores every column** by how many link-shaped values it holds over the first 200 body rows, skipping status/notes columns outright so a notes column full of pasted links can never outbid the real one. The header is used **only to break an exact tie**. A column called `Page`, `Resource` or nothing at all lands correctly now; before, it needed the header to say so.
+
+That left one honest gap: if detection guesses wrong there is no way to say so, so **⚙ Columns** grew a per-column role dropdown (Data column / URL / Name / Status / Notes). Roles persist to `turnstone-col-roles`, keyed by the file's `headerSignature`, are carried inside column presets, and are applied in `loadMatrix` **before** the status/notes seeding so a re-flagged status column still round-trips. A headerless list is session-only by construction, and `urlCol` is never cleared — a file that once had a link column keeps the flag. Verified by reload: detection said column 1, the stored flag said column 2, and the flag won.
+
+### 3. DOCX — a Word table with no library at all
+A `.docx` is a ZIP containing `word/document.xml`, and browsers expose `DecompressionStream('deflate-raw')`, so this needed no new dependency: walk the central directory, inflate that one member, parse the XML. `<w:tbl>` → `<w:tr>` → `<w:tc>` becomes the matrix, and a cell's text is its `<w:t>` runs joined — which is what makes a value Word split across two runs (`https://www.` + `bbc.com/`) arrive whole. A document with no table falls back to one row per paragraph, split on tabs. Two details worth having: the format is decided from the container's **member list** (`word/document.xml` vs `xl/workbook.xml`), so a Word file renamed `.xlsx` still opens as Word, and a legacy `.doc` is identified by the UTF-16LE `WordDocument` stream name in its OLE2 directory and **refused by name** instead of being handed to SheetJS to produce a nonsense error. `HAS_ZIP` gates it, and a browser without `DecompressionStream` is told so on the welcome panel rather than on first drop.
+
+A fixture family needs one shared target, so `sample-links.docx` mirrors `sample-links.csv` exactly (10 rows, 4 columns, 3 complete) and `assets/make-sample-docx.js` generates it (since folded into `assets/make-fixtures.js`) — a real ZIP with real DEFLATE and CRC32, written by hand against node's zlib because this repo has no build tooling, and byte-identical between runs so the binary is reproducible. **Verified in-browser**: `?file=sample-links.docx` → `magic PK\x03\x04 (ZIP container → docx)`, `DOCX parsed: 1 table(s), 11 rows, 4 columns` → `urlCol=1, nameCol=0, statusCol=2, notesCol=3` → **10 cards, 7 visible, 3 complete**, matching every other fixture. Cell-by-cell against the XLSX fixture it differs in exactly one pre-existing place — the XLSX's Hacker News note is missing the `— use ↗` the CSV has — which is a stale xlsx fixture, not a DOCX bug; the DOCX matches the CSV.
+
+### 4. MailLayer and PhoneLayer, embedded
+Both are ours, both are small (12.8 KB and 24.0 KB), both are vendored into `vendor/` with sha256s recorded, and both work by intercepting clicks on real anchors — so the app needed **no calls into them**: a cell that is an address renders as `mailto:`, one that is a number as `tel:`, and the layers take the click. `linkKindOf`/`linkHrefOf` are the single place that decides href shape, and the link-column scoring learned the same two kinds (URL 2 · email 1.5 · phone 1) so a list with a Website *and* an Email column still leads with the website while an address-only list still gets a working link column. Any email or number on a card row is clickable too, without flagging the column first.
+
+PhoneLayer documents per-trigger `data-phonelayer-theme`/`data-phonelayer-color`, so **each `tel:` anchor is stamped with the theme and accent of the moment it was rendered** — better than configuring the script tag once at load, and it means the picker matches the app in either theme. `HAS_LAYERS` reads `window.PhoneLayer` (MailLayer publishes no global; the pair is vendored together), and the welcome panel collects **every** missing capability into one list now instead of overwriting itself, so the bookmarklet's `core` variant correctly reports both "read-only workbooks" and "plain email and phone links".
+
+**Verified in-browser**: both modals open — MailLayer's provider picker (`gmail/outlook/yahoo/native`, `defaultPrevented: true`) and PhoneLayer's `.pl-overlay` with its 40 providers. Two honest caveats, both documented rather than papered over: **MailLayer's picker fetches Gmail/Outlook icons from `upload.wikimedia.org` and our `img-src 'self'` refuses them**, so those two buttons show text without the logo (a request-free app beats a logo — do not widen the policy), and **MailLayer's own `isMobile()` test is `innerWidth <= 768 && 'ontouchstart' in window`**, so in a narrow *desktop* window it hands the click to the system mail handler instead of showing its picker. PhoneLayer's check is user-agent based and is unaffected.
+
+The bookmarklet is deliberately **left out**: those layers build their modals in the host page's DOM, which on someone else's site is not ours to decorate, so its welcome panel says addresses and numbers go to the system handlers. It still gains DOCX for free, because the ZIP work is browser-native.
+
+### 5. Markdown — the format the two features above paid for
+DOCX had already proved the pattern, so markdown was the cheap one: it is **plain text**, so one `FORMAT_INFO` row, one `EXT_FORMAT` alias set, one `parseMarkdownText()` and one sniff test covers it — in **every** edition, including the zero-library `csv` bookmarklet. The design bet was that a task list *is* a table: `- [x] Finish the audit — https://acme.example — called Tuesday` already has a name, a link, a checkbox and a note, so the checkbox becomes the card's status, the text before the link its name and the text after it the note. It came out shaped **exactly** like the CSV fixture — `urlCol=1, nameCol=0, statusCol=2, notesCol=3`, 10 cards, 7 visible, 3 complete, 5 notes — which means nothing downstream ever learned that a checkbox was involved. Both shapes ship as fixtures (`sample-links.md` as a task list, `sample-links-table.md` as a pipe table) and both hit that target.
+
+Three things testing changed, all worth recording:
+- **The scan needed value-shaped scheme matchers.** Matching "non-whitespace after `tel:`" captured `tel:+1` out of `tel:+1 (555) 987-6543` and dumped the rest of the number into the note — a number with spaces is normal and the first version only worked because the test used one without. `mailto:` now matches an address and `tel:`/`sms:` a run of digits and separators.
+- **`- Task (https://link)` split its bracket pair** (the `(` landed in the name, the `)` in the note). The two are now dropped together — and only when they pair, so a note that legitimately begins with `(` survives.
+- **Sniffing stays deliberately narrow.** Only a checklist item or a real pipe table (a pipe row followed by its `|---|` delimiter) counts. A bare bullet list of URLs is *still* a one-column delimited list, which is what keeps every existing `.txt` behaving exactly as it did.
+
+Write-back is off, and that refusal is a **choice**, not a limitation: completion and notes could round-trip losslessly, but the file is a document, so writing means reflowing prose and normalising bullets. Doing it properly needs a line-level surgical edit, and that deserves its own decision rather than a checkbox in the UI now.
+
+The fixture sweep that verified all this also turned up a **pre-existing gap**: `sample-links.xml` is feed-shaped (`title`/`link`/`notes`) and lands **3 columns, 0 statuses, 10 visible** — where every other fixture, and `history.md`'s own claim about the four measured fixtures, says 4 columns / 3 complete / 7 visible. Recorded in `todo.md` rather than quietly "fixed", because the fixture is a published artifact.
+
+### Housekeeping
+- `sw.js` → **v0.11.0**, precaching the two layers, `sample-links.docx` and both markdown fixtures. The markdown work landed in the same unpublished version, so no second bump was needed.
+- All three ports rebuilt: `app.html` 173.7 KB → **standalone 1162.8 KB**; bookmarklet `csv` 176.4 KB / `core` 186.0 KB / `full` 1122.6 KB; extension `dist/` 1194.3 KB. The bookmarklet build needed one patch count updated (4 theme-root reads, not 3 — `currentTheme()` is a new one), which is the anchor system doing its job.
+- Regression-tested: the XLSX fixture still parses through the vendored SheetJS (11 rows, 3 complete), the extension panel boots under `script-src 'self'`, the bookmarklet's `core` payload mounts in a shadow root with no host-page globals leaked (`window.PhoneLayer` undefined there), and `node --check` passes on all three inline script blocks and both new vendor files. A Node test over the real detection slice covers the new predicates and scoring (30 assertions, incl. dates and quantities *not* becoming phone numbers), a second covers the markdown parser and sniffer (43 assertions), and all **nine** fixtures were swept in-browser through `loadMatrix` to confirm they land the same queue.
+
 ## 2026-09-24 — A site map in the chrome, and elements stacked instead of crammed
 
 **Request:** add a simple top nav, check the site's alignment — some elements "aren't quite working as intended" — and stack more rather than sitting everything side by side. Every complaint turned out to be real and measurable.

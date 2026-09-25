@@ -4,7 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Turnstone — URL List Processor</title>
-<meta name="description" content="Zero-server workspace for link lists (CSV, TSV, XLSX, XLS, ODS, JSON, HTML, XML): tabbed browsing, status tracking, and write-back — all client-side.">
+<meta name="description" content="Zero-server workspace for link lists (CSV, TSV, XLSX, XLS, ODS, DOCX, Markdown, JSON, HTML, XML, email): tabbed browsing, status tracking, write-back, and workspace links that carry a list inside the URL — all client-side.">
+<link rel="canonical" href="https://spuds0588.github.io/Turnstone/app.html">
+<meta name="robots" content="index, follow">
+<link rel="describedby" type="text/plain" href="llms.txt" title="llms.txt — this site for agents">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Turnstone",
+  "url": "https://spuds0588.github.io/Turnstone/app.html",
+  "applicationCategory": "BrowserApplication",
+  "operatingSystem": "Any (web browser)",
+  "browserRequirements": "Requires JavaScript. The File System Access API (Chromium) adds silent write-back; other browsers get automatic snapshots and export instead.",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "description": "A workspace for lists: load a link list from a spreadsheet, CSV, JSON, HTML, Markdown, Word table or saved email and work it as task cards with statuses and notes, saving back to your file. Lists with no links at all are supported through a portal link template.",
+  "isPartOf": { "@type": "WebSite", "name": "Turnstone", "url": "https://spuds0588.github.io/Turnstone/" }
+}
+</script>
 <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#f4f6fa" media="(prefers-color-scheme: light)">
 <!-- Data-call-out lockdown: scripts/styles/images/workers only from this origin (plus
@@ -313,6 +331,10 @@
   .col-row .ck { flex: 0 0 auto; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .5px; }
   .col-row .cv { flex: 1 1 auto; color: var(--text); word-break: break-word; min-width: 0; }
   .col-row .emptyv { color: var(--muted); }
+  /* A cell that is an address or a number is a link: it reads as one, and the
+     vendored layers take the click. Dotted so it never shouts over the data. */
+  .col-row .cv a.cell-link { color: var(--accent); text-decoration: none; border-bottom: 1px dotted var(--accent-dark); }
+  .col-row .cv a.cell-link:hover { text-decoration: underline; border-bottom-color: transparent; }
   .col-more {
     align-self: flex-start; background: none; border: none; color: var(--accent);
     font-size: 11px; cursor: pointer; padding: 1px 0;
@@ -333,6 +355,11 @@
   #settings-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
   #settings-head h2 { margin: 0; font-size: 15px; }
   #settings-box .hint { font-size: 11px; color: var(--muted); margin: 6px 0; }
+  #settings-box .set-h { font-size: 12.5px; margin: 16px 0 2px; display: flex; align-items: center; gap: 7px; }
+  #settings-box .set-opt {
+    font-size: 10px; font-weight: 500; color: var(--muted); border: 1px solid var(--border);
+    border-radius: 999px; padding: 1px 7px; text-transform: uppercase; letter-spacing: .04em;
+  }
   #settings-cols { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
   .set-col {
     display: flex; align-items: center; gap: 8px; padding: 6px 8px;
@@ -344,13 +371,31 @@
   .set-col.fixed .drag { cursor: default; opacity: .5; }
   .set-col.dragging { opacity: .5; }
   .set-col label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-  .set-col .pos { margin-left: auto; color: var(--muted); font-size: 10.5px; }
+  .set-col input[type=checkbox] { flex: 0 0 auto; }
+  .set-col .pos { color: var(--muted); font-size: 10.5px; white-space: nowrap; }
+  .set-col .cname { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .set-col select {
+    flex: 0 0 auto; background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    border-radius: 5px; font-size: 11.5px; padding: 2px 4px; font-family: inherit; cursor: pointer;
+  }
+  .set-col.fixed select { border-color: var(--accent-dark); }
   #settings-presets { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
   .preset-row { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }
   .preset-row .pname { font-weight: 600; }
   .preset-row .pmeta { color: var(--muted); font-size: 10.5px; flex: 1; }
   .srow { display: flex; gap: 6px; margin-top: 8px; }
   .srow input[type=text] { flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; font-size: 12px; }
+
+  /* ---------- Desktop-only gate ---------- */
+  /* Turnstone is a desktop app; a phone gets an honest notice instead of a
+     broken layout. Same blocking-overlay shape as the mode picker. */
+  #mobile-gate {
+    position: fixed; inset: 0; background: rgba(0,0,0,.72); z-index: 400;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  #mobile-gate[hidden] { display: none; }
+  #mobile-gate .gate-icon { font-size: 30px; line-height: 1; margin-bottom: 8px; }
+  #mobile-gate .gate-note { font-size: 11.5px; color: var(--muted); margin: 0 0 12px; }
 
   /* ---------- Inline dialogs (open-mode picker, sheet picker) ---------- */
   /* None of this is an inline `style="…"` attribute. A strict CSP drops those
@@ -390,6 +435,51 @@
   .pick-opt:hover { border-color: var(--accent-dark); }
   .pick-opt .label { font-weight: 600; }
   .pick-opt .hint { font-size: 11px; color: var(--muted); }
+
+  /* Portal editor — the prompt for a list with no links, and the same control
+     in the settings panel. */
+  .portal-editor { margin: 6px 0 2px; }
+  .portal-input {
+    width: 100%; box-sizing: border-box; background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px; padding: 7px 9px;
+    font-size: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .portal-input:focus { outline: none; border-color: var(--accent-dark); }
+  .portal-input.bad { border-color: var(--danger); }
+  .pchips { display: flex; flex-wrap: wrap; gap: 5px; margin: 7px 0 2px; }
+  .pchip {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 999px; padding: 2px 9px; font-size: 11px; cursor: pointer;
+  }
+  .pchip:hover { color: var(--text); border-color: var(--accent-dark); }
+  .portal-preview {
+    font-size: 11px; color: var(--muted); margin: 6px 0 0; word-break: break-all;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .portal-preview.bad { color: var(--danger); }
+  .portal-preview b { color: var(--text); font-weight: 600; }
+
+  /* Share-link builder — paste a list, walk away with a URL that carries it. */
+  .bl-label {
+    display: block; font-size: 10.5px; color: var(--muted); margin: 12px 0 4px;
+    text-transform: uppercase; letter-spacing: .05em; font-weight: 600;
+  }
+  .bl-area { height: 128px; resize: vertical; line-height: 1.45; }
+  .bl-url { height: 64px; resize: vertical; font-size: 10.5px; line-height: 1.4; }
+  .bl-size { font-size: 11px; color: var(--muted); margin: 6px 0 0; }
+  .bl-size.bad { color: var(--danger); }
+  .bl-status { font-size: 11.5px; color: var(--muted); margin: 8px 0 0; }
+  .bl-status b { color: var(--text); }
+
+  /* Paste preview */
+  .paste-preview { max-height: 210px; overflow: auto; border: 1px solid var(--border); border-radius: 6px; margin: 8px 0; }
+  .paste-preview table { border-collapse: collapse; width: 100%; font-size: 11.5px; }
+  .paste-preview th, .paste-preview td {
+    border: 1px solid var(--border); padding: 3px 6px; text-align: left;
+    max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .paste-preview th { background: var(--panel-2); color: var(--muted); font-weight: 600; }
+  .paste-preview tr.more td { color: var(--muted); text-align: center; }
   .sheet-opt {
     display: block; width: 100%; text-align: left; margin: 4px 0; padding: 7px 12px;
     font-size: 13px; cursor: pointer; border-radius: 8px;
@@ -412,6 +502,7 @@
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #toast.error { border-color: var(--danger); color: var(--danger); }
   #toast.success { border-color: var(--green); }
+  #toast.warn { border-color: var(--amber); }
 
   @media (max-width: 760px) {
     #app { grid-template-columns: 1fr; grid-template-rows: 1fr 45vh; }
@@ -421,7 +512,7 @@
 </head>
 <body>
 
-<input type="file" id="file-input" accept=".csv,.tsv,.tab,.txt,.xlsx,.xls,.ods,.json,.jsonl,.ndjson,.html,.htm,.xml,.rss,.atom,.opml,text/csv,text/tab-separated-values,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.oasis.opendocument.spreadsheet,text/html,application/xml,text/xml" hidden>
+<input type="file" id="file-input" accept=".csv,.tsv,.tab,.txt,.xlsx,.xls,.ods,.docx,.md,.markdown,.mdown,.mkd,.json,.jsonl,.ndjson,.html,.htm,.mht,.mhtml,.xml,.rss,.atom,.opml,.eml,text/csv,text/tab-separated-values,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,application/vnd.ms-excel,application/vnd.oasis.opendocument.spreadsheet,text/html,message/rfc822,application/xml,text/xml" hidden>
 
 <main id="app">
   <!-- LEFT: tabbed iframe workspace (one of several open modes) -->
@@ -437,8 +528,10 @@
             <span class="dz-icon" aria-hidden="true">⤓</span>
             <span class="dz-main">Drop a file here, or click to choose</span>
             <span class="dz-sub">Read and parsed on this device — nothing is uploaded.</span>
-            <span class="dz-formats" id="dz-formats">CSV · TSV · XLSX / XLS / ODS · JSON · HTML · XML</span>
+            <span class="dz-formats" id="dz-formats">CSV · TSV · XLSX / XLS / ODS · DOCX · Email (.eml) · Markdown · JSON · HTML · XML</span>
           </div>
+          <p class="help" id="paste-hint">No file to hand? Copy a table anywhere — a portal, a mail client, a
+            spreadsheet — and press <kbd>Ctrl</kbd>+<kbd>V</kbd> (<kbd>⌘</kbd>+<kbd>V</kbd>) anywhere in Turnstone.</p>
           <p id="cap-notice" hidden></p>
           <div class="row">
             <input type="text" id="url-input" placeholder="…or paste a link-list URL" spellcheck="false">
@@ -474,13 +567,17 @@
       <button class="menu-item" id="mi-open"><span class="mi">📂</span> Open file…</button>
       <button class="menu-item" id="mi-restore" hidden><span class="mi">↺</span> Restore last file</button>
       <button class="menu-item" id="mi-close" disabled><span class="mi">✕</span> Close current file</button>
-      <button class="menu-item" id="mi-link" disabled><span class="mi">🔗</span> Copy share link (?file=)</button>
+      <button class="menu-item" id="mi-link" disabled><span class="mi">🔗</span> Copy share link</button>
+      <button class="menu-item" id="mi-build"><span class="mi">🧩</span> Build a share link…</button>
       <div class="menu-sep"></div>
       <div class="menu-label">Opening links</div>
       <button class="menu-item mode-item" data-mode="tabs"><span class="mi">🗂</span> Tabs (iframes)</button>
       <button class="menu-item mode-item" data-mode="newtab"><span class="mi">↗</span> New browser tab</button>
       <button class="menu-item mode-item" data-mode="newwin"><span class="mi">◱</span> New popup window</button>
       <button class="menu-item" id="mi-mode-help"><span class="mi">❔</span> Which should I pick?</button>
+      <div class="menu-sep"></div>
+      <button class="menu-item" id="mi-portal"><span class="mi">🏛</span> Portal link template…</button>
+      <button class="menu-item" id="mi-paste"><span class="mi">📋</span> Paste a list…</button>
       <div class="menu-sep"></div>
       <div class="menu-label">Automation</div>
       <button class="menu-item toggle-item" id="mi-auto-open"><span class="mi">⚡</span> Open link when card is selected</button>
@@ -515,8 +612,25 @@
       <h2>Task card columns</h2>
       <button class="icon" id="settings-x" title="Close">✕</button>
     </div>
-    <p class="hint">Drag to reorder · untick to hide. URL, name, status and notes are fixed card features. Changes apply live.</p>
+    <p class="hint">Drag to reorder · untick to hide. The dropdown flags what a column <em>is</em>: Turnstone picks the link column from the values themselves — a page, an <code>@address</code> or a phone number all count — so if it ever guesses wrong, or your links are bare <code>example.com</code>, set <b>URL</b> here and it sticks for this file. Addresses and numbers anywhere on a card are clickable on their own, through MailLayer and PhoneLayer. Changes apply live.</p>
     <div id="settings-cols"></div>
+
+    <h3 class="set-h">Portal link template <span class="set-opt">optional</span></h3>
+    <p class="hint">For lists where nothing in the file is a link because the work happens in one portal. Name the
+      portal address and every card gets a link built from its own row — <code>{Column name}</code> is replaced with that
+      cell's value. Remembered for this column layout, and shareable with <code>?link=</code>. Leave it empty and cards
+      link to the file's own URL column, as before.</p>
+    <div class="portal-editor">
+      <input type="text" id="portal-set-input" class="portal-input" spellcheck="false" autocomplete="off"
+             placeholder="https://portal.example.com/ticket/{Ticket ID}" value="">
+      <div class="pchips" id="portal-set-chips"></div>
+      <p class="portal-preview" id="portal-set-preview"></p>
+      <div class="srow">
+        <button class="btn primary" id="portal-set-apply">Apply template</button>
+        <button class="btn" id="portal-set-clear">Clear</button>
+      </div>
+    </div>
+
     <p class="hint">Save the layout as a preset — any link list whose header row matches this exact column order loads with it pre-applied.</p>
     <div class="srow">
       <input type="text" id="preset-name" placeholder="Preset name (e.g. Client audit)" maxlength="40">
@@ -526,6 +640,16 @@
     <div class="srow">
       <button class="btn" id="btn-cols-reset">Reset to file order</button>
     </div>
+  </div>
+</div>
+
+<div id="mobile-gate" hidden>
+  <div class="modal-box">
+    <div class="gate-icon" aria-hidden="true">🖥️</div>
+    <h2 class="modal-title">Turnstone is a desktop app</h2>
+    <p class="modal-sub">Mobile isn't supported. Open Turnstone on a desktop — or on a device and window sized like one.</p>
+    <p class="gate-note">This device reports a touch-first pointer at <span id="gate-w">0</span>×<span id="gate-h">0</span>px. On touch, file picking, drag-and-drop and save-back are unreliable — expect a broken workspace.</p>
+    <button class="btn" id="gate-dismiss">Continue anyway</button>
   </div>
 </div>
 
@@ -557,6 +681,11 @@
 
 <script src="vendor/papaparse.min.js"></script>
 <script src="vendor/xlsx.full.min.js"></script>
+<!-- The two embedded layers. Both read their config off their own tag and expose
+     no required global, so no inline wiring is needed here; per-link overrides
+     (theme, colour, provider) are stamped onto each anchor as it renders. -->
+<script src="vendor/maillayer.js"></script>
+<script src="vendor/phonelayer.js"></script>
 <script>
 'use strict';
 /* =========================================================================
@@ -615,6 +744,12 @@ async function idbGetAll(store) {
 }
 
 /* --------------------------------- State --------------------------------- */
+/* `?link=` is read by the boot sequence but consumed by the *next* loadMatrix, so
+   it lives outside `state` and is cleared once used. */
+let bootLinkTemplate = '';
+/* The payload of the workspace link currently loaded, so a same-document fragment
+   change is not reloaded into itself (see the hashchange listener at boot). */
+let loadedInlineKey = '';
 const state = {
   name: null,          // file name or URL label
   ext: 'csv',          // format id: csv | tsv | xlsx | xls | ods | json | html | xml
@@ -624,6 +759,8 @@ const state = {
   data: [],            // 2D array, exactly as parsed
   hasHeader: false,
   urlCol: 0, nameCol: -1, statusCol: -1, notesCol: -1,
+  linkless: false,     // true when no cell in the file is link-shaped (portal list)
+  linkTemplate: '',    // portal URL template, e.g. https://portal.example.com/ticket/{Ticket ID}
   status: [],          // virtual per-card status ('incomplete'|'complete'), cardIndex-based
   notes: [],           // virtual per-card notes
   isDirty: false,
@@ -638,17 +775,26 @@ const state = {
 };
 
 const $ = (sel) => document.querySelector(sel);
+/* Every modal this app builds is mounted, and asked for, through these two
+   helpers rather than through `document.body` / `document.querySelector`. One
+   place to point them at, which matters because the bookmarklet build mounts the
+   app inside a shadow root — where `document.body` is somebody else's page and
+   `document.querySelector` cannot see our own overlays at all. */
+const mountPoint = () => document.body;
+const modalOpen = (sel) => !!document.querySelector(sel);
 const els = {
   fileInput: $('#file-input'), dropzone: $('#dropzone'), btnDemo: $('#btn-demo'),
   dzFormats: $('#dz-formats'), capNotice: $('#cap-notice'),
   btnMenu: $('#btn-menu'), menu: $('#menu'), headName: $('#head-name'), headSave: $('#head-save'),
-  miOpen: $('#mi-open'), miRestore: $('#mi-restore'), miClose: $('#mi-close'), miLink: $('#mi-link'),
+  miOpen: $('#mi-open'), miRestore: $('#mi-restore'), miClose: $('#mi-close'), miLink: $('#mi-link'), miBuild: $('#mi-build'),
   miColumns: $('#mi-columns'), miExportCsv: $('#mi-export-csv'), miExportXlsx: $('#mi-export-xlsx'),
   miInstall: $('#mi-install'), miTheme: $('#mi-theme'), miThemeLabel: $('#mi-theme-label'),
   miAutoOpen: $('#mi-auto-open'), miAutoAdvance: $('#mi-auto-advance'),
+  miPortal: $('#mi-portal'), miPaste: $('#mi-paste'), pasteHint: $('#paste-hint'),
   settingsOverlay: $('#settings-overlay'), settingsCols: $('#settings-cols'), settingsPresets: $('#settings-presets'),
   settingsX: $('#settings-x'), presetName: $('#preset-name'), btnPresetSave: $('#btn-preset-save'), btnColsReset: $('#btn-cols-reset'),
   editionsHint: $('#editions-hint'),
+  gate: $('#mobile-gate'), gateW: $('#gate-w'), gateH: $('#gate-h'), gateDismiss: $('#gate-dismiss'),
   urlInput: $('#url-input'), btnLoadUrl: $('#btn-load-url'),
   btnTestCsv: $('#btn-test-csv'), btnTestXlsx: $('#btn-test-xlsx'),
   welcome: $('#welcome'), recents: $('#recents'), recentsList: $('#recents-list'),
@@ -704,23 +850,263 @@ async function copyText(text, label = 'text') {
    (analyzeMatrix → loadMatrix → renderCards) is format-agnostic, so adding a
    format means one detector entry plus one parser that returns rows. */
 
-const HEADER_URL_RE = /^(url|link|href|website|web site|site|address|loc|permalink)\b/i;
-const HEADER_NAME_RE = /^(name|title|task|label|page|description)\b/i;
+const HEADER_URL_RE = /^(url|link|href|website|web site|site|address|loc|permalink|portal|record|open in)\b/i;
+/* The words real trackers use for "the thing this row is about". A vendor
+   onboarding sheet, a ticket queue, an approvals list and a candidate pipeline
+   all name this column something other than "Name" — and the column that *does*
+   read like a label on those sheets is the identifier beside it. */
+const HEADER_NAME_RE = /^(name|title|task|label|page|description|summary|subject|item|issue|request|job|candidate|applicant|vendor|supplier|client|customer|company|asset|document|contract|policy|renewal|action|deliverable|activity|step|milestone|what|thing)\b/i;
+/* Identifier columns: `INC0041821` is what you *find* a row by, never what the
+   row is. Recognized so a title column can outrank it — ``#2``, not ``#1``. */
+const HEADER_ID_RE = /^(id|no|num|number|ref|reference|code|key|#|ticket|case|invoice|order|po|sku|uid|guid|index|seq|sequence|row)(\b|$)/i;
+
+/* A cell is a URL *value* when it looks like a link, whatever its column is
+   called. This is the only test used to choose the URL column: the header text
+   is at most a tiebreaker, so a list whose URL column is titled "Page",
+   "Resource" or nothing at all still lands on the right column. */
 const URL_VALUE_RE = /^https?:\/\//i;
+const DOMAIN_VALUE_RE = /^(?:www\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,})(?:[/?#].*)?$/i;
+const FILE_EXT_TLDS = new Set(['exe','txt','doc','docx','pdf','zip','png','jpg','jpeg','gif','csv','tsv','xls','xlsx','ods','json','html','htm','xml','md','log','bak','tmp','py','js','ts','css','mp3','mp4','svg','ppt','pptx','tar','gz','rar','7z','iso','dmg','apk']);
+/* A label, not a value: short, readable, and free of the marks that give a real
+   data value away — a long digit run (`INC0041821`), a date, an address, a link,
+   or a number pretending to be a word. "Phone 1" and "Q3 notes" are labels;
+   "1200" and "2024-05-12" are not. */
+const LABEL_SHAPE_RE = /^[A-Za-z][A-Za-z0-9 ._/#&'()%+\-]{0,39}$/;
+function looksLikeLabel(v) {
+  const s = String(v ?? '').trim();
+  if (!s) return false;
+  if (/\d{3,}/.test(s)) return false;
+  if (DATE_SHAPE_RE.test(s)) return false;
+  return LABEL_SHAPE_RE.test(s) && !isUrlValue(s) && !isEmailValue(s) && !isPhoneValue(s);
+}
+/** Is `first` a header row over `sample`? Every filled cell must read as a label
+    and at least one column must hold values that are *not* labels below it —
+    otherwise a two-row list of plain names would be promoted to a header. */
+function looksLikeLabelRow(first, sample) {
+  const cells = first.map(c => String(c ?? '').trim());
+  const filled = cells.filter(Boolean);
+  if (filled.length < 2) return false;
+  if (!filled.every(looksLikeLabel)) return false;
+  for (let c = 0; c < cells.length; c++) {
+    let values = 0, nonLabels = 0;
+    for (const r of sample) {
+      const v = String(r[c] ?? '').trim();
+      if (!v) continue;
+      values++;
+      if (!looksLikeLabel(v)) nonLabels++;
+    }
+    if (values >= 2 && nonLabels / values >= 0.6) return true;
+  }
+  return false;
+}
+function isUrlValue(v) {
+  const s = String(v ?? '').trim();
+  if (!s) return false;
+  if (URL_VALUE_RE.test(s)) return true;
+  const m = s.match(DOMAIN_VALUE_RE);
+  if (!m) return false;
+  const tld = m[1].slice(m[1].lastIndexOf('.') + 1).toLowerCase();
+  return !FILE_EXT_TLDS.has(tld);   // "setup.exe" is a filename, not a link
+}
+
+/* ------------------------------------------------------------------ *
+   Portal lists: work that lives behind one URL
+   ------------------------------------------------------------------ *
+   A large share of real admin queues carries no link at all. The rows are
+   ticket numbers, invoice IDs, vendor names or case references, the portal is
+   the same page every time, and the *key* to a row is a column value — not an
+   address. Turnstone's link detection is value-based and rightly finds nothing
+   there, so the list gets a template instead: the user names the portal once
+   (or arrives with `?link=`) and every row composes its own URL.
+
+   `{Column name}` is filled from that column and percent-encoded, because that
+   is what a path segment or a query value needs 90% of the time. `{Column|raw}`
+   splices the value verbatim for the other 10% — a template that rebuilds a
+   path the value already spells out. `{0}` addresses a column by index, so a
+   file with no header row can still be templated. */
+const TEMPLATE_FIELD_RE = /\{([^{}]+)\}/g;
+const isHttpUrl = (s) => /^https?:\/\//i.test(String(s ?? '').trim());
+
+/** The distinct placeholders a template names, `|raw` stripped (for the UI). */
+function templateFields(tpl) {
+  const out = [];
+  TEMPLATE_FIELD_RE.lastIndex = 0;
+  let m;
+  while ((m = TEMPLATE_FIELD_RE.exec(String(tpl ?? '')))) {
+    const name = m[1].trim().replace(/\|raw$/i, '').trim();
+    if (name && !out.includes(name)) out.push(name);
+  }
+  return out;
+}
+
+/** Resolve one placeholder against a row: header name (case-insensitive) first,
+    then a bare column index. Returns null when nothing matches, '' when the
+    column exists but this row is empty — the difference decides the warning. */
+function resolveTemplateField(field, row, header) {
+  const name = String(field).trim();
+  const idx = header.findIndex(h => String(h ?? '').trim().toLowerCase() === name.toLowerCase());
+  if (idx >= 0) return String(row[idx] ?? '').trim();
+  if (/^\d+$/.test(name) && Number(name) < row.length) return String(row[Number(name)] ?? '').trim();
+  return null;
+}
+
+/** Compose one row's URL. `''` means "this row has no link" — either the template
+    is blank, a placeholder has no matching column, or the row's key is empty.
+    A missing *column* is a template mistake and is reported once; a blank *cell*
+    is simply a row without a key, which is ordinary and stays quiet. */
+function applyUrlTemplate(tpl, row, header) {
+  let t = String(tpl ?? '').trim();
+  if (!t) return '';
+  // A template typed as a bare host means https, the same way it does in the
+  // address bar. This is the single place that forgives that, so the preview in
+  // the UI and the URL on a card can never disagree.
+  if (!/^[a-z][a-z0-9+.\-]*:/i.test(t)) t = 'https://' + t;
+  /* An empty value is fatal in the *path* and harmless in the query. A portal
+     address like `/incident/` with the ticket number missing is not a link to
+     this row, it is a link to the wrong page — so there is no link. `?tag=` with
+     an empty tag is just an empty filter, and dropping the whole row's link over
+     it would be worse than keeping it. */
+  const queryAt = t.search(/[?#]/);
+  let missing = false;
+  const url = t.replace(TEMPLATE_FIELD_RE, (whole, field, offset) => {
+    const name = field.trim().replace(/\|raw$/i, '').trim();
+    const raw = /\|raw$/i.test(field.trim());
+    const value = resolveTemplateField(name, row, header);
+    if (value === null) { missing = true; return ''; }
+    if (value === '' && (queryAt < 0 || offset < queryAt)) { missing = true; return ''; }
+    return raw ? value : encodeURIComponent(value);
+  }).trim();
+  if (missing) return '';
+  /* Last gate before a value becomes a clickable href: only a real http(s) URL
+     comes back, so no template can ever produce a `javascript:` or `data:` link. */
+  return isHttpUrl(url) ? url : '';
+}
+
+/** The host a template points at — used to label a constant portal URL. */
+function portalLabel(tpl) {
+  try { return new URL(String(tpl).replace(/\{[^{}]*\}/g, 'x')).host || 'the portal'; }
+  catch (e) { return 'the portal'; }
+}
+
+/** Validate a template against the loaded columns. Returns a human reason, or null. */
+function templateProblem(tpl, header) {
+  const t = String(tpl ?? '').trim();
+  if (!t) return null;
+  if (/^\s*(javascript|data|vbscript|file|blob):/i.test(t)) return 'Only http:// and https:// templates are allowed';
+  const names = header.map(h => String(h ?? '').trim().toLowerCase());
+  const unknown = templateFields(t).filter(f => !names.includes(f.toLowerCase()) && !/^\d+$/.test(f));
+  if (unknown.length) {
+    const cols = header.filter(h => String(h ?? '').trim()).map(h => `“${String(h).trim()}”`).join(', ');
+    return `No column called ${unknown.map(u => `“${u}”`).join(' or ')} — ${cols ? `this file has ${cols}` : 'this file has no header row, so use {0}, {1} … by position'}`;
+  }
+  return null;
+}
+
+/* ---- Remembered portal templates ---------------------------------------- */
+/* Keyed by header signature, exactly like column roles and presets, so the same
+   report opened next month composes its links again without being asked. A file
+   with no header row has no signature to key on, so its template is not
+   remembered — it is re-entered (or passed with `?link=`) each time. */
+const LS_TEMPLATES = 'turnstone-link-templates';
+function loadTemplates() {
+  try { return JSON.parse(localStorage.getItem(LS_TEMPLATES) || '{}'); }
+  catch (e) { warn('Could not read saved link templates', e); return {}; }
+}
+function saveTemplates(t) {
+  try { localStorage.setItem(LS_TEMPLATES, JSON.stringify(t)); return true; }
+  catch (e) { warn('Could not persist link template', e); return false; }
+}
+/** A header signature is only meaningful when there is a header row. */
+const templateKeyFor = (data, hasHeader) => (hasHeader ? headerSignature((data || [])[0] || []) : '');
+function rememberTemplate(key, tpl) {
+  if (!key) return;
+  const all = loadTemplates();
+  if (String(tpl || '').trim()) all[key] = String(tpl).trim();
+  else delete all[key];
+  if (saveTemplates(all)) log(`Link template ${tpl ? 'saved' : 'cleared'} for this header signature`);
+}
+
+/* An address and a phone number are the other two "link-shaped" values a list
+   can carry, and they are decided from the *value* for the same reason a URL is:
+   nobody's CRM export calls those columns what we would. Turnstone vendors the
+   two embedded layers that make the click useful — MailLayer for addresses,
+   PhoneLayer for numbers — so a click opens a webmail composer or a VoIP/SMS
+   provider picker instead of a dead desktop handler. */
+const EMAIL_VALUE_RE = /^[a-z0-9._%+'\-]+@[a-z0-9\-]+(?:\.[a-z0-9\-]+)+$/i;
+const PHONE_VALUE_RE = /^\+?\d[\d\s().\u2011\u2013\-/]{4,}\d$/;
+const DATE_SHAPE_RE = /^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}$/;   // 2024-05-12 is a date, not a number
+function isEmailValue(v) {
+  const s = String(v ?? '').trim();
+  if (!s || s.length > 254 || /\s/.test(s)) return false;
+  if (!EMAIL_VALUE_RE.test(s)) return false;
+  const tld = s.slice(s.lastIndexOf('.') + 1);
+  return tld.length >= 2 && !/\d/.test(tld);   // "a@b.12" is not an address
+}
+/* Money and measurements are not telephone numbers. `12480.75` is an invoice
+   amount with seven digits in it, and it read as a phone number — which was
+   enough, on its own, to stop a finance sheet being recognized as a list whose
+   rows are worked in one portal. A decimal number has one dot (or a thousands
+   separator) and a fraction; a dotted phone number (555.123.4567) has two or
+   three groups instead. */
+const DECIMAL_NUMBER_RE = /^-?(?:\d{1,3}(?:,\d{3})+)(?:\.\d+)?$|^-?\d+\.\d+$/;
+function isPhoneValue(v) {
+  const s = String(v ?? '').trim();
+  if (!s || DATE_SHAPE_RE.test(s) || DECIMAL_NUMBER_RE.test(s)) return false;
+  if (!PHONE_VALUE_RE.test(s)) return false;
+  const digits = s.replace(/\D/g, '');
+  return digits.length >= 7 && digits.length <= 15;   // E.164 stops at 15 digits
+}
+/** Which kind of link a cell value is — the one place that decides href shape. */
+function linkKindOf(v) {
+  const s = String(v ?? '').trim();
+  if (!s) return null;
+  if (isUrlValue(s)) return 'url';
+  if (isEmailValue(s)) return 'email';
+  if (isPhoneValue(s)) return 'phone';
+  return null;
+}
+/** Where a link-shaped value should actually go. */
+function linkHrefOf(v) {
+  const s = String(v ?? '').trim();
+  const kind = linkKindOf(s);
+  if (kind === 'email') return `mailto:${s}`;
+  if (kind === 'phone') return `tel:${s.replace(/(?!^\+)[^\d]/g, '')}`;   // same sanitization PhoneLayer applies
+  return s;
+}
+/* A link column usually wants a page over an address over a bare number, so a list
+   with both a Website and an Email column still leads with the website. */
+const LINK_WEIGHT = { url: 2, email: 1.5, phone: 1 };
+const LAYER_ACCENT = { dark: '#7aa2ff', light: '#3b66d0' };
+const currentTheme = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
+/** PhoneLayer documents per-trigger colour/theme overrides — stamp them, so its
+    provider picker matches the app instead of arriving in its own light default. */
+const layerAnchorAttrs = (kind) => kind === 'phone'
+  ? ` data-phonelayer-color="${LAYER_ACCENT[currentTheme()]}" data-phonelayer-theme="${currentTheme()}"`
+  : '';
 
 /* Completed/status + notes columns. We emit "Status"/"Notes" on export, but a
    file dropped back in (or built elsewhere) may label them Completed / Done /
    Finished / Checked / Comment — accepting that whole family is what lets a
    re-import resume the user's progress instead of resetting every card. */
-const HEADER_STATUS_RE = /^(status|state|complet(e|ed|ion)|done|finished|checked|reviewed|processed|handled)\b/i;
+/* Pipeline vocabulary included on purpose: a vendor tracker says Stage, a
+   candidate pipeline says Stage or Phase, a project sheet says Progress. Those
+   are the same column as Status, and a list whose status column goes unrecognized
+   loses every tick the user made in the system it came from. */
+const HEADER_STATUS_RE = /^(status|state|stage|phase|progress|complet(e|ed|ion)|done|finished|checked|reviewed|processed|handled|result|outcome|disposition)\b/i;
 const HEADER_NOTES_RE  = /^(notes?|comments?|remarks?|memo)\b/i;
-const STATUS_HEADER_WORDS = new Set(['status', 'state', 'complete', 'completed', 'completion', 'done', 'finished', 'checked', 'reviewed', 'processed', 'handled']);
+const STATUS_HEADER_WORDS = new Set(['status', 'state', 'stage', 'phase', 'progress', 'complete', 'completed', 'completion', 'done', 'finished', 'checked', 'reviewed', 'processed', 'handled', 'result', 'outcome', 'disposition']);
 const NOTES_HEADER_WORDS  = new Set(['note', 'notes', 'comment', 'comments', 'remark', 'remarks', 'memo']);
 const normalizeHeader = (h) => String(h ?? '').toLowerCase().replace(/[^a-z]/g, '');
 
 /** Cell values that mean "this task is done". Ticks are accepted so rows pasted
     from a spreadsheet round-trip, and a completion *date* counts as done too. */
-const COMPLETE_RE = /^(complete|completed|done|finished|yes|y|true|1|x|✓|✔|☑|✅)$/i;
+/* Terminal states, as the systems these lists come out of spell them. Turnstone
+   asks "has this row been handled?", not "did it succeed?" — so a closed ticket,
+   a paid invoice and a rejected application are all done with, because the queue
+   is what matters. Every in-flight word (open, new, pending, awaiting, in
+   progress, blocked) is deliberately absent, and the two tests below are anchored
+   to the whole value, so "Pending approval" can never read as "Approved". */
+const COMPLETE_RE = /^(complete|completed|done|finished|yes|y|true|1|x|✓|✔|☑|✅|closed?|resolved|approved?|accepted|paid|sent|signed|shipped|filed|submitted|handled|processed|cancell?ed|declined|rejected|void|archived|reconciled|verified|published|renewed|delivered|no action needed)$/i;
 const COMPLETE_DATE_RE = /^\d{4}-\d{1,2}-\d{1,2}([T ].*)?$/;
 /* Same test after stripping decoration, so "✓ done", "done ✔" and "- complete"
    all count. Anchored matches keep "not done" and "incomplete" safely false. */
@@ -744,11 +1130,18 @@ const FORMAT_INFO = {
   xlsm: { label: 'XLSM',       writable: false },
   xlsb: { label: 'XLSB',       writable: false },
   ods:  { label: 'ODS',        writable: false },
+  docx: { label: 'Word doc',   writable: false },
+  md:   { label: 'Markdown',   writable: false },
+  doc:  { label: 'Word 97-2003', writable: false },
   json: { label: 'JSON',       writable: false },
   html: { label: 'HTML table', writable: false },
   xml:  { label: 'XML',        writable: false },
+  eml:  { label: 'Email (.eml)', writable: false },
   pdf:  { label: 'PDF',        writable: false },
 };
+/** The formats welcome-panel / drop-zone copy advertises. One place, so the
+    advertised list and the accepted list cannot drift apart. */
+const ADVERTISED_FORMATS = ['CSV · TSV', 'XLSX / XLS / ODS', 'DOCX', 'Email (.eml)', 'Markdown', 'JSON · HTML · XML'];
 const formatLabel = (f) => (FORMAT_INFO[f] || {}).label || String(f || '').toUpperCase();
 /** Formats whose matrix can be written back into the source file in place. */
 const isWritable = (f) => !!(FORMAT_INFO[f] && FORMAT_INFO[f].writable);
@@ -763,6 +1156,11 @@ const HAS_XLSX = typeof XLSX === 'object' && XLSX !== null && typeof XLSX.read =
    and must then treat workbooks as one-way imports instead of promising a
    write-back it cannot deliver. */
 const HAS_XLSX_WRITE = HAS_XLSX && typeof XLSX.write === 'function';
+/* The two embedded layers are a capability like any other. MailLayer publishes no
+   global, so the pair is read from PhoneLayer's: they are vendored together and a
+   build has both or neither. Without them an address still opens the system mail
+   handler and a number the system dialler — so the app degrades, it never breaks. */
+const HAS_LAYERS = typeof window.PhoneLayer === 'object' && window.PhoneLayer !== null;
 /* Some builds have no durable storage at all — the bookmarklet overlay runs on a
    throwaway origin and shadows IndexedDB. Those builds must say so instead of
    promising a snapshot that will not outlive the tab. */
@@ -779,11 +1177,18 @@ const EXT_FORMAT = {
   xlsx: 'xlsx', xlsm: 'xlsm', xlsb: 'xlsb', xls: 'xls', ods: 'ods',
   json: 'json', jsonl: 'json', ndjson: 'json',
   html: 'html', htm: 'html', xml: 'xml', rss: 'xml', atom: 'xml', opml: 'xml',
-  pdf: 'pdf',
+  /* .mht / .mhtml are the same MIME container as .eml — a saved page is a
+     multipart message whose body part is HTML — so one parser reads both. */
+  eml: 'eml', mht: 'eml', mhtml: 'eml',
+  pdf: 'pdf', docx: 'docx',
+  md: 'md', markdown: 'md', mdown: 'md', mkd: 'md',
 };
 const CT_FORMAT = [
   [/spreadsheetml|ms-excel|excel/, 'xlsx'],
   [/opendocument\.spreadsheet/, 'ods'],
+  [/wordprocessingml|msword/, 'docx'],
+  [/markdown/, 'md'],
+  [/rfc822|ms-outlook/, 'eml'],
   [/json/, 'json'],
   [/html/, 'html'],
   [/xml/, 'xml'],
@@ -794,31 +1199,140 @@ const CT_FORMAT = [
 
 const MAGIC = {
   pdf: [0x25, 0x50, 0x44, 0x46], // %PDF
-  ole: [0xd0, 0xcf, 0x11, 0xe0], // OLE2 container — legacy .xls
-  zip: [0x50, 0x4b, 0x03, 0x04], // PK\x03\x04 — xlsx / xlsm / xlsb / ods
+  ole: [0xd0, 0xcf, 0x11, 0xe0], // OLE2 container — legacy .xls and .doc
+  zip: [0x50, 0x4b, 0x03, 0x04], // PK\x03\x04 — xlsx / xlsm / xlsb / ods / docx
 };
 function hasMagic(buf, bytes) {
   return buf.byteLength >= bytes.length && bytes.every((b, i) => new DataView(buf).getUint8(i) === b);
 }
+/** An OLE2 file is Word when its stream directory names a WordDocument stream.
+    The directory stores names as UTF-16LE, so the marker arrives NUL-interleaved. */
+function oleLooksLikeWord(buf) {
+  const head = new Uint8Array(buf, 0, Math.min(buf.byteLength, 8192));
+  return new TextDecoder('utf-16le', { fatal: false }).decode(head).includes('WordDocument');
+}
+/** ZIP walking, shared by the DOCX parser. A .docx is a ZIP of XML and browsers
+    expose DecompressionStream('deflate-raw'), so the container opens with no
+    library at all — the same technique the bookmarklet's SheetJS stand-in uses
+    for .xlsx. Reading and rebuilding a Word file are different problems: this is
+    read-only on purpose, so DOCX stays a one-way import. */
+/* Reading DOCX needs two browser capabilities, and they are worth naming apart:
+   inflating a ZIP member (`DecompressionStream`) and reading the XML inside it
+   (`DOMParser`). Every browser with one has the other, but keeping them separate
+   keeps the capability honest — and lets the container work be tested without a
+   DOM, which is the only reason `test/run.js` can cover DOCX at all. */
+const HAS_INFLATE = typeof DecompressionStream === 'function';
+const HAS_DOMPARSER = typeof DOMParser === 'function';
+const HAS_ZIP = HAS_INFLATE && HAS_DOMPARSER;
+const ZIP_SIG = { entry: 0x04034b50, cd: 0x02014b50, eocd: 0x06054b50 };
+/** Central directory as name → { method, compSize, localOffset }. */
+function zipEntries(buf) {
+  const dv = new DataView(buf);
+  const floor = Math.max(0, dv.byteLength - 65557 - 22);
+  let eocd = -1;
+  for (let i = dv.byteLength - 22; i >= floor; i--) if (dv.getUint32(i, true) === ZIP_SIG.eocd) { eocd = i; break; }
+  if (eocd < 0) throw new Error('not a ZIP container (no end-of-central-directory record)');
+  const count = dv.getUint16(eocd + 10, true);
+  let off = dv.getUint32(eocd + 16, true);
+  const entries = new Map();
+  for (let n = 0; n < count; n++) {
+    if (off + 46 > dv.byteLength || dv.getUint32(off, true) !== ZIP_SIG.cd) break;
+    const nameLen = dv.getUint16(off + 28, true);
+    const extraLen = dv.getUint16(off + 30, true);
+    const commentLen = dv.getUint16(off + 32, true);
+    entries.set(new TextDecoder('utf-8').decode(new Uint8Array(buf, off + 46, nameLen)), {
+      method: dv.getUint16(off + 10, true),
+      compSize: dv.getUint32(off + 20, true),
+      localOffset: dv.getUint32(off + 42, true),
+    });
+    off += 46 + nameLen + extraLen + commentLen;
+  }
+  return entries;
+}
+/** Inflate one member to text. Method 0 (stored) needs no zlib at all. */
+async function zipEntryText(buf, entry) {
+  const dv = new DataView(buf);
+  if (dv.getUint32(entry.localOffset, true) !== ZIP_SIG.entry) throw new Error('corrupt ZIP member header');
+  const start = entry.localOffset + 30 + dv.getUint16(entry.localOffset + 26, true) + dv.getUint16(entry.localOffset + 28, true);
+  if (entry.method === 0) return new TextDecoder('utf-8').decode(new Uint8Array(buf, start, entry.compSize));
+  if (entry.method !== 8) throw new Error(`unsupported ZIP compression method ${entry.method}`);
+  const stream = new Blob([buf.slice(start, start + entry.compSize)]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return new TextDecoder('utf-8').decode(await new Response(stream).arrayBuffer());
+}
 function bufHead(buf, n = 2048) {
   return new TextDecoder('utf-8').decode(buf.slice(0, Math.min(n, buf.byteLength))).replace(/^\uFEFF/, '');
+}
+
+/** Is this text markdown? Only strong, structural signals count: a checklist item,
+    or a pipe row followed by its `|---|` delimiter. A bulleted list of bare URLs is
+    deliberately **not** a signal — that stays a one-column .txt list, exactly as it
+    did before markdown existed, because nothing about it is markdown-specific. */
+function looksLikeMarkdown(text) {
+  const lines = String(text ?? '').split(/\r?\n/);
+  let fenced = false;
+  for (let i = 0; i < lines.length; i++) {
+    if (MD_FENCE_RE.test(lines[i])) { fenced = !fenced; continue; }
+    if (fenced) continue;
+    if (MD_TASK_RE.test(lines[i])) return true;
+    if (lines[i].includes('|') && i + 1 < lines.length && mdIsDelimiterRow(lines[i + 1])) return true;
+  }
+  return false;
+}
+
+/* An .eml carries no magic bytes and is text, so it has to be recognized by
+   shape. The test is deliberately strict: an RFC 5322 header block is a run of
+   `Name: value` fields (plus folded continuations) that ends at the first blank
+   line, and it has to contain at least two *known* field names. A data row never
+   survives that — `From,To` has no colon, and a lone `Subject: hi` is one known
+   field, not two. */
+const RFC822_FIELD_RE = /^([!-9;-~]+):/;
+const RFC822_KNOWN_RE = /^(from|to|cc|bcc|subject|date|received|message-id|in-reply-to|references|mime-version|content-type|content-transfer-encoding|content-disposition|content-id|reply-to|return-path|delivered-to|sender|authentication-results|dkim-signature|x-[a-z0-9-]+)\s*:/i;
+function looksLikeEml(head) {
+  const lines = String(head || '').split(/\r?\n/);
+  let known = 0;
+  const limit = Math.min(lines.length, 80);
+  for (let i = 0; i < limit; i++) {
+    const l = lines[i];
+    if (!l.trim()) {
+      /* A header block needs something on the other side of the blank line. Two
+         header-ish lines and then the end of the file is a data row that happens
+         to contain colons, not a message — and claiming it would turn a two-line
+         CSV into "this email has no list in it". */
+      return known >= 2 && lines.slice(i + 1).some(x => x.trim());
+    }
+    if (/^[ \t]/.test(l)) continue;        // folded continuation of the field above
+    if (!RFC822_FIELD_RE.test(l)) return false;
+    if (RFC822_KNOWN_RE.test(l)) known++;
+  }
+  return false;                            // no blank line within 80 lines — not a message
 }
 
 /** Content sniffing for text formats — the strongest signal we have. */
 function sniffTextFormat(head) {
   const h = head.trimStart().toLowerCase();
   if (!h) return null;
+  /* Checked before the others: a header block is a far stronger structure than
+     "starts with [" or "has a pipe row", and a multipart body can contain
+     anything at all underneath it — including something that looks like a
+     markdown table. */
+  if (looksLikeEml(head)) return 'eml';
+  /* Markdown is checked first because it is the one text format with no magic
+     bytes *and* no delimiter of its own: a task list or a real pipe table is
+     unambiguous, and a file that starts with `[` is otherwise claimed by JSON. */
+  if (looksLikeMarkdown(head)) return 'md';
   if (h[0] === '[' || h[0] === '{') return 'json';
   if (h.startsWith('<!doctype html') || h.startsWith('<html')) return 'html';
   if (h.startsWith('<?xml')) return 'xml';
-  if (h.startsWith('<!--')) return /<!doctype html|<html|<table/.test(h) ? 'html' : 'xml';
-  if (h[0] === '<') return /<table\b|<tr\b|<td\b/.test(h) ? 'html' : 'xml';
+  if (h.startsWith('<!--')) return /<!doctype html|<html|<table/.test(h) ? 'html' : 'xml';    if (h[0] === '<') return /<table\b|<tr\b|<td\b/.test(h) ? 'html' : 'xml';
   return null; // delimiter choice is PapaParse's job, not ours
 }
 
 /** Split an extension + Content-Type into soft hints used only when content is inconclusive. */
 function formatHints(name, contentType) {
-  const m = String(name || '').match(/\.([a-z0-9]{1,5})(?:$|[?#])/i);
+  /* Up to 10 characters, not 5: `.markdown` and `.ndjson` are both longer than the
+     old cap, so their aliases in EXT_FORMAT were unreachable — the extension simply
+     failed to match and the file fell through to the delimited-text default. */
+  const m = String(name || '').match(/\.([a-z0-9]{1,10})(?:$|[?#])/i);
   const ext = m ? m[1].toLowerCase() : null;
   const ct = String(contentType || '').toLowerCase();
   const hit = CT_FORMAT.find(([re]) => re.test(ct));
@@ -830,10 +1344,24 @@ function detectFormat(buf, name, contentType) {
   const hint = formatHints(name, contentType);
   let format, why;
   if (hasMagic(buf, MAGIC.pdf)) { format = 'pdf'; why = 'magic %PDF'; }
-  else if (hasMagic(buf, MAGIC.ole)) { format = 'xls'; why = 'magic OLE2 (legacy Excel)'; }
+  else if (hasMagic(buf, MAGIC.ole)) {
+    // The OLE2 container carries both Excel 97-2003 and Word 97-2003; the stream
+    // directory says which, and only one of them is worth opening.
+    if (oleLooksLikeWord(buf)) { format = 'doc'; why = 'magic OLE2 (legacy Word)'; }
+    else { format = 'xls'; why = 'magic OLE2 (legacy Excel)'; }
+  }
   else if (hasMagic(buf, MAGIC.zip)) {
-    // xlsx / xlsm / xlsb / ods all share the ZIP magic — the extension says which.
-    format = isWorkbookFormat(hint.extFormat) ? hint.extFormat : 'xlsx';
+    /* xlsx / xlsm / xlsb / ods / docx all share the ZIP magic. The member list
+       answers it exactly (`word/document.xml` vs `xl/workbook.xml`), so a Word
+       file renamed to .xlsx still opens as a Word file; the extension is only
+       the fallback for a container whose directory we cannot walk. */
+    let zipKind = null;
+    try {
+      const names = zipEntries(buf);
+      if (names.has('word/document.xml')) zipKind = 'docx';
+      else if (names.has('xl/workbook.xml') || names.has('xl/workbook.bin')) zipKind = isWorkbookFormat(hint.extFormat) ? hint.extFormat : 'xlsx';
+    } catch (e) { warn('ZIP central directory unreadable — falling back to the file extension', e); }
+    format = zipKind || (hint.extFormat === 'docx' ? 'docx' : isWorkbookFormat(hint.extFormat) ? hint.extFormat : 'xlsx');
     why = `magic PK\\x03\\x04 (ZIP container → ${format})`;
   } else {
     const sniffed = sniffTextFormat(bufHead(buf));
@@ -869,6 +1397,220 @@ async function parseWorkbook(buf, sheetPick) {
     .map(row => row.map(c => String(c ?? '')));
   log(`Workbook parsed: ${wb.SheetNames.length} sheet(s), loaded "${name}" — ${rows.length} rows`);
   return { rows, sheetName: name };
+}
+
+/* ---- Parser: DOCX (Word) ---- */
+const WORDPROC_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+/** A Word table row is <w:tr>, a cell <w:tc>, and text lives in <w:t> runs inside
+    <w:p> paragraphs — so a cell's text is that cell's runs joined. Tables are what
+    a link list lives in; a document without one falls back to a row per paragraph
+    (cells split on tabs), which is exactly what a pasted-from-Word list looks like. */
+async function parseDocx(buf) {
+  const entry = zipEntries(buf).get('word/document.xml');
+  if (!entry) throw new Error('this .docx has no word/document.xml — is it a Word file, or something else renamed?');
+  const xml = await zipEntryText(buf, entry);
+  const dom = new DOMParser().parseFromString(xml, 'application/xml');
+  if (dom.querySelector('parsererror')) throw new Error('word/document.xml is not readable XML — the file may be damaged');
+  const runs = (el) => Array.from(el.getElementsByTagNameNS(WORDPROC_NS, 't')).map(t => t.textContent || '').join('').trim();
+  const tables = Array.from(dom.getElementsByTagNameNS(WORDPROC_NS, 'tbl'));
+  if (tables.length) {
+    const rows = [];
+    for (const tbl of tables) {
+      for (const tr of Array.from(tbl.getElementsByTagNameNS(WORDPROC_NS, 'tr'))) {
+        rows.push(Array.from(tr.children)
+          .filter(c => c.namespaceURI === WORDPROC_NS && c.localName === 'tc')
+          .map(runs));
+      }
+    }
+    log(`DOCX parsed: ${tables.length} table(s), ${rows.length} rows, ${Math.max(...rows.map(r => r.length), 0)} columns`);
+    if (!rows.length) throw new Error('the Word table in this document is empty');
+    return rows;
+  }
+  const rows = Array.from(dom.getElementsByTagNameNS(WORDPROC_NS, 'p'))
+    .map(p => runs(p).split('\t').map(s => s.trim()))
+    .filter(r => r.some(c => c));
+  log(`DOCX parsed: no table — ${rows.length} paragraph rows`);
+  if (!rows.length) throw new Error('this .docx has no text to read');
+  return rows;
+}
+
+/* ---- Parser: Markdown (task lists, pipe tables, link lists) ----
+   Markdown is plain text, so this needs no library — the same reason DOCX needed
+   none — which means every build gets it, including the zero-library bookmarklet.
+   A task list is already a table with the four columns Turnstone wants: the task,
+   its link, the checkbox and the trailing note. So the list parser emits a matrix
+   shaped exactly like the CSV fixture's, and nothing downstream has to know that a
+   checkbox was ever involved. */
+const MD_FENCE_RE = /^\s*(?:```|~~~)/;
+const MD_TASK_RE = /^\s*(?:[-*+]|\d+[.)])\s+\[([ xX])\]\s+(.*)$/;
+const MD_ITEM_RE = /^\s*(?:[-*+]|\d+[.)])\s+(\S.*)$/;
+const MD_HEADING_RE = /^\s{0,3}#{1,6}\s/;
+/* One scan for every link shape markdown actually carries: [label](target),
+   <autolink>, an explicit scheme URL, a bare http/www URL, and a bare address.
+   Order matters — the scheme alternative has to run before the bare-address one, or
+   "mailto:ada@example.com" would match as "ada@example.com" and leave "mailto:"
+   stranded in the task's text. */
+const MD_LINK_SCAN = /\[([^\]]*)\]\(\s*([^\s)]+)(?:\s+"[^"]*")?\s*\)|<((?:https?|mailto|tel|sms):[^>\s]+)>|(mailto:[a-z0-9._%+'\-]+@[a-z0-9\-]+(?:\.[a-z0-9\-]+)+)(?:\?[^\s]*)?|((?:tel|sms):[+\d][\d\s().\u2011\-\/]{4,}\d)(?:\?[^\s]*)?|((?:https?:\/\/|www\.)[^\s<>()\[\]`*_]+)|([a-z0-9._%+'\-]+@[a-z0-9\-]+(?:\.[a-z0-9\-]+)+)/gi;
+const MD_LINK_RE = /\[([^\]]*)\]\(\s*([^\s)]+)(?:\s+"[^"]*")?\s*\)/g;
+/* Separators a task line uses to set its name and note apart from its link. */
+const MD_TRIM_RE = /^[\s·•\-–—:]+|[\s·•\-–—:]+$/g;
+
+/** Markdown's decoration, removed: code spans, bold, italic, backslash escapes. */
+function mdStripInline(s) {
+  return String(s ?? '')
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1$2')
+    .replace(/(^|[\s(])_([^_\n]+)_/g, '$1$2')
+    .replace(/\\([\\`*_{}\[\]()#+\-.!|>])/g, '$1');
+}
+
+/** Every link on a line, in order, with its exact span in the raw text. */
+function mdLinks(text) {
+  const out = [];
+  MD_LINK_SCAN.lastIndex = 0;   // the scan regex is shared, so its cursor is reset per call
+  let m;
+  while ((m = MD_LINK_SCAN.exec(text))) {
+    out.push({
+      start: m.index,
+      end: m.index + m[0].length,
+      label: m[1] !== undefined ? mdStripInline(m[1]).trim() : '',
+      target: (m[2] || m[3] || m[4] || m[5] || m[6] || m[7] || '').trim(),
+    });
+  }
+  return out;
+}
+
+/** A markdown link's target may carry its own kind (`mailto:`, `tel:`, `sms:`) and a
+    query. The matrix wants the bare *value*, so the app's own value predicates
+    recognise it and the href can be rebuilt from the kind at render time. */
+function normalizeLinkTarget(target) {
+  const t = String(target ?? '').trim().replace(/^<(.*)>$/, '$1');
+  const m = t.match(/^(?:mailto|tel|sms):([^?#]*)/i);
+  return m ? (m[1].trim() || t) : t;
+}
+
+/** A pipe-table cell: decoration stripped, a lone link resolved to its target (so a
+    URL column holds a URL), an inline link in prose reduced to its label. */
+function mdInlineCell(raw) {
+  const text = mdStripInline(raw).trim();
+  const links = mdLinks(text);
+  if (links.length === 1 && !text.slice(0, links[0].start).trim() && !text.slice(links[0].end).trim()) {
+    const target = normalizeLinkTarget(links[0].target);
+    return linkKindOf(target) ? target : (links[0].label || target);
+  }
+  return text.replace(MD_LINK_RE, (whole, label, target) => label.trim() || normalizeLinkTarget(target));
+}
+
+/** `| a | b |` → ['a','b'], honouring `\|` escapes and stripping the outer pipes. */
+function mdSplitRow(line) {
+  const t = String(line).trim().replace(/^\||\|$/g, '');
+  const cells = [];
+  let cur = '';
+  for (let i = 0; i < t.length; i++) {
+    if (t[i] === '\\' && t[i + 1] === '|') { cur += '|'; i++; continue; }
+    if (t[i] === '|') { cells.push(cur); cur = ''; continue; }
+    cur += t[i];
+  }
+  cells.push(cur);
+  return cells.map(mdInlineCell);
+}
+/** The `|---|:--:|` row that makes a stack of pipes a table rather than a paragraph. */
+function mdIsDelimiterRow(line) {
+  const t = String(line).trim();
+  if (!t.includes('-')) return false;
+  return t.replace(/^\||\|$/g, '').split('|').every(c => /^:?-{2,}:?$/.test(c.trim()));
+}
+/** Lines outside fenced code blocks — a URL in a code fence is an example, not a task. */
+function mdUnfencedLines(text) {
+  const out = [];
+  let fenced = false;
+  for (const line of String(text).replace(/^\uFEFF/, '').split(/\r?\n/)) {
+    if (MD_FENCE_RE.test(line)) { fenced = !fenced; continue; }
+    if (!fenced) out.push(line);
+  }
+  return out;
+}
+function mdFindTable(lines) {
+  for (let i = 0; i + 1 < lines.length; i++) {
+    if (!lines[i].includes('|') || !mdIsDelimiterRow(lines[i + 1])) continue;
+    const header = mdSplitRow(lines[i]);
+    const rows = [header];
+    for (let j = i + 2; j < lines.length; j++) {
+      if (!lines[j].includes('|')) break;
+      if (mdIsDelimiterRow(lines[j])) continue;
+      const cells = mdSplitRow(lines[j]);
+      while (cells.length < header.length) cells.push('');
+      rows.push(cells.slice(0, header.length));
+    }
+    log(`Markdown parsed: pipe table — ${header.length} column(s), ${rows.length - 1} row(s)`);
+    return rows;
+  }
+  return null;
+}
+
+/** List item → { name, link, checked, note }. The first link ends the name and
+    starts the note, which is why a note containing its own em dash survives. */
+function mdListItem(body, box) {
+  const links = mdLinks(body);
+  if (!links.length) return { name: mdStripInline(body).replace(MD_TRIM_RE, ''), link: '', checked: box, note: '' };
+  const first = links[0];
+  let before = mdStripInline(body.slice(0, first.start)).replace(MD_TRIM_RE, '');
+  let after = mdStripInline(body.slice(first.end)).replace(MD_TRIM_RE, '');
+  /* `- Task (https://link)` — the link sat inside brackets, so one half of the pair
+     lands in the name and the other in the note. Drop them together, and only when
+     they actually pair up, so a note that legitimately starts with "(" survives. */
+  if (/[([]$/.test(before) && /^[)\]]/.test(after)) {
+    before = before.replace(/[([]$/, '').trim();
+    after = after.replace(/^[)\]]/, '').trim();
+  }
+  const target = normalizeLinkTarget(first.target);
+  const link = linkKindOf(target) ? target : (linkKindOf(first.label) ? first.label : target);
+  return { name: before || first.label || link, link, checked: box, note: after };
+}
+
+/** Items → matrix, with only the columns the file actually has. A bare-URL list
+    gets one column; a task list gets all four, headed exactly like the CSV fixture. */
+function mdMatrix(items) {
+  const hasLink = items.some(it => it.link);
+  const hasBox = items.some(it => it.checked !== null);
+  const hasNote = items.some(it => it.note);
+  const hasNames = items.some(it => it.name && it.name !== it.link);
+  const cols = [];
+  if (hasNames) cols.push(['Name', it => it.name]);
+  if (hasLink) cols.push(['URL', it => it.link]);
+  if (hasBox) cols.push(['Status', it => (it.checked ? 'complete' : 'incomplete')]);
+  if (hasNote) cols.push(['Notes', it => it.note]);
+  if (!cols.length) cols.push(['Name', it => it.name]);
+  log(`Markdown parsed: ${items.length} item(s) → ${cols.map(([h]) => h).join(' / ')}`);
+  return [cols.map(([h]) => h), ...items.map(it => cols.map(([, get]) => get(it)))];
+}
+
+function parseMarkdownText(text) {
+  const lines = mdUnfencedLines(text);
+  const table = mdFindTable(lines);
+  if (table) return table;
+  const listed = [], loose = [];
+  for (const line of lines) {
+    const task = line.match(MD_TASK_RE);
+    const bullet = task ? null : line.match(MD_ITEM_RE);
+    if (task) listed.push(mdListItem(task[2].trim(), task[1].toLowerCase() === 'x'));
+    else if (bullet) {
+      const item = mdListItem(bullet[1].trim(), null);
+      /* A bullet is only a task if it points somewhere — that is what keeps a
+         README's bulleted prose out of the queue. */
+      if (item.link) listed.push(item);
+    } else if (!MD_HEADING_RE.test(line) && line.trim()) {
+      const item = mdListItem(line.trim(), null);
+      if (item.link) loose.push(item);
+    }
+  }
+  /* A list wins outright when there is one: a document's stray prose links should
+     not be appended to the queue its list describes. */
+  const items = listed.length ? listed : loose;
+  if (!items.length) throw new Error('nothing to queue in this markdown file — it has no table, no list and no links');
+  return mdMatrix(items);
 }
 
 /* ---- Parser: JSON (array of objects, array of arrays, wrapped array, NDJSON) ---- */
@@ -1079,11 +1821,427 @@ function parseXmlText(text) {
   return [keys, ...recs.map(r => keys.map(k => jsonScalar(r[k])))];
 }
 
+/* ---- Parser: email (.eml / .mht) ------------------------------------------ */
+/* An .eml is a MIME message, and a queue very often arrives as one: someone
+   forwards "here is this week's list, please work through it", or a portal emails
+   a digest. Two things make it worth reading properly rather than refusing:
+
+     1. the message body is HTML or text, and both parsers already exist; and
+     2. a forwarded queue usually has the *spreadsheet attached*, so the real
+        payload is a base64 part that our own detector can already open.
+
+   Everything below works in "binary string" space — a JS string whose character
+   codes are the file's bytes, 1:1. That keeps one representation from the raw
+   file down to the part bodies, so base64, quoted-printable and a declared
+   charset are all decodable without guessing at any point.
+
+   Unlike every other parser here, this one is async: recursing into an attached
+   workbook means calling back into parseDetected. */
+const MIME_MAX_DEPTH = 8;
+function bytesToBinary(buf) {
+  const b = new Uint8Array(buf);
+  let s = '';
+  for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+  return s;
+}
+function binaryToBytes(bin) {
+  const a = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i) & 0xff;
+  return a;
+}
+/** Charset labels we will hand to TextDecoder, aliased to the canonical name.
+    Anything unrecognized falls back to UTF-8, which is the safe modern default. */
+const CHARSET_ALIAS = {
+  'utf8': 'utf-8', 'utf-8': 'utf-8', 'us-ascii': 'utf-8', 'ascii': 'utf-8', 'unicode-1-1-utf-8': 'utf-8',
+  'latin1': 'windows-1252', 'latin-1': 'windows-1252', 'iso-8859-1': 'windows-1252', 'iso8859-1': 'windows-1252',
+  'iso-8859-15': 'iso-8859-15', 'cp1252': 'windows-1252', 'windows-1252': 'windows-1252',
+  'utf-16': 'utf-16le', 'utf-16le': 'utf-16le', 'utf-16be': 'utf-16be',
+  'gb2312': 'gbk', 'gbk': 'gbk', 'big5': 'big5', 'shift_jis': 'shift_jis', 'sjis': 'shift_jis', 'euc-kr': 'euc-kr',
+};
+function charsetDecode(bin, charset) {
+  const label = CHARSET_ALIAS[String(charset || '').trim().toLowerCase().replace(/^"|"$/g, '')] || 'utf-8';
+  try { return new TextDecoder(label).decode(binaryToBytes(bin)); }
+  catch (e) { warn(`Unknown charset "${charset}" — decoded as UTF-8`, e); return new TextDecoder('utf-8').decode(binaryToBytes(bin)); }
+}
+/** `=XX` escapes and soft line breaks (a trailing `=`) — quoted-printable. */
+function decodeQuotedPrintable(bin) {
+  return String(bin)
+    .replace(/=\r?\n/g, '')                      // soft line break: the line continues
+    .replace(/=([0-9a-f]{2})/gi, (_, h) => String.fromCharCode(parseInt(h, 16)));
+}
+/** Header fields, with folded continuations joined and names lower-cased. */
+function mimeHeaderFields(block) {
+  const map = new Map();
+  let last = null;
+  for (const line of String(block).split(/\r?\n/)) {
+    if (/^[ \t]/.test(line) && last) { map.set(last, map.get(last) + ' ' + line.trim()); continue; }
+    const m = line.match(/^([!-9;-~]+):[ \t]?(.*)$/);
+    if (!m) continue;
+    last = m[1].toLowerCase();
+    map.set(last, m[2].trim());
+  }
+  return map;
+}
+/** Split a MIME entity at the first blank line: everything above is headers. */
+function splitMimeEntity(text) {
+  const m = /\r?\n\r?\n/.exec(text);
+  if (!m) return { headers: mimeHeaderFields(text), body: '' };
+  return { headers: mimeHeaderFields(text.slice(0, m.index)), body: text.slice(m.index + m[0].length) };
+}
+function mimeParams(value) {
+  const out = {};
+  const re = /;\s*([a-z0-9*_-]+(?:\*\d+)?)\s*=\s*(?:"([^"]*)"|([^;]*))/gi;
+  let m;
+  while ((m = re.exec(String(value)))) out[m[1].toLowerCase()] = (m[2] !== undefined ? m[2] : (m[3] || '')).trim();
+  return out;
+}
+function mimeContentType(headers) {
+  const raw = headers.get('content-type') || 'text/plain';
+  return { type: (raw.split(';')[0] || '').trim().toLowerCase(), params: mimeParams(raw) };
+}
+/** A filename, honouring the RFC 2231 form Outlook writes for non-ASCII names. */
+function mimeFilename(part) {
+  const disp = part.headers.get('content-disposition') || '';
+  const p = mimeParams(disp);
+  if (p['filename*0*'] || p['filename*']) {
+    const raw = p['filename*'] || p['filename*0*'];
+    // utf-8''na%C3%AFve.csv
+    const m = /^([^']*)'[^']*'(.*)$/.exec(raw);
+    if (m) { try { return decodeURIComponent(m[2]); } catch (e) {} }
+  }
+  return p.filename || part.params.name || '';
+}
+/** Walk the boundary tree, flattening to leaf entities. */
+function collectMimeParts(text, depth, out) {
+  if (depth > MIME_MAX_DEPTH) { warn('MIME nesting too deep — stopping'); return; }
+  const { headers, body } = splitMimeEntity(text);
+  const { type, params } = mimeContentType(headers);
+  if (type.startsWith('multipart/') && params.boundary) {
+    for (const chunk of splitMimeParts(body, params.boundary)) collectMimeParts(chunk, depth + 1, out);
+    return;
+  }
+  out.push({ headers, body, type, params });
+}
+/** Split a multipart body on its boundary. The closing `--boundary--` ends the
+    list; the CRLF that precedes a delimiter belongs to the delimiter, not to the
+    part, which is why the match starts with it. */
+function splitMimeParts(body, boundary) {
+  const esc = String(boundary).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp('(?:^|\\r?\\n)--' + esc + '(--)?[^\\r\\n]*', 'g');
+  const marks = [];
+  let m;
+  while ((m = re.exec(body))) marks.push({ start: m.index, end: m.index + m[0].length, close: !!m[1] });
+  const parts = [];
+  for (let i = 0; i < marks.length; i++) {
+    if (marks[i].close) break;
+    /* One leading CRLF belongs to the delimiter line, so it is not part of the
+       part that follows — and leaving it there would make the part's own first
+       line look like a blank one, i.e. an empty header block. */
+    const chunk = body.slice(marks[i].end, marks[i + 1] ? marks[i + 1].start : body.length);
+    parts.push(chunk.replace(/^\r?\n/, ''));
+  }
+  return parts;
+}
+/** A leaf part's content, transfer-decoded then charset-decoded. */
+function decodeMimePart(part) {
+  const enc = (part.headers.get('content-transfer-encoding') || '').toLowerCase().trim();
+  let bin = part.body;
+  if (enc === 'base64') { try { bin = atob(bin.replace(/[^A-Za-z0-9+/=]/g, '')); } catch (e) { warn('base64 part did not decode cleanly', e); } }
+  else if (enc === 'quoted-printable') bin = decodeQuotedPrintable(bin);
+  return charsetDecode(bin, part.params.charset);
+}
+/** Is this a *list*, or just prose that happens to have line breaks? Without this
+    an email that says "Hi, three things" would parse as a three-row table of
+    sentences — confidently wrong, which is the one outcome this app avoids. */
+function plausibleList(rows) {
+  const body = rows.filter(r => r.some(c => String(c ?? '').trim()));
+  if (body.length < 2) return false;
+  const width = body.reduce((m, r) => Math.max(m, r.length), 0);
+  if (width >= 2) return true;
+  const vals = body.map(r => String(r[0] ?? '').trim()).filter(Boolean);
+  return vals.length >= 2 && vals.every(v => linkKindOf(v));
+}
+/** A text/plain body: markdown if it is markdown, otherwise delimited. */
+function parseEmlPlainText(text) {
+  const guess = sniffTextFormat(String(text).slice(0, 4096));
+  if (guess === 'md') return parseMarkdownText(text);
+  return parseDelimitedText(text, /\t/.test(text) ? 'tsv' : 'csv');
+}
+
+/** Is this ambiguity-prone text a *table*? Stricter than `plausibleList`, and
+    both callers are the cases where prose can masquerade as data:
+
+      - a text/plain email body, which is prose by default — splitting "Hi,\n\nThe
+        queue for this week's run is attached. Ten items, four of them" on commas
+        yields rows of wildly different lengths; and
+      - a paste, where the same paragraph arrives through the same door, and
+        loading it would silently replace the queue the user is working through.
+
+    So it has to be *rectangular* — every row the same width — or a single column
+    of nothing but link-shaped values. A real table from Excel, Sheets or a portal
+    is rectangular because the cells are there whether or not they hold anything. */
+function plausibleTable(rows) {
+  if (!plausibleList(rows)) return false;
+  const body = rows.filter(r => r.some(c => String(c ?? '').trim()));
+  const widths = new Set(body.map(r => r.length));
+  if (widths.size !== 1) return false;
+  const width = [...widths][0];
+  return width >= 2 || body.every(r => linkKindOf(String(r[0] ?? '').trim()));
+}
+
+/** Read an .eml / .mht: the best body part that yields a list, else an attachment. */
+async function parseEmlText(bin, { depth = 0, sheetPick = null } = {}) {
+  const parts = [];
+  collectMimeParts(bin, 0, parts);
+  const bodies = { 'text/html': [], 'text/plain': [] };
+  const attachments = [];
+  for (const p of parts) {
+    const disp = (p.headers.get('content-disposition') || '').toLowerCase();
+    const filename = mimeFilename(p);
+    if (/^\s*attachment/.test(disp) || (!p.type.startsWith('text/') && filename)) { attachments.push(Object.assign(p, { filename })); continue; }
+    if (bodies[p.type]) bodies[p.type].push(p);
+  }
+  log(`Email parsed: ${parts.length} MIME part(s) — ${bodies['text/html'].length} HTML body, ${bodies['text/plain'].length} text body, ${attachments.length} attachment(s)`);
+
+  /* Bodies first: a forward often carries both the table *and* the file, and the
+     table is the more deliberate statement of the list. HTML before plain,
+     because the plain part of a multipart/alternative is its degraded copy. */
+  for (const p of [...bodies['text/html'], ...bodies['text/plain']]) {
+    let text;
+    try { text = decodeMimePart(p); } catch (e) { warn('Could not decode a body part', e); continue; }
+    if (!text.trim()) continue;
+    let rows;
+    try {
+      rows = p.type === 'text/html'
+        ? (HAS_DOMPARSER ? parseHtmlText(text, { allowLinkFallback: true }) : null)
+        : parseEmlPlainText(text);
+    } catch (e) { log(`Body part (${p.type}) had no list: ${e.message}`); continue; }
+    const acceptable = p.type === 'text/html' ? plausibleList(rows) : plausibleTable(rows);
+    if (rows && acceptable) {
+      log(`Email body used: ${p.type} body part → ${rows.length} row(s)`);
+      return { rows, from: `${p.type} body` };
+    }
+    if (rows) log(`Body part (${p.type}) parsed but is not list-shaped — ignoring it`);
+  }
+
+  /* Then attachments: "here is the queue" with the export attached. */
+  if (depth < 1) {
+    for (const a of attachments) {
+      if (!a.filename) continue;
+      const ext = (a.filename.match(/\.([a-z0-9]{1,10})$/i) || [])[1];
+      if (!ext || !EXT_FORMAT[ext.toLowerCase()]) { log(`Skipping attachment "${a.filename}" (no reader for it)`); continue; }
+      const bytes = binaryToBytes(decodeMimePartBinary(a));
+      if (bytes.byteLength < 8) continue;
+      const det = detectFormat(bytes.buffer, a.filename, a.headers.get('content-type') || '');
+      if (det.format === 'eml') continue;   // an attached message would just recurse
+      try {
+        const { rows, format } = await parseDetected(bytes.buffer, det, sheetPick, { allowLinkFallback: false });
+        if (plausibleList(rows)) { log(`Email attachment used: "${a.filename}" → ${format}, ${rows.length} row(s)`); return { rows, from: `attachment ${a.filename}` }; }
+        log(`Attachment "${a.filename}" parsed as ${format} but is not list-shaped`);
+      } catch (e) { log(`Attachment "${a.filename}" could not be read: ${e.message}`); }
+    }
+  }
+  if (!parts.length) throw new Error('this file is not a readable email message');
+  throw new Error('no list in this email — no table, no link list, and no readable attachment in it');
+}
+/** The raw transfer-decoded bytes of a part (attachments need bytes, not text). */
+function decodeMimePartBinary(part) {
+  const enc = (part.headers.get('content-transfer-encoding') || '').toLowerCase().trim();
+  if (enc === 'base64') { try { return atob(part.body.replace(/[^A-Za-z0-9+/=]/g, '')); } catch (e) { warn('base64 attachment did not decode cleanly', e); return part.body; } }
+  if (enc === 'quoted-printable') return decodeQuotedPrintable(part.body);
+  return part.body;
+}
+
+/* ======================================================================
+   Workspace links — a whole list carried inside a URL
+   ======================================================================
+   This is the one container that has no file behind it: an agent (or a person)
+   hands over a link, and the list is already there. It is a *format* concern like
+   every other reader in this file, so it lives here rather than in the boot code.
+
+   Two encodings, for two different callers:
+
+     #data=<text>   the list as percent-encoded text. Readable, debuggable, and the
+                    one a language model or a person can write by hand.
+     #zdata=<text>  the same text deflated (raw) then base64url'd, no padding. Four
+                    to six times smaller, which is the difference between a link
+                    that survives a chat client and one that gets truncated. Needs
+                    DecompressionStream to open — native, and no dependency.
+
+   The fragment rather than the query string is a deliberate choice with two
+   independent reasons. A fragment is never sent to the server, so a list of client
+   names handed over this way never lands in GitHub's access logs — which matters
+   for an app whose whole claim is that nothing is uploaded. And it escapes the
+   ~8 KB request-line limit that a query string is subject to (nginx's default
+   8 KB header buffer answers anything longer with a 414), so a long list works
+   where `?data=` would be refused by the host before our code ever ran.
+   `?data=` is still read, for tooling that can only append a query. */
+
+/** Past this, a URL is being asked to be a file. Refused with a reason. */
+const INLINE_MAX_BYTES = 2 * 1024 * 1024;
+/** Past this, a link may still work but chat clients start trimming it. Warned about. */
+const INLINE_WARN_BYTES = 100 * 1024;
+
+/** Bytes → base64url, no padding. Chunked, because the spread operator dies at
+    ~100k arguments and a list is bigger than that. */
+function bytesToBase64Url(bytes) {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/** base64url → bytes. Accepts the standard alphabet and padding too, because
+    `+` and `/` survive enough transports that people paste them in. */
+function base64UrlToBytes(s) {
+  const clean = String(s || '').replace(/[\s]/g, '').replace(/-/g, '+').replace(/_/g, '/');
+  const pad = clean.length % 4 ? '='.repeat(4 - (clean.length % 4)) : '';
+  const bin = atob(clean + pad);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+/** FNV-1a, 32-bit, over the raw bytes. Small and dependency-free, which is the
+    whole requirement — this is a "did the link arrive whole?" check, not a
+    security primitive. */
+function fnv1a32(bytes) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < bytes.length; i++) {
+    h ^= bytes[i];
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h >>> 0;
+}
+
+/** A short integrity token for a list: its length and checksum, in base 36.
+ *
+ * Why this exists at all: a deflate stream cut at a *block* boundary inflates
+ * without error, so a link that lost its tail in a chat client or a line-wrapped
+ * post can decode to a shorter list that looks perfectly plausible. Every other
+ * failure mode here announces itself; that one does not, and a silently short
+ * queue is the worst thing this app could hand someone. Twelve characters of URL
+ * buys the ability to say "this link is not what was sent" instead. */
+function inlineDigest(bytes) {
+  return `${bytes.length.toString(36)}.${fnv1a32(bytes).toString(36)}`;
+}
+
+/** Raw deflate / inflate through the platform's streams — no library, no eval. */
+async function deflateRawBytes(bytes) {
+  if (typeof CompressionStream !== 'function') throw new Error('this browser cannot compress a link (no CompressionStream)');
+  const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+async function inflateRawBytes(bytes) {
+  if (!HAS_INFLATE) throw new Error('this browser cannot open a compressed link (no DecompressionStream)');
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  /* The engine's own wording here is useless to a person — a truncated stream
+     surfaces as "Failed to fetch" (a Response whose body stream errored), and
+     "unexpected end of file" in Node. Both mean the same thing to the reader. */
+  try {
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  } catch (e) {
+    throw new Error('the compressed list could not be unpacked — a link cut short in transit is the usual reason, so ask for it to be sent again');
+  }
+}
+
+/** The parameters a workspace link may carry, from **both** the query string and
+    the fragment (the fragment wins — that is where we put ours). Pure string work,
+    so the Node suite can test it without a browser. */
+function inlineParamsFrom(search, hash) {
+  const into = (acc, s) => {
+    try {
+      new URLSearchParams(String(s || '').replace(/^[?#]/, '')).forEach((v, k) => { acc[k] = v; });
+    } catch (e) { warn('Could not read URL parameters:', e); }
+    return acc;
+  };
+  return into(into({}, search), hash);
+}
+
+/** Decode whichever encoding the link used. Returns { text, encoding, bytes }.
+    Throws a message meant for the user, because the usual failure here is a link
+    that a chat client truncated, and "the list is incomplete" is the thing they
+    need to know. */
+/** Verify the integrity token, when the link carries one. A link without one is
+    still opened — a person typing `#data=` by hand cannot compute a checksum, and
+    refusing their link would be pedantry. A link *with* a token that disagrees is
+    refused, because that is the silent-partial-list case. */
+function checkInlineDigest(raw, text) {
+  const claimed = String(raw.sum || '').trim();
+  if (!claimed) return { verified: false };
+  const actual = inlineDigest(new TextEncoder().encode(text));
+  if (claimed !== actual) {
+    throw new Error('this link is not what was sent — it decoded to a different list, which is what a link cut short in transit looks like');
+  }
+  return { verified: true };
+}
+
+async function decodeInlineList(raw) {
+  const z = String(raw.zdata || '').trim();
+  const plain = String(raw.data || '');
+  if (!z && !plain) throw new Error('this link carries no list in it');
+  if (z) {
+    let bytes;
+    try { bytes = base64UrlToBytes(z); }
+    catch (e) { throw new Error('the compressed list in this link is not valid base64 — it was probably truncated when it was shared'); }
+    const out = await inflateRawBytes(bytes);
+    if (out.length > INLINE_MAX_BYTES) throw new Error(`this link carries ${Math.round(out.length / 1048576)} MB of list — too much for a URL`);
+    const text = new TextDecoder('utf-8').decode(out);
+    const { verified } = checkInlineDigest(raw, text);
+    return { text, encoding: 'zdata', bytes: out.length, verified };
+  }
+  const bytes = new TextEncoder().encode(plain);
+  if (bytes.length > INLINE_MAX_BYTES) throw new Error(`this link carries ${Math.round(bytes.length / 1048576)} MB of list — too much for a URL`);
+  const { verified } = checkInlineDigest(raw, plain);
+  return { text: plain, encoding: 'data', bytes: bytes.length, verified };
+}
+
+/** Build a workspace link for a list whose bytes we already have. Compressed when
+    compression actually helps and the browser can do it, plain text when it does
+    not — on a ten-row list the deflate header costs more than it saves. Returns
+    { url, encoding, bytes, warning }. */
+async function buildInlineLink(text, opts = {}) {
+  const bytes = new TextEncoder().encode(text);
+  if (bytes.length > INLINE_MAX_BYTES) throw new Error(`that list is ${Math.round(bytes.length / 1048576)} MB — too big to carry in a URL`);
+  let encoding = 'data', payload = encodeURIComponent(text);
+  if (typeof CompressionStream === 'function') {
+    const deflated = await deflateRawBytes(bytes);
+    const candidate = bytesToBase64Url(deflated);
+    /* Only when it is genuinely shorter: for a short list the base64 of a deflate
+       stream is longer than the text itself, and `#data=` is also readable. */
+    if (candidate.length < payload.length * 0.9) { encoding = 'zdata'; payload = candidate; }
+  }
+  const base = opts.base || `${location.origin}${location.pathname}`;
+  const params = Object.assign({ sum: inlineDigest(bytes) }, opts.params || {});
+  const extra = new URLSearchParams(params).toString();
+  const url = `${base}#${encoding}=${payload}${extra ? `&${extra}` : ''}`;
+  const warning = bytes.length > INLINE_WARN_BYTES
+    ? `That list is ${Math.round(bytes.length / 1024)} KB — some chat apps and mail clients trim links this long.`
+    : '';
+  log(`Workspace link built: ${encoding}, ${bytes.length} bytes of list → ${payload.length} chars of URL`);
+  return { url, encoding, bytes: bytes.length, warning };
+}
+
 /** Detect + parse any supported buffer into a matrix. Throws a friendly error for the rest. */
 async function parseDetected(buf, det, sheetPick, htmlOpts) {
   const format = det.format;
   if (format === 'pdf') {
     throw new Error('PDF is not supported yet — export the list to CSV/XLSX first');
+  }
+  if (format === 'doc') {
+    throw new Error('Legacy .doc (Word 97-2003) is not supported — open it in Word and save as .docx, or export the list as CSV');
+  }
+  if (format === 'docx') {
+    // Word is read through the browser's own ZIP reader, so a build without it
+    // must refuse out loud rather than fail on the first drop.
+    if (!HAS_ZIP) throw new Error('this browser cannot unpack DOCX (no ZIP or XML support) — save the list as CSV or XLSX instead');
+    return { rows: await parseDocx(buf), sheetName: null, format };
+  }
+  if (format === 'eml') {
+    const { rows, from } = await parseEmlText(bytesToBinary(buf), { sheetPick });
+    log(`Email import: ${rows.length} row(s) taken from the ${from}`);
+    return { rows, sheetName: null, format, from };
   }
   if (isWorkbookFormat(format)) {
     if (!HAS_XLSX) throw new Error(`${formatLabel(format)} needs workbook support, which this build does not include — load a CSV, TSV, JSON, HTML or XML list instead`);
@@ -1092,6 +2250,7 @@ async function parseDetected(buf, det, sheetPick, htmlOpts) {
   }
   const text = new TextDecoder('utf-8').decode(buf);
   const rows = format === 'json' ? parseJsonText(text)
+    : format === 'md' ? parseMarkdownText(text)
     : format === 'html' ? parseHtmlText(text, htmlOpts)
     : format === 'xml' ? parseXmlText(text)
     : parseDelimitedText(text, format);
@@ -1114,46 +2273,89 @@ function analyzeMatrix(data) {
   const first = (data[0] || []).map(c => String(c).trim());
 
   // Header heuristic: known header words, or a first row with no URL values while later rows have URLs.
-  const firstRowHasUrl = first.some(c => URL_VALUE_RE.test(c));
-  const hasHeader = first.some(c => HEADER_URL_RE.test(c) || HEADER_NAME_RE.test(c) || HEADER_STATUS_RE.test(c) || HEADER_NOTES_RE.test(c))
-    || (!firstRowHasUrl && data.slice(1, 51).some(r => r.some(c => URL_VALUE_RE.test(String(c)))));
+  const firstRowHasLink = first.some(c => linkKindOf(c));
+  const sample = data.slice(1, 51);
+  /* The old second clause needed a link below the first row to call it a header —
+     which a *portal* list can never supply, because nothing in it is a link. So a
+     first row that reads entirely like labels, over rows that do not, counts too.
+     Guarded by "no link in the first row" either way, so a headerless list of
+     values is still left headerless. */
+  const hasHeader = first.some(c => HEADER_NAME_RE.test(c) || HEADER_URL_RE.test(c) || HEADER_STATUS_RE.test(c) || HEADER_NOTES_RE.test(c))
+    || (!firstRowHasLink && (sample.some(r => r.some(c => linkKindOf(c))) || looksLikeLabelRow(first, sample)));
 
   const header = hasHeader ? first : [];
   let urlCol = -1, nameCol = -1, statusCol = -1, notesCol = -1;
 
   if (hasHeader) {
-    header.forEach((h, i) => {
-      if (urlCol < 0 && HEADER_URL_RE.test(h)) urlCol = i;
-      if (nameCol < 0 && HEADER_NAME_RE.test(h)) nameCol = i;
-    });
+    header.forEach((h, i) => { if (nameCol < 0 && HEADER_NAME_RE.test(h)) nameCol = i; });
     statusCol = pickColumn(header, STATUS_HEADER_WORDS, HEADER_STATUS_RE);
     notesCol = pickColumn(header, NOTES_HEADER_WORDS, HEADER_NOTES_RE);
   }
-  // Fallback URL column: the column with the most http-prefixed values in the first 50 rows.
+
+  /* URL column: score link-shaped *values* per column and take the winner. A
+     URL, an email address and a phone number all count — weighted, so a list
+     with both a Website and an Email column leads with the website while a list
+     that only holds addresses still gets a working link column. Status/notes
+     columns are skipped so a notes column full of pasted links never outbids the
+     real one; the header name only settles an exact tie. */
+  const skip = new Set([statusCol, notesCol].filter(c => c >= 0));
+  const bodyStart = hasHeader ? 1 : 0;
+  const sampleEnd = Math.min(data.length, bodyStart + 200);
+  let bestCount = 0, bestHeaderMatch = false;
+  for (let c = 0; c < width; c++) {
+    if (skip.has(c)) continue;
+    let n = 0;
+    for (let r = bodyStart; r < sampleEnd; r++) n += LINK_WEIGHT[linkKindOf(data[r][c])] || 0;
+    if (!n) continue;
+    const headerMatch = hasHeader && HEADER_URL_RE.test(header[c] || '');
+    if (n > bestCount || (n === bestCount && headerMatch && !bestHeaderMatch)) {
+      bestCount = n; bestHeaderMatch = headerMatch; urlCol = c;
+    }
+  }
+  if (urlCol < 0 && hasHeader) {
+    const h = header.findIndex(x => HEADER_URL_RE.test(x));   // nothing link-shaped: trust the label
+    if (h >= 0) urlCol = h;
+  }
   if (urlCol < 0) {
-    let best = -1, bestCount = 0;
-    for (let c = 0; c < width; c++) {
-      let n = 0;
-      for (let r = hasHeader ? 1 : 0; r < Math.min(data.length, 50); r++) if (URL_VALUE_RE.test(String(data[r][c] || '').trim())) n++;
-      if (n > bestCount) { bestCount = n; best = c; }
-    }
-    urlCol = bestCount > 0 ? best : 0;
+    for (let c = 0; c < width; c++) if (c !== nameCol && !skip.has(c)) { urlCol = c; break; }
   }
-  // Fallback name column: first non-URL column with any text.
-  if (nameCol < 0) {
-    for (let c = 0; c < width; c++) {
-      if (c === urlCol) continue;
-      if (data.some(r => String(r[c] || '').trim())) { nameCol = c; break; }
-    }
+  if (urlCol < 0) urlCol = 0;
+
+  /* Name column: a title-ish header decides, and an identifier column is never
+     allowed to — `Ticket, Summary, …` must title its cards with the summary, not
+     with `INC0041821`. Failing that, the first column with text that is neither
+     the link, the status, the notes, nor an identifier. */
+  if (nameCol < 0 && hasHeader) {
+    nameCol = header.findIndex(h => HEADER_NAME_RE.test(String(h || '')) && !HEADER_ID_RE.test(String(h || '').trim()));
+    if (nameCol >= 0) log(`Name column taken from the "${String(header[nameCol]).trim()}" header`);
   }
-  log(`Matrix analyzed: header=${hasHeader}, urlCol=${urlCol}, nameCol=${nameCol}, statusCol=${statusCol}, notesCol=${notesCol}, width=${width}`);
-  return { hasHeader, urlCol, nameCol, statusCol, notesCol, width };
+  const idish = hasHeader ? header.map(h => HEADER_ID_RE.test(String(h || '').trim())) : [];
+  const firstTextColumn = (allowId) => {
+    for (let c = 0; c < width; c++) {
+      if (c === urlCol || skip.has(c)) continue;
+      if (!allowId && idish[c]) continue;
+      if (data.some(r => String(r[c] || '').trim())) return c;
+    }
+    return -1;
+  };
+  if (nameCol < 0) nameCol = firstTextColumn(false);
+  if (nameCol < 0) nameCol = firstTextColumn(true);   // every column looked like an identifier
+  log(`Matrix analyzed: header=${hasHeader}, urlCol=${urlCol} (${bestCount} link point${bestCount === 1 ? '' : 's'}${bestHeaderMatch ? ', header agreed' : ''}), nameCol=${nameCol}, statusCol=${statusCol}, notesCol=${notesCol}, width=${width}`);
+  /* `linkless` is the signal that this is a *portal* list: not one cell anywhere
+     looks like an address. That is not a broken list, it is a list whose rows are
+     keys — so it gets a URL template instead of a link column. */
+  return { hasHeader, urlCol, nameCol, statusCol, notesCol, width, linkless: bestCount === 0 };
 }
 
 /** Load a normalized 2D matrix into app state. */
 function loadMatrix(data, meta) {
   log(`loadMatrix: ${data.length} rows from "${meta.name}" (mode=${meta.mode}, ext=${meta.ext})`);
   const a = analyzeMatrix(data);
+  // A column the user flagged in Settings outranks detection — and it must land
+  // before the status/notes seeding below, so a re-flagged status column still
+  // round-trips the file's progress.
+  const roleRec = a.hasHeader ? loadRoles()[headerSignature(data[0] || [])] : null;
+  if (applyRoleRecord(a, roleRec, a.width)) log(`Remembered column flags applied: URL=${a.urlCol}, name=${a.nameCol}, status=${a.statusCol}, notes=${a.notesCol}`);
   const bodyRows = data.length - (a.hasHeader ? 1 : 0);
 
   state.name = meta.name;
@@ -1163,7 +2365,23 @@ function loadMatrix(data, meta) {
   state.sourceUrl = meta.sourceUrl || null;
   state.sheetName = meta.sheetName || 'Sheet1';
   state.data = data;
-  Object.assign(state, a);
+  state.hasHeader = a.hasHeader;
+  state.urlCol = a.urlCol; state.nameCol = a.nameCol; state.statusCol = a.statusCol; state.notesCol = a.notesCol;
+  state.linkless = a.linkless;
+  /* Where a row's link comes from, decided once per file: an explicit `?link=`
+     or the settings panel, else whatever was remembered for this header, else
+     nothing (and the row's own link cell, if it has one). */
+  const tplKey = templateKeyFor(data, a.hasHeader);
+  const fromParam = String(meta.linkTemplate ?? bootLinkTemplate ?? '').trim();
+  bootLinkTemplate = '';                       // one load only
+  /* `?? ''` on the *remembered* value too, not just the incoming one: a header that
+     has never carried a template has no entry, so this is `undefined` on every
+     ordinary file — and `String(undefined)` is the string "undefined", which the
+     URL builder would then happily turn into https://undefined for every row. */
+  const remembered = String((tplKey ? loadTemplates()[tplKey] : '') ?? '').trim();
+  state.linkTemplate = fromParam || remembered;
+  if (fromParam && tplKey) rememberTemplate(tplKey, fromParam);
+  if (state.linkTemplate) log(`Link template for this list: ${state.linkTemplate}`);
 
   // Seed per-card status/notes. Priority: explicit session restore > the file's
   // own Status/Notes columns (round-trip) > blank state.
@@ -1215,6 +2433,7 @@ function loadMatrix(data, meta) {
   renderCards();
   els.welcome.hidden = true;   // #welcome[hidden] in the stylesheet — no inline write needed
   maybeShowFirstRunPicker();
+  maybeOfferPortalSetup();
   const noun = `task${n === 1 ? '' : 's'}`;
   toast(`Loaded ${n} ${noun} from ${state.name}${resumed.length ? ` — resumed ${resumed.join(' · ')}` : ''}`, 'success');
 }
@@ -1246,7 +2465,7 @@ function showModePicker(firstRun) {
       ${opts}
       <button id="picker-later" class="modal-cancel">${firstRun ? 'Decide later (tabs by default)' : 'Cancel'}</button>
     </div>`;
-  document.body.appendChild(overlay);
+  mountPoint().appendChild(overlay);
   const done = () => { overlay.remove(); };
   overlay.querySelectorAll('button[data-pick]').forEach(b => {
     b.onclick = () => {
@@ -1282,6 +2501,69 @@ function savePresets(p) {
   catch (e) { warn('Could not persist column presets', e); return false; }
 }
 
+/* ---- Column roles: which column is the URL / name / status / notes ---- */
+/* Detection reads values and is right most of the time; when it is not, the
+   settings panel lets the user say so. That flag is remembered per header
+   signature, so re-opening the same list — or the same export — keeps it. */
+const LS_ROLES = 'turnstone-col-roles';
+const ROLE_FIELDS = { url: 'urlCol', name: 'nameCol', status: 'statusCol', notes: 'notesCol' };
+const ROLE_LABELS = { '': 'Data column', url: 'URL', name: 'Name', status: 'Status', notes: 'Notes' };
+
+function loadRoles() {
+  try { return JSON.parse(localStorage.getItem(LS_ROLES) || '{}'); }
+  catch (e) { warn('Could not read column flags', e); return {}; }
+}
+function saveRoles(r) {
+  try { localStorage.setItem(LS_ROLES, JSON.stringify(r)); return true; }
+  catch (e) { warn('Could not persist column flags', e); return false; }
+}
+
+/** Which role a column currently holds ('' when it is an ordinary data column). */
+function columnRole(c) {
+  for (const [role, field] of Object.entries(ROLE_FIELDS)) if (state[field] === c) return role;
+  return '';
+}
+
+/** Remember this header shape's role assignment. Headerless lists have no stable
+    signature, so their flags last for the session only. */
+function persistRoles() {
+  if (!state.hasHeader) { log('No header row to key column flags to — flags last this session only'); return; }
+  const sig = headerSignature(state.data[0]);
+  const all = loadRoles();
+  all[sig] = { url: state.urlCol, name: state.nameCol, status: state.statusCol, notes: state.notesCol, ts: Date.now() };
+  if (saveRoles(all)) log(`Column flags saved for header signature: URL=${state.urlCol}, name=${state.nameCol}, status=${state.statusCol}, notes=${state.notesCol}`);
+}
+
+/** Overlay a remembered role record onto a role set (analysis `a` or `state`).
+    Detection proposes; a recorded flag decides — out-of-range values are ignored
+    so schema drift degrades to detection instead of a broken column. */
+function applyRoleRecord(target, rec, width) {
+  if (!rec || typeof rec !== 'object') return false;
+  const ok = (v) => Number.isInteger(v) && v >= 0 && v < width;
+  const set = (field, v) => {
+    if (v === -1) { if (field !== 'urlCol') target[field] = -1; }   // URL must always land somewhere
+    else if (ok(v)) target[field] = v;
+  };
+  set('urlCol', rec.url); set('nameCol', rec.name); set('statusCol', rec.status); set('notesCol', rec.notes);
+  return true;
+}
+
+/** Assign a role to a column from the settings panel ('' clears it back to data). */
+function setColumnRole(col, role) {
+  const prev = columnRole(col);
+  if (prev) state[ROLE_FIELDS[prev]] = -1;
+  if (role && ROLE_FIELDS[role]) {
+    const holder = state[ROLE_FIELDS[role]];
+    if (holder >= 0 && holder !== col) log(`Column ${holder} (${colLabel(holder)}) released the ${role} role → data column`);
+    state[ROLE_FIELDS[role]] = col;
+    delete state.colHidden[col];   // a role column is a card feature, never hidden
+  }
+  log(`Column ${col} (${colLabel(col)}) flagged as ${ROLE_LABELS[role] || 'Data column'}`);
+  persistRoles();
+  renderCards();
+  renderSettings();
+}
+
 /** If a saved preset matches this file's header exactly, apply its layout. */
 function applyLayoutFor(headerRow) {
   const width = (state.data[0] || []).length;
@@ -1295,6 +2577,9 @@ function applyLayoutFor(headerRow) {
     state.colOrder = valid;
     state.colHidden = {};
     for (const c of preset.hidden || []) if (c >= 0 && c < width) state.colHidden[c] = true;
+    // The live flag store wins over a preset's copy: a preset is only saved on
+    // demand, so it can be stale the moment the user re-flags a column.
+    if (preset.roles && !loadRoles()[sig] && applyRoleRecord(state, preset.roles, width)) log('Preset also carried column flags (URL/name/status/notes)');
     log(`Preset "${preset.name}" auto-applied (header signature matched)`);
     toast(`Layout preset "${preset.name}" applied`, 'success');
   } else {
@@ -1326,31 +2611,43 @@ function visibleCardCount() { return cardColumns().length; }
 function openSettings() {
   log('Opening column settings');
   renderSettings();
+  /* The portal field is mounted here rather than written into the markup, so it
+     can list this file's own columns as chips and preview against a real row. */
+  const input = document.getElementById('portal-set-input');
+  if (input) input.value = state.linkTemplate;
+  const refresh = wirePortalEditor('portal-set', { onCommit: null });
+  const apply = document.getElementById('portal-set-apply');
+  const clear = document.getElementById('portal-set-clear');
+  if (apply) apply.onclick = () => { applyPortalTemplate(input.value); openSettings(); };
+  if (clear) clear.onclick = () => { input.value = ''; applyPortalTemplate(''); openSettings(); };
+  if (refresh) refresh();
   els.settingsOverlay.hidden = false;
 }
 function closeSettings() { els.settingsOverlay.hidden = true; }
 
 function renderSettings() {
   const width = state.data.reduce((m, r) => Math.max(m, r.length), 0);
-  const fixed = new Set([state.urlCol, state.nameCol, state.statusCol, state.notesCol].filter(c => c >= 0));
-  const roles = { [state.urlCol]: 'URL', [state.nameCol]: 'name', [state.statusCol]: 'status', [state.notesCol]: 'notes' };
   const order = state.colOrder ? state.colOrder.filter(c => c < width) : [];
   for (let c = 0; c < width; c++) if (!order.includes(c)) order.push(c);
 
   const frag = document.createDocumentFragment();
   for (const c of order) {
+    const role = columnRole(c);
     const div = document.createElement('div');
-    div.className = 'set-col' + (fixed.has(c) ? ' fixed' : '');
-    div.draggable = !fixed.has(c);
+    div.className = 'set-col' + (role ? ' fixed' : '');
+    div.draggable = !role;
     div.dataset.col = c;
-    div.innerHTML = fixed.has(c)
-      ? `<span class="drag">⋮⋮</span><em>${esc(String(roles[c] || '').toUpperCase())}</em> <span>${esc(colLabel(c))}</span><span class="pos">card feature</span>`
-      : `<span class="drag" title="Drag to reorder">⋮⋮</span>
-         <label><input type="checkbox" data-colshow="${c}" ${state.colHidden[c] ? '' : 'checked'}> ${esc(colLabel(c))}</label>
-         <span class="pos">#${order.indexOf(c) + 1}</span>`;
+    const opts = ['', 'url', 'name', 'status', 'notes']
+      .map(r => `<option value="${r}"${r === role ? ' selected' : ''}>${ROLE_LABELS[r]}</option>`).join('');
+    div.innerHTML =
+      `<span class="drag"${role ? '' : ' title="Drag to reorder"'}>⋮⋮</span>
+       ${role ? '' : `<input type="checkbox" data-colshow="${c}" aria-label="Show ${esc(colLabel(c))} on cards" title="Show on cards" ${state.colHidden[c] ? '' : 'checked'}>`}
+       <span class="cname" title="${esc(colLabel(c))}">${esc(colLabel(c))}</span>
+       <select data-colrole="${c}" title="What this column means" aria-label="Role for ${esc(colLabel(c))}">${opts}</select>
+       <span class="pos">${role ? 'card feature' : '#' + (order.indexOf(c) + 1)}</span>`;
     frag.appendChild(div);
   }
-  if (!order.length) els.settingsCols.innerHTML = '<p class="hint">No extra columns — every column in this file is a fixed card feature.</p>';
+  if (!order.length) els.settingsCols.innerHTML = '<p class="hint">No columns in this file.</p>';
   else { els.settingsCols.innerHTML = ''; els.settingsCols.appendChild(frag); }
 
   const presets = loadPresets();
@@ -1378,8 +2675,9 @@ function savePreset() {
   for (let c = 0; c < width; c++) if (!order.includes(c)) order.push(c);
   const hidden = Object.keys(state.colHidden).map(Number).filter(c => c < width);
   const sig = headerSignature(state.data[0]);
+  const roles = { url: state.urlCol, name: state.nameCol, status: state.statusCol, notes: state.notesCol };
   const presets = loadPresets();
-  presets[sig] = { name, colOrder: order, hidden, ts: Date.now() };
+  presets[sig] = { name, colOrder: order, hidden, roles, ts: Date.now() };
   if (savePresets(presets)) {
     log(`Column preset "${name}" saved for header signature (${sig.split('¦').length} cols)`);
     toast(`Preset "${name}" saved — files with this exact header auto-apply it`, 'success');
@@ -1391,10 +2689,15 @@ function savePreset() {
 function applyPresetByKey(sig) {
   const p = loadPresets()[sig];
   if (!p) return;
+  const width = state.data.reduce((m, r) => Math.max(m, r.length), 0);
   state.colOrder = (p.colOrder || []).slice();
   state.colHidden = {};
   for (const c of p.hidden || []) state.colHidden[c] = true;
   state.expanded = {};
+  if (p.roles && applyRoleRecord(state, p.roles, width)) {
+    log('Preset carried column flags (URL/name/status/notes) — remembering them for this header');
+    persistRoles();   // the live store follows an explicit preset apply
+  }
   log(`Preset "${p.name}" applied manually`);
   renderCards();
   renderSettings();
@@ -1407,6 +2710,433 @@ function resetColLayout() {
   log('Column layout reset to file order');
   renderCards();
   renderSettings();
+}
+
+/* ---------------------- Portal lists (no links at all) -------------------- */
+/* The editor is one control mounted twice: the prompt offered when a list turns
+   out to have no link-shaped value anywhere, and the same field in the settings
+   panel for changing your mind later. `ns` namespaces the field ids so both can
+   be in the DOM at once. */
+const LS_PORTAL_DECLINED = 'turnstone-portal-declined';
+
+/** The columns a template may name — header names, or positions when there is no
+    header row to name. */
+function templateColumns() {
+  return templateColumnsFor(state.data, state.hasHeader);
+}
+
+/** The same naming rule for any matrix, not just the loaded one — the share-link
+    builder previews a list that is not loaded yet, and its chips must name columns
+    exactly as the live editor would name them. */
+function templateColumnsFor(rows, hasHeader) {
+  const data = rows || [];
+  const header = hasHeader ? (data[0] || []) : [];
+  const width = data.reduce((m, r) => Math.max(m, r.length), 0);
+  const out = [];
+  for (let c = 0; c < width; c++) {
+    const name = String(header[c] ?? '').trim();
+    out.push(name ? { label: name, field: name } : { label: `column ${c + 1}`, field: String(c) });
+  }
+  return out;
+}
+
+/** The row a preview should be built from: the first row that looks like data. */
+function firstBodyRow() {
+  return state.data[state.hasHeader ? 1 : 0] || state.data[0] || [];
+}
+
+/** Wire the input, the column chips and the live preview for one editor. Calls
+    `onCommit(value)` on every keystroke, so the cards follow along as you type. */
+function wirePortalEditor(ns, { onCommit } = {}) {
+  const input = document.getElementById(`${ns}-input`);
+  const chips = document.getElementById(`${ns}-chips`);
+  const preview = document.getElementById(`${ns}-preview`);
+  if (!input || !chips || !preview) return;
+  chips.innerHTML = '';
+  for (const col of templateColumns()) {
+    const b = document.createElement('button');
+    b.className = 'pchip';
+    b.type = 'button';
+    b.textContent = `{${col.label}}`;
+    b.title = `Insert {${col.field}}`;
+    b.onclick = () => {
+      const at = input.selectionStart ?? input.value.length;
+      input.value = input.value.slice(0, at) + `{${col.field}}` + input.value.slice(input.selectionEnd ?? at);
+      input.focus();
+      input.selectionStart = input.selectionEnd = at + col.field.length + 2;
+      refresh();
+    };
+    chips.appendChild(b);
+  }
+  const refresh = () => {
+    const value = input.value.trim();
+    const problem = templateProblem(value, state.hasHeader ? (state.data[0] || []) : []);
+    const composed = value ? applyUrlTemplate(value, firstBodyRow(), state.hasHeader ? (state.data[0] || []) : []) : '';
+    input.classList.toggle('bad', !!problem);
+    preview.className = 'portal-preview' + (problem ? ' bad' : '');
+    if (problem) preview.textContent = problem;
+    else if (!value) preview.textContent = 'No template — each card links to its own URL column, as before.';
+    else if (!composed) preview.innerHTML = 'Template is valid, but the first row has nothing in the column(s) it names — <b>that row will have no link</b>.';
+    else preview.innerHTML = `First card would open: <b>${esc(composed)}</b>`;
+    if (onCommit) onCommit(value);
+  };
+  input.oninput = refresh;
+  refresh();
+  return refresh;
+}
+
+/** Apply a portal template to the live list, remembering it for this header. */
+function applyPortalTemplate(value) {
+  const key = templateKeyFor(state.data, state.hasHeader);
+  state.linkTemplate = String(value || '').trim();
+  rememberTemplate(key, state.linkTemplate);
+  if (state.linkTemplate) {
+    const host = portalLabel(state.linkTemplate);
+    log(`Portal template applied (${host}); ${templateFields(state.linkTemplate).length} per-row field(s)`);
+    toast(`Links are now built from your rows — ${host}`, 'success');
+  } else log('Portal template cleared — back to the file\'s own link column');
+  markDirty();
+  renderCards();
+}
+
+function portalDeclined(key) {
+  try { return (JSON.parse(localStorage.getItem(LS_PORTAL_DECLINED) || '[]') || []).includes(key); }
+  catch (e) { return false; }
+}
+function declinePortal(key) {
+  if (!key) return;
+  try {
+    const list = JSON.parse(localStorage.getItem(LS_PORTAL_DECLINED) || '[]') || [];
+    if (!list.includes(key)) list.push(key);
+    localStorage.setItem(LS_PORTAL_DECLINED, JSON.stringify(list));
+  } catch (e) { warn('Could not remember that you declined the portal prompt', e); }
+}
+
+/** Offer the portal prompt once, for a list that has no links anywhere. */
+function maybeOfferPortalSetup() {
+  if (!state.linkless || state.linkTemplate || !cardCount()) return;
+  if (modalOpen('#mode-picker')) { log('Portal prompt deferred — another modal is open'); return; }
+  const key = templateKeyFor(state.data, state.hasHeader);
+  if (!key) { log('Portal list with no header row — no key to remember a decline against, offering the prompt each load'); }
+  else if (portalDeclined(key)) { log('Portal prompt already declined for this header — staying quiet'); return; }
+  showPortalSetup();
+}
+
+function showPortalSetup() {
+  log('Showing portal setup — this list has no link-shaped value in any column');
+  const overlay = document.createElement('div');
+  overlay.id = 'portal-modal';
+  overlay.innerHTML = `
+    <div class="modal-box" style="width:min(560px,92vw)">
+      <h3 class="modal-title">This list has no links</h3>
+      <p class="modal-sub">Not one cell in it is a page, an address or a number — which usually means the work
+      happens in one portal and each row is a <em>key</em> into it. Give Turnstone the portal address and it will
+      build the link for every row; use <code>{Column name}</code> anywhere the row's own values belong.</p>
+      ${portalEditorMarkup('portal')}
+      <div class="srow">
+        <button class="btn primary" id="portal-use">Use this portal</button>
+        <button class="modal-cancel" id="portal-skip">Keep it link-free</button>
+      </div>
+    </div>`;
+  mountPoint().appendChild(overlay);
+  const input = overlay.querySelector('#portal-input');
+  const refresh = wirePortalEditor('portal', { onCommit: null });
+  const close = () => overlay.remove();
+  overlay.querySelector('#portal-use').onclick = () => {
+    applyPortalTemplate(input.value);
+    if (!state.linkTemplate) { toast('Enter a portal URL first', 'error'); return; }
+    close();
+  };
+  overlay.querySelector('#portal-skip').onclick = () => {
+    declinePortal(templateKeyFor(state.data, state.hasHeader));
+    log('Portal prompt declined — cards stay link-free');
+    close();
+  };
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') overlay.querySelector('#portal-use').click(); });
+  input.focus();
+  if (refresh) refresh();
+}
+
+function portalEditorMarkup(ns) {
+  return `<div class="portal-editor">
+    <input type="text" id="${ns}-input" class="portal-input" spellcheck="false" autocomplete="off"
+           placeholder="https://portal.example.com/ticket/{Ticket ID}" value="${esc(state.linkTemplate)}">
+    <div class="pchips" id="${ns}-chips"></div>
+    <p class="portal-preview" id="${ns}-preview"></p>
+  </div>`;
+}
+
+/* -------------------------- Build a share link --------------------------- */
+/* The other half of the paste path. Paste takes a list *from* somewhere; this
+   hands one *to* somewhere as a single URL, which is the thing an agent needs — it
+   has found or generated a list and wants to give you a workspace to work it in.
+
+   The preview is the real parser rather than an approximation: the panel reports
+   what the link will open because it runs the same code the link runs on arrival.
+   That is the only way to be sure a link is right before sending it to somebody. */
+function showBuildLink() {
+  /* Prefilled from the list you are working on, because "send this to Sam" is the
+     common case. With nothing loaded the placeholder does the teaching. */
+  const prefilled = cardCount() > 0
+    ? Papa.unparse(buildExportMatrix(), { delimiter: state.ext === 'tsv' ? '\t' : ',' })
+    : '';
+  const overlay = document.createElement('div');
+  overlay.id = 'build-modal';
+  overlay.innerHTML = `
+    <div class="modal-box" style="width:min(760px,94vw)">
+      <h3 class="modal-title">Build a share link</h3>
+      <p class="modal-sub">The list goes <b>inside the link</b> — no upload, no account, nothing to host.
+        Whoever opens it gets these rows as a workspace.</p>
+      <label class="bl-label" for="bl-text">The list</label>
+      <textarea id="bl-text" class="portal-input bl-area" spellcheck="false"
+        placeholder="Name,URL,Status,Notes&#10;Apple Newsroom,https://www.apple.com/newsroom/,incomplete,Q3 earnings&#10;BBC Homepage,https://www.bbc.com/,complete,"></textarea>
+      <p class="bl-status" id="bl-status"></p>
+      <label class="bl-label" for="bl-link">Portal link template (optional — for a list with no links of its own)</label>
+      <input type="text" id="bl-link" class="portal-input" spellcheck="false" autocomplete="off"
+        placeholder="https://portal.example.com/ticket/{Ticket}">
+      <div class="pchips" id="bl-chips"></div>
+      <label class="bl-label" for="bl-name">Name this workspace (optional)</label>
+      <input type="text" id="bl-name" class="portal-input" spellcheck="false" autocomplete="off" placeholder="Q3 approvals">
+      <label class="bl-label" for="bl-url">The link</label>
+      <textarea id="bl-url" class="portal-input bl-url" readonly></textarea>
+      <p class="bl-size" id="bl-size"></p>
+      <div class="srow">
+        <button class="btn primary" id="bl-copy">Copy link</button>
+        <button class="btn" id="bl-open">Open it here</button>
+        <button class="modal-cancel" id="bl-close">Close</button>
+      </div>
+    </div>`;
+  mountPoint().appendChild(overlay);
+
+  const ta = overlay.querySelector('#bl-text');
+  const urlBox = overlay.querySelector('#bl-url');
+  const status = overlay.querySelector('#bl-status');
+  const sizeLine = overlay.querySelector('#bl-size');
+  const chips = overlay.querySelector('#bl-chips');
+  const tplInput = overlay.querySelector('#bl-link');
+  const nameInput = overlay.querySelector('#bl-name');
+  ta.value = prefilled;
+  tplInput.value = state.linkTemplate || '';
+
+  let built = null;
+  let seq = 0;
+  async function refresh() {
+    const mine = ++seq;                       // a stale async run must not paint
+    const text = ta.value;
+    if (!text.trim()) {
+      status.textContent = 'Paste a list above, or open a file first and this panel starts from it.';
+      urlBox.value = ''; sizeLine.textContent = ''; chips.innerHTML = '';
+      built = null;
+      return;
+    }
+    let rows = [], format = 'csv';
+    try {
+      const parsed = await pasteToMatrix({ text, kind: 'text' });
+      rows = parsed.rows; format = parsed.format;
+    } catch (e) {
+      if (mine !== seq) return;
+      status.textContent = `That is not a list yet: ${e.message}`;
+      urlBox.value = ''; built = null;
+      return;
+    }
+    if (mine !== seq) return;
+    const a = analyzeMatrix(rows);
+    const tasks = rows.length - (a.hasHeader ? 1 : 0);
+    status.innerHTML = `Read as <b>${esc(formatLabel(format))}</b> — <b>${tasks}</b> task${tasks === 1 ? '' : 's'},
+      <b>${a.width}</b> column${a.width === 1 ? '' : 's'}${a.hasHeader ? ', header row detected' : ', no header row'}${a.linkless ? ' — no links anywhere, so a portal template will be needed' : ''}`;
+
+    /* The columns this list actually has, as chips: a template is impossible to
+       guess at, and clicking one beats typing braces from memory. */
+    chips.innerHTML = templateColumnsFor(rows, a.hasHeader)
+      .map(c => `<button class="pchip" data-f="${esc(c.field)}" title="${esc(c.label)}">{${esc(c.field)}}</button>`).join('');
+    chips.querySelectorAll('.pchip').forEach(b => b.addEventListener('click', () => {
+      tplInput.value += `{${b.dataset.f}}`;
+      tplInput.focus();
+      refresh();
+    }));
+
+    const params = {};
+    if (tplInput.value.trim()) params.link = tplInput.value.trim();
+    if (nameInput.value.trim()) params.name = nameInput.value.trim();
+    try {
+      const b = await buildInlineLink(text, { params });
+      if (mine !== seq) return;
+      built = b;
+      urlBox.value = b.url;
+      const kb = Math.round(b.bytes / 1024);
+      sizeLine.className = 'bl-size' + (b.warning ? ' bad' : '');
+      sizeLine.textContent = `${b.url.length} characters · carries ${b.bytes} bytes of list (${kb} KB), `
+        + `${b.encoding === 'zdata' ? 'compressed' : 'as plain text'}`
+        + `${b.warning ? ` — ${b.warning}` : ''}`;
+    } catch (e) {
+      if (mine !== seq) return;
+      built = null; urlBox.value = '';
+      sizeLine.textContent = e.message;
+      sizeLine.className = 'bl-size bad';
+    }
+  }
+
+  let timer = 0;
+  const kick = () => { clearTimeout(timer); timer = setTimeout(refresh, 160); };
+  ta.addEventListener('input', kick);
+  tplInput.addEventListener('input', kick);
+  nameInput.addEventListener('input', kick);
+  overlay.querySelector('#bl-copy').addEventListener('click', async () => {
+    if (!built) return;
+    const okCopied = await copyText(built.url, 'workspace link');
+    toast(okCopied ? 'Link copied — it carries the list itself' : 'Copy failed — select the link text and copy it by hand', okCopied ? 'success' : 'error');
+  });
+  overlay.querySelector('#bl-open').addEventListener('click', () => {
+    if (!built) return;
+    log('Opening the link just built (same tab) to check it');
+    overlay.remove();
+    location.hash = built.url.slice(built.url.indexOf('#'));   // hashchange loads it
+  });
+  overlay.querySelector('#bl-close').addEventListener('click', () => { log('Share-link builder closed'); overlay.remove(); });
+  overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') overlay.remove(); });
+  ta.focus();
+  refresh();
+}
+
+/* ------------------------------ Paste a list ----------------------------- */
+/* Copying a table out of a portal, a mail client or a spreadsheet and pasting it
+   straight into Turnstone is the shortest path there is — no file, no download,
+   no export button to hunt for. The clipboard carries both `text/html` (the real
+   markup, multi-line cells and all) and `text/plain` (tab-separated), and the
+   first is strictly better when it holds a table, so it wins.
+
+   Nothing is loaded without confirmation: a paste that turns out to be a sentence
+   must never silently replace the list you are working through. */
+const PASTE_MIN_ROWS = 2;
+function isEditableTarget(t) {
+  if (!t || !t.tagName) return false;
+  const tag = t.tagName.toLowerCase();
+  return tag === 'input' || tag === 'textarea' || tag === 'select' || t.isContentEditable === true;
+}
+
+/** The best list the clipboard is offering, or null. */
+function clipboardListText(dt) {
+  const html = dt.getData('text/html') || '';
+  if (/<table[\s>]/i.test(html)) return { text: html, kind: 'html', why: 'an HTML table on the clipboard' };
+  const text = dt.getData('text/plain') || '';
+  if (!text.trim()) return null;
+  if (/<table[\s>]/i.test(text)) return { text, kind: 'html', why: 'a table pasted as markup' };
+  return { text, kind: 'text', why: 'plain text on the clipboard' };
+}
+
+/** Parse pasted text into a matrix, or throw. `force` names the format explicitly,
+    which the workspace-link path needs: a link has no filename for the extension
+    hint to read, so `&format=md` is how a caller says what it is holding. */
+async function pasteToMatrix(clip, force = '') {
+  if (force) {
+    const buf = new TextEncoder().encode(clip.text).buffer;
+    const det = detectFormat(buf, `inline.${force}`, '');
+    const { rows } = await parseDetected(buf, det, null, { allowLinkFallback: true });
+    return { rows, format: det.format };
+  }
+  if (clip.kind === 'html') {
+    const buf = new TextEncoder().encode(clip.text).buffer;
+    const det = detectFormat(buf, '', 'text/html');
+    const { rows } = await parseDetected(buf, det, null, { allowLinkFallback: true });
+    return { rows, format: det.format };
+  }
+  const head = clip.text.slice(0, 4096);
+  const sniffed = sniffTextFormat(head);
+  const format = sniffed === 'md' ? 'md' : sniffed === 'json' ? 'json' : /\t/.test(clip.text) ? 'tsv' : 'csv';
+  const rows = format === 'md' ? parseMarkdownText(clip.text)
+    : format === 'json' ? parseJsonText(clip.text)
+    : parseDelimitedText(clip.text, format);
+  return { rows, format };
+}
+
+/** Build the confirmation dialog: what was understood, shown as a table. */
+function showPastePreview(rows, format, why) {
+  const width = rows.reduce((m, r) => Math.max(m, r.length), 0);
+  const body = rows.filter(r => r.some(c => String(c ?? '').trim())).length;
+  const head = rows.slice(0, 6);
+  log(`Paste candidate: ${why} → ${formatLabel(format)}, ${body} row(s) × ${width} col(s)`);
+  const overlay = document.createElement('div');
+  overlay.id = 'paste-modal';
+  const cell = (v) => `<td title="${esc(v)}">${esc(v)}</td>`;
+  overlay.innerHTML = `
+    <div class="modal-box" style="width:min(720px,94vw)">
+      <h3 class="modal-title">Load this pasted list?</h3>
+      <p class="modal-sub">Read as <b>${formatLabel(format)}</b> — ${body} row${body === 1 ? '' : 's'} × ${width} column${width === 1 ? '' : 's'}.</p>
+      <div class="paste-preview"><table>
+        <tbody>${head.map(r => `<tr>${r.map(c => cell(String(c ?? ''))).join('')}</tr>`).join('')}</tbody>
+      </table></div>
+      <div class="srow">
+        <button class="btn primary" id="paste-load">Load ${body} row${body === 1 ? '' : 's'}</button>
+        <button class="modal-cancel" id="paste-cancel">Not this</button>
+      </div>
+    </div>`;
+  mountPoint().appendChild(overlay);
+  overlay.querySelector('#paste-load').onclick = () => {
+    overlay.remove();
+    loadMatrix(rows, { name: 'Pasted list', ext: format, mode: 'fallback' });
+    scheduleSave(0);
+  };
+  overlay.querySelector('#paste-cancel').onclick = () => { log('Paste discarded'); overlay.remove(); };
+  overlay.querySelector('#paste-load').focus();
+}
+
+/** Handle a paste anywhere in the app that is not a text field. */
+async function onPaste(e) {
+  if (isEditableTarget(e.target)) return;                      // typing, not loading
+  if (modalOpen('#mode-picker, #portal-modal, #paste-modal, #sheet-picker')) return;
+  const dt = e.clipboardData;
+  if (!dt) return;
+  const files = [...(dt.files || [])];
+  if (files.length) { e.preventDefault(); log(`Paste carried ${files.length} file(s)`); await handleDroppedFiles(dt); return; }
+  const clip = clipboardListText(dt);
+  if (!clip) return;
+  let parsed;
+  try { parsed = await pasteToMatrix(clip); }
+  catch (err2) {
+    /* An image or a screenshot lands here: there is no OCR in this build, and a
+       silently ignored paste would look like a bug. Say so plainly instead. */
+    log('Paste could not be read as a list:', err2.message);
+    toast(`That paste is not a list — ${err2.message}`, 'error');
+    return;
+  }
+  const body = parsed.rows.filter(r => r.some(c => String(c ?? '').trim())).length;
+  /* `plausibleTable`, not `plausibleList`: a paragraph split on its commas is
+     shaped like a table to a lenient test, and it must not be allowed to replace
+     the list the user is working through. */
+  if (body < PASTE_MIN_ROWS || !plausibleTable(parsed.rows)) {
+    if (clip.text.trim().split(/\r?\n/).filter(l => l.trim()).length >= 3) {
+      log(`Paste had ${body} row(s) and is not list-shaped — ignored`);
+      toast('That paste does not look like a list — copy a table from a spreadsheet or portal first', 'error');
+    }
+    return;
+  }
+  e.preventDefault();
+  showPastePreview(parsed.rows, parsed.format, clip.why);
+}
+
+/** Menu action: read the clipboard directly when the browser allows it. */
+async function pasteFromClipboard() {
+  if (!navigator.clipboard || !navigator.clipboard.read) {
+    log('Clipboard read API unavailable — asking the user to paste instead');
+    toast('Press Ctrl+V (⌘V on a Mac) anywhere in Turnstone to paste your list', 'success');
+    return;
+  }
+  try {
+    const items = await navigator.clipboard.read();
+    for (const item of items) {
+      const htmlType = item.types.find(t => t === 'text/html');
+      const textType = item.types.find(t => t === 'text/plain');
+      const blob = await item.getType(htmlType || textType);
+      const text = await blob.text();
+      const clip = { text, kind: htmlType ? 'html' : 'text' };
+      const parsed = await pasteToMatrix(clip);
+      if (plausibleTable(parsed.rows)) { showPastePreview(parsed.rows, parsed.format, 'the clipboard'); return; }
+    }
+    toast('Nothing list-shaped on the clipboard', 'error');
+  } catch (e) {
+    warn('Clipboard read was refused', e);
+    toast('Press Ctrl+V (⌘V on a Mac) anywhere in Turnstone to paste your list', 'success');
+  }
 }
 
 /** Read a File/Blob (picked locally) and load it. */
@@ -1484,12 +3214,14 @@ async function readSessionMetaFor(name) {
 /* --------------------------- File acquisition ---------------------------- */
 const FS_PICK_OPTS = {
   types: [{
-    description: 'Link list (CSV, TSV, XLSX, XLS, ODS, JSON, HTML, XML)',
+    description: 'Link list (CSV, TSV, XLSX, XLS, ODS, DOCX, EML, JSON, HTML, XML)',
     accept: {
       'text/csv': ['.csv', '.tsv', '.tab', '.txt'],
       'text/plain': ['.csv', '.tsv', '.txt'],
       'application/json': ['.json', '.jsonl', '.ndjson'],
       'text/html': ['.html', '.htm'],
+      'message/rfc822': ['.eml', '.mht', '.mhtml'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
       'application/xml': ['.xml', '.rss', '.atom', '.opml'],
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx', '.xlsm'],
       'application/vnd.ms-excel': ['.xls', '.xlsb'],
@@ -1517,6 +3249,36 @@ async function openLocalFile() {
     log('File System Access API unavailable → <input type=file> fallback');
     els.fileInput.click();
   }
+}
+
+/** Open a workspace link — a list carried in the URL itself, with nothing to fetch.
+ *
+ * This is the path an agent's link takes: it reads the payload, hands the text to
+ * the same parser a paste goes through, and loads the matrix. The bar for accepting
+ * it is deliberately the *file* bar rather than the paste bar — a link is an explicit
+ * hand-off, so it is opened rather than questioned, and the load toast reports what
+ * was read. Only a payload with no list in it at all is refused.
+ */
+async function loadInlineWorkspace(raw) {
+  const dec = await decodeInlineList(raw);
+  loadedInlineKey = String(raw.zdata || raw.data || '');
+  log(`Workspace link: ${dec.encoding}, ${dec.bytes} bytes of list decoded`);
+  if (dec.bytes > INLINE_WARN_BYTES) warn(`Workspace link carries ${Math.round(dec.bytes / 1024)} KB — a truncated share is the usual way this fails`);
+  const { rows, format } = await pasteToMatrix(
+    { text: dec.text, kind: 'text', why: 'a workspace link' },
+    String(raw.format || '').trim().toLowerCase(),
+  );
+  const filled = rows.filter(r => r.some(c => String(c ?? '').trim()));
+  if (filled.length < 2) {
+    throw new Error('it decoded, but there was no list in it — a link cut short in transit looks like this');
+  }
+  const name = String(raw.name || '').trim();
+  loadMatrix(rows, { name: name || 'Shared workspace', ext: format, mode: 'fallback' });
+  /* cardCount(), not the row count: `filled` includes the header row, and reporting
+     "11 rows" for a ten-task workspace is exactly the kind of off-by-one that makes
+     a person distrust the number. */
+  toast(`Opened a shared workspace — ${cardCount()} task${cardCount() === 1 ? '' : 's'} read from the link`, 'success');
+  scheduleSave(0);
 }
 
 /** Load a remote file from ?file=/?url= param or the welcome-panel input. */
@@ -1614,7 +3376,7 @@ function pickSheetName(buf, current) {
         ${names.map(n => `<button data-sheet="${esc(n)}" class="sheet-opt${n === current ? ' current' : ''}">${esc(n)}</button>`).join('')}
         <button id="sheet-cancel" class="modal-cancel">Cancel</button>
       </div>`;
-    document.body.appendChild(overlay);
+    mountPoint().appendChild(overlay);
     overlay.querySelector('#sheet-cancel').onclick = () => { overlay.remove(); resolve(null); };
     overlay.querySelectorAll('button[data-sheet]').forEach(b => { b.onclick = () => { const s = b.dataset.sheet; overlay.remove(); log('User picked sheet:', s); resolve(s); }; });
   });
@@ -1649,7 +3411,7 @@ async function restoreLastFile() {
       const sess = await idbGet('session', 'session');
       if (!sess || !sess.data) { toast('No saved browser session found', 'error'); return; }
       log('Restoring fallback session from IndexedDB:', sess.name);
-      loadMatrix(sess.data, { name: sess.name, ext: sess.ext || 'csv', mode: 'fallback', sheetName: sess.sheetName, status: sess.status, notes: sess.notes, sourceUrl: sess.sourceUrl || null });
+      loadMatrix(sess.data, { name: sess.name, ext: sess.ext || 'csv', mode: 'fallback', sheetName: sess.sheetName, status: sess.status, notes: sess.notes, sourceUrl: sess.sourceUrl || null, linkTemplate: sess.linkTemplate || '' });
       state.isDirty = true; // still needs exporting
       updateSaveIndicator();
       scheduleSave(0);
@@ -1702,12 +3464,12 @@ function updateChrome() {
   const has = cardCount() > 0;
   // Sidebar header: file name + save state
   els.headName.innerHTML = state.name
-    ? `${esc(state.name)} <span class="head-mode">· ${modeLabels[state.mode] || ''} · ${state.ext.toUpperCase()}</span>`
+    ? `${esc(state.name)} <span class="head-mode">· ${modeLabels[state.mode] || ''} · ${state.ext.toUpperCase()}${state.linkTemplate ? ' · portal links' : ''}</span>`
     : '<span class="no-file">No file loaded</span>';
   els.headName.title = state.sourceUrl ? `${state.name} — from ${state.sourceUrl}` : (state.name || '');
   // Menu item availability
   els.miClose.disabled = !state.mode;
-  els.miLink.disabled = !state.sourceUrl;
+  els.miLink.disabled = !state.sourceUrl && !state.mode;
   els.miExportCsv.disabled = !has;
   els.miExportXlsx.disabled = !has || !HAS_XLSX_WRITE;
   els.miExportXlsx.hidden = !HAS_XLSX_WRITE;   // no workbook writer → offer only what works
@@ -1767,6 +3529,21 @@ function nextIncompleteRow(afterRow) {
   return -1;
 }
 
+/* The one place that answers "where does row i go?". A cell whose value is a
+   page, an address or a number answers for itself; a list with a portal template
+   gets its URL composed from the row. Everything downstream — the card, the open
+   modes, ?open=1 — reads this, so all of them agree by construction. */
+function rowLink(i) {
+  const row = state.data[i + (state.hasHeader ? 1 : 0)] || [];
+  if (state.linkTemplate) {
+    const composed = applyUrlTemplate(state.linkTemplate, row, state.data[0] || []);
+    if (composed) return { href: composed, kind: 'url', value: composed, composed: true };
+  }
+  const raw = String(row[state.urlCol] ?? '').trim();
+  const kind = linkKindOf(raw);
+  return kind ? { href: linkHrefOf(raw), kind, value: raw, composed: false } : null;
+}
+
 function renderCards() {
   const q = state.search.trim().toLowerCase();
   const total = cardCount();
@@ -1784,16 +3561,41 @@ function renderCards() {
     const row = state.data[i + (state.hasHeader ? 1 : 0)] || [];
     const raw = String(row[c] ?? '').trim();
     if (!raw) return ''; // no value → no row, no clutter
+    /* The link column already has a home on the card, so don't repeat it here.
+       Every *other* cell that is an address or a number becomes a real link, so
+       MailLayer and PhoneLayer pick the click up wherever it appears — no need
+       to flag those columns in Settings first. */
+    const kind = c === state.urlCol ? null : linkKindOf(raw);
+    const body = kind
+      ? `<a class="cell-link" href="${esc(linkHrefOf(raw))}"${kind === 'url' ? ' target="_blank" rel="noopener"' : layerAnchorAttrs(kind)}>${esc(raw)}</a>`
+      : esc(raw);
     return `<div class="col-row">
       <span class="ck">${esc(colLabel(c))}</span>
-      <span class="cv">${esc(raw)}</span>
+      <span class="cv">${body}</span>
       ${copyBtn(raw, colLabel(c), `${i}:${c}`)}
     </div>`;
   };
 
   for (const i of sortedIndices()) {
     const row = state.data[i + (state.hasHeader ? 1 : 0)] || [];
-    const url = String(row[state.urlCol] || '').trim();
+    const link = rowLink(i);
+    const url = link ? link.value : '';
+    /* Where the primary link goes depends on what the value *is*: a page opens in
+       a real tab, an address goes to the MailLayer composer, a number to the
+       PhoneLayer provider picker. */
+    const urlKind = link ? link.kind : null;
+    const urlHref = link ? link.href : '';
+    const urlAttrs = (urlKind === 'url' ? ' target="_blank" rel="noopener"' : '') + layerAnchorAttrs(urlKind);
+    const urlGlyph = urlKind === 'email' ? '✉' : urlKind === 'phone' ? '☎' : '↗';
+    /* A composed link is labeled with the portal it came from when the template
+       is the same for every row, and with the composed URL when the row's own
+       values are what make it different. */
+    const urlShown = link && link.composed && !templateFields(state.linkTemplate).length ? portalLabel(state.linkTemplate) : url;
+    const urlHint = urlKind === 'email' ? `Compose an email to ${url}`
+      : urlKind === 'phone' ? `Call or text ${url}`
+      : link && link.composed ? `Open this row in ${portalLabel(state.linkTemplate)}`
+      : urlKind === 'url' ? 'Open in new browser tab (always a real tab)'
+      : 'Open this link';
     const name = String(state.nameCol >= 0 ? row[state.nameCol] : '') || url;
     const status = state.status[i] || 'incomplete';
     const notes = state.notes[i] || '';
@@ -1816,10 +3618,10 @@ function renderCards() {
       <div class="card-top">
         <button class="card-title" title="Open this link (your chosen mode) + show all columns">${highlight(name, state.search.trim())}</button>
         ${copyBtn(name, 'name', `${i}:name`)}
-        <a class="icon" href="${esc(url)}" target="_blank" rel="noopener" title="Open in new browser tab (always a real tab)">↗</a>
+        ${url ? `<a class="icon" href="${esc(urlHref)}"${urlAttrs} title="${esc(urlHint)}">${urlGlyph}</a>` : ''}
       </div>
       <div class="card-url">
-        <a href="${esc(url)}" target="_blank" rel="noopener" title="${esc(url)}">${highlight(url, state.search.trim())}</a>
+        ${url ? `<a href="${esc(urlHref)}"${urlAttrs} title="${esc(urlHint)}">${highlight(urlShown, state.search.trim())}</a>` : ''}
         ${copyBtn(url, 'URL', `${i}:url`)}
       </div>
       ${colRows}
@@ -1893,8 +3695,9 @@ function setOpenMode(m, announce = true) {
 
 /** Open a task URL according to the current mode. */
 function openUrlFor(i) {
-  const url = String((state.data[i + (state.hasHeader ? 1 : 0)] || [])[state.urlCol] || '').trim();
-  if (!url) { warn(`openUrlFor(${i}): no URL in row`); return; }
+  const link = rowLink(i);
+  const url = link ? link.href : '';
+  if (!url) { warn(`openUrlFor(${i}): no URL in row (and no portal template composed one)`); return; }
   const mode = getOpenMode();
   log(`Opening row ${i} as ${mode}: ${url}`);
   if (mode === 'tabs') { openInIframe(url, i); return; }
@@ -2023,8 +3826,22 @@ async function saveNow() {
       state.lastSavedAt = Date.now(); state.lastSavedWhere = 'to file';
       log(`Wrote file "${state.name}" in ${(performance.now() - t0).toFixed(0)}ms`);
     } else {
-      await persistSessionSnapshot();
-      state.isDirty = state.mode !== 'fs'; // fallback stays dirty until exported
+      const snapshotted = await persistSessionSnapshot();
+      /* Saved is saved — including in fallback mode, where "saved" means the
+         snapshot in browser storage. This used to stay dirty on purpose, to keep
+         nudging the user to export. It made the status line say "● unsaved" about
+         work that had just been written, and — worse — it armed the beforeunload
+         guard permanently, so **every reload and every tab close** raised a
+         "you have unexported changes" confirm over a list that was already saved.
+         A prompt that always fires is one people learn to click through, which is
+         how the guard stops protecting the one case it exists for. The header still
+         says "fallback: browser storage", and the import toast still says so. */
+      /* …and if the snapshot did not land, nothing is saved: stay dirty, so the
+         status line and the unload guard both keep telling the truth. A build with
+         no durable storage at all (the bookmarklet's throwaway origin) therefore
+         keeps its guard armed, which is exactly right there. */
+      state.isDirty = !snapshotted;
+      if (!snapshotted) warn('Snapshot did not persist — this build has nowhere durable to put it; export to keep the work');
       state.lastSavedAt = Date.now(); state.lastSavedWhere = 'to browser storage';
       log(`Saved session snapshot in ${(performance.now() - t0).toFixed(0)}ms`);
     }
@@ -2092,11 +3909,15 @@ async function persistSessionSnapshot() {
   try {
     await idbPut('session', {
       key: 'session', name: state.name, ext: state.ext, sheetName: state.sheetName,
-      data: state.data, status: state.status, notes: state.notes, sourceUrl: state.sourceUrl, ts: Date.now(),
+      data: state.data, status: state.status, notes: state.notes, sourceUrl: state.sourceUrl,
+      linkTemplate: state.linkTemplate,   // a headerless portal list has no signature to remember it against
+      ts: Date.now(),
     });
     log(`Session snapshot persisted (${cardCount()} cards)`);
+    return true;
   } catch (e) {
     err('Session snapshot failed (file too large for IndexedDB?)', e);
+    return false;   // the caller must not report "saved" for a snapshot that did not land
   }
 }
 
@@ -2267,12 +4088,34 @@ document.addEventListener('drop', async (e) => {
 window.addEventListener('blur', () => els.dropzone.classList.remove('over'));
 els.miRestore.addEventListener('click', () => { closeMenu(); restoreLastFile(); });
 els.miClose.addEventListener('click', () => { closeMenu(); closeCurrentFile(); });
+/* Two kinds of share link, and the difference is where the list lives. A file we
+   fetched can be pointed at (`?file=`), which is the smaller link. Anything else —
+   a local pick, a dropped file, a paste, a database hand-off — has no address, so
+   the list itself goes in the fragment (`#zdata=`), carrying the statuses and notes
+   entered so far. Both open the same workspace; the second one needs no server at all. */
+els.miBuild.addEventListener('click', () => { closeMenu(); showBuildLink(); });
 els.miLink.addEventListener('click', async () => {
   closeMenu();
-  if (!state.sourceUrl) return;
-  const link = `${location.origin}${location.pathname}?file=${encodeURIComponent(state.sourceUrl)}`;
-  await copyText(link, 'shareable ?file= link');
-  toast('Link copied — anyone opening it gets this same file', 'success');
+  if (state.sourceUrl) {
+    const link = `${location.origin}${location.pathname}?file=${encodeURIComponent(state.sourceUrl)}`;
+    await copyText(link, 'shareable ?file= link');
+    toast('Link copied — anyone opening it gets this same file', 'success');
+    return;
+  }
+  if (!state.mode) return;
+  try {
+    const matrix = buildExportMatrix();
+    const text = Papa.unparse(matrix, { delimiter: state.ext === 'tsv' ? '\t' : ',' });
+    const params = {};
+    if (state.linkTemplate) params.link = state.linkTemplate;
+    const built = await buildInlineLink(text, { params });
+    await copyText(built.url, 'workspace link');
+    log(`Workspace link copied (${built.encoding}, ${built.bytes} bytes of list)`);
+    toast(built.warning || 'Link copied — it carries the list, your notes and your ticks', built.warning ? 'warn' : 'success');
+  } catch (e) {
+    err('Could not build a workspace link', e);
+    toast(`Could not build a link: ${e.message}`, 'error');
+  }
 });
 els.menu.querySelectorAll('.mode-item').forEach(b => b.addEventListener('click', () => { closeMenu(); setOpenMode(b.dataset.mode); }));
 els.menu.querySelector('#mi-mode-help')?.addEventListener('click', () => { closeMenu(); showModePicker(false); });
@@ -2302,6 +4145,13 @@ els.miAutoAdvance.addEventListener('click', () => {
   renderAutoMenu();
 });
 els.miColumns.addEventListener('click', () => { closeMenu(); openSettings(); });
+els.miPortal.addEventListener('click', () => {
+  closeMenu();
+  if (!cardCount()) { toast('Load a list first — the template is built from its columns', 'error'); return; }
+  showPortalSetup();
+});
+els.miPaste.addEventListener('click', () => { closeMenu(); pasteFromClipboard(); });
+document.addEventListener('paste', onPaste, true);
 els.miExportCsv.addEventListener('click', () => { closeMenu(); exportFile('csv'); });
 els.miExportXlsx.addEventListener('click', () => { closeMenu(); exportFile('xlsx'); });
 els.miTheme.addEventListener('click', () => { closeMenu(); toggleThemeFromMenu(); });
@@ -2326,6 +4176,8 @@ els.presetName.addEventListener('keydown', (e) => { if (e.key === 'Enter') saveP
 els.btnColsReset.addEventListener('click', resetColLayout);
 
 els.settingsCols.addEventListener('change', (e) => {
+  const picker = e.target.closest('select[data-colrole]');
+  if (picker) { setColumnRole(+picker.dataset.colrole, picker.value); return; }
   const cb = e.target.closest('input[data-colshow]');
   if (!cb) return;
   const c = +cb.dataset.colshow;
@@ -2541,9 +4393,46 @@ function closeCurrentFile() {
   toast('File closed — pick or paste another when ready');
 }
 
+/* --------------------------- Desktop-only gate ---------------------------- */
+/* Turnstone is built for desktop: native file pickers, in-place save-back,
+   drag-and-drop and the multi-column workspace all assume a pointer and a real
+   window. A phone or tablet (a coarse, non-hovering primary pointer) gets an
+   honest, dismissible notice instead of a silently broken app. Touch laptops
+   keep a fine primary pointer and pass; the extension's side panel is a desktop
+   window and passes; a merely narrow desktop window passes too, since the
+   layout is designed to work narrow. */
+const MOBILE_POINTER_QUERY = '(pointer: coarse) and (hover: none)';
+let gateDismissed = false;
+const isMobileLike = () => !!(window.matchMedia && window.matchMedia(MOBILE_POINTER_QUERY).matches);
+
+function syncMobileGate() {
+  const show = isMobileLike() && !gateDismissed;
+  if (els.gate.hidden === !show) return;   // nothing changed → leave the DOM alone
+  els.gate.hidden = !show;
+  if (show) {
+    els.gateW.textContent = window.innerWidth;
+    els.gateH.textContent = window.innerHeight;
+    log(`Touch-first pointer detected (${MOBILE_POINTER_QUERY}) at ${window.innerWidth}×${window.innerHeight} — showing the desktop-only notice`);
+  } else log('Desktop-only notice hidden');
+}
+
+els.gateDismiss.addEventListener('click', () => {
+  gateDismissed = true;
+  log('Desktop-only notice dismissed by the user — continuing at their own risk');
+  syncMobileGate();
+});
+if (window.matchMedia) {
+  const mq = matchMedia(MOBILE_POINTER_QUERY);
+  if (mq.addEventListener) mq.addEventListener('change', syncMobileGate);
+  else if (mq.addListener) mq.addListener(syncMobileGate);
+}
+window.addEventListener('resize', syncMobileGate);
+window.addEventListener('orientationchange', syncMobileGate);
+syncMobileGate();
+
 /* --------------------------------- Boot ---------------------------------- */
 (async function init() {
-  log(`Turnstone initializing — FSA API: ${!!window.showOpenFilePicker}, XLSX: ${HAS_XLSX}, URL: ${location.href}`);
+  log(`Turnstone initializing — FSA API: ${!!window.showOpenFilePicker}, XLSX: ${HAS_XLSX}, ZIP: ${HAS_INFLATE}, DOM: ${HAS_DOMPARSER}, layers: ${HAS_LAYERS}${HAS_LAYERS ? ` (PhoneLayer ${window.PhoneLayer.version})` : ''}, URL: ${location.href}`);
   applyTheme(document.documentElement.dataset.theme, false);
 
   // A build without SheetJS says so before the user drops a workbook on it.
@@ -2556,15 +4445,34 @@ function closeCurrentFile() {
   const hasSite = !STANDALONE_BUILD && !SESSION_ONLY;
   els.editionsHint.hidden = !hasSite;
   log(hasSite ? 'Edition pointer shown (other builds available on this site)' : 'Edition pointer hidden (no site beside this build)');
+  /* The advertised format list is generated from the format table the parsers
+     themselves use, so a format can never be accepted-but-unadvertised, or
+     advertised by a build that cannot open it. */
+  els.dzFormats.textContent = ADVERTISED_FORMATS
+    .filter(f => (HAS_XLSX || !/XLSX/.test(f)) && (HAS_ZIP || !/DOCX/.test(f)))
+    .join(' · ');
+  /* Every capability this build lacks is named in the same place, on the welcome
+     panel, instead of being discovered by dropping a file on it. Collected into
+     one list so a build missing two things still says both. */
+  const capLines = [];
   if (!HAS_XLSX) {
-    els.dzFormats.textContent = 'CSV · TSV · JSON · HTML · XML';
-    els.capNotice.hidden = false;
-    els.capNotice.innerHTML = '<b>CSV-only build</b> — no workbook support (XLSX/XLS/ODS). Everything else works: CSV, TSV, JSON, HTML and XML lists.';
+    capLines.push('<b>CSV-only build</b> — no workbook support (XLSX/XLS/ODS). Everything else works: CSV, TSV, DOCX, email, Markdown, JSON, HTML and XML lists.');
     log('Workbook support unavailable in this build — welcome panel switched to CSV-only');
   } else if (!HAS_XLSX_WRITE) {
-    els.capNotice.hidden = false;
-    els.capNotice.innerHTML = '<b>Read-only workbooks</b> — this build can open XLSX/XLS/ODS, but your edits are kept in the page and exported as CSV.';
+    capLines.push('<b>Read-only workbooks</b> — this build can open XLSX/XLS/ODS, but your edits are kept in the page and exported as CSV.');
     log('Workbook writer unavailable — workbooks import one-way, edits export as CSV');
+  }
+  if (!HAS_ZIP) {
+    capLines.push(`<b>No DOCX</b> — this browser has no ${HAS_INFLATE ? '<code>DOMParser</code>' : '<code>DecompressionStream</code>'}, so Word documents cannot be unpacked. CSV, XLSX, Markdown, JSON, HTML and XML all still work.`);
+    log(`DOCX support unavailable (${HAS_INFLATE ? 'no DOMParser' : 'no DecompressionStream'}) — DOCX refused`);
+  }
+  if (!HAS_LAYERS) {
+    capLines.push('<b>Plain email and phone links</b> — MailLayer and PhoneLayer are not part of this build, so an address opens your system mail app and a number your system dialler.');
+    log('Embedded layers unavailable in this build — mailto:/tel: stay native');
+  }
+  if (capLines.length) {
+    els.capNotice.hidden = false;
+    els.capNotice.innerHTML = capLines.join('<br>');
   }
 
   // Live-follow the OS light/dark preference while the user hasn't picked explicitly.
@@ -2582,21 +4490,73 @@ function closeCurrentFile() {
     await renderRecents();
   } catch (e) { warn('IndexedDB unavailable — persistence limited to this page load', e); }
 
-  const params = new URLSearchParams(location.search);
-  const fileParam = params.get('file') || params.get('url');
-  const openFirst = params.get('open') === '1';
+  /* Parameters come from the query string **and** the fragment. Ours (the list
+     itself) live in the fragment, because a fragment is never sent to the server
+     and is not subject to the host's request-line limit; `?file=` and friends stay
+     in the query where they have always been. A fragment value wins on conflict. */
+  const params = new Map(Object.entries(inlineParamsFrom(location.search, location.hash)));
+  const param = (k) => params.get(k) || '';
+  const fileParam = param('file') || param('url');
+  const openFirst = param('open') === '1';
+  /* `?link=` names the portal a link-free list is worked in, so a portal queue can
+     be shared as one URL: `?file=queue.csv&link=https://portal/ticket/{Ticket ID}`.
+     It is applied when the file loads, and remembered for that header afterwards. */
+  bootLinkTemplate = param('link').trim();
+  if (bootLinkTemplate) log(`link template in the URL → portal template: ${bootLinkTemplate}`);
+
+  /* A workspace link: the list is *in* the URL, so there is nothing to fetch. This
+     is the path an agent's link takes. It takes precedence over restore, and over
+     ?file=, because a link that carries its own data is the most explicit thing a
+     URL can say. */
+  /* Editing the address bar from one workspace link to another is a *same-document*
+     navigation: the browser only fires `hashchange`, the script never re-runs, and
+     without this the second link would silently do nothing. Registering before the
+     boot branch keeps it live on every path through this IIFE. */
+  window.addEventListener('hashchange', async () => {
+    const p = inlineParamsFrom('', location.hash);
+    const key = p.zdata || p.data;
+    if (!key || key === loadedInlineKey) return;
+    log('Fragment changed → opening a different workspace link');
+    bootLinkTemplate = String(p.link || '').trim();
+    try { await loadInlineWorkspace(p); }
+    catch (e) { err('Workspace link in the fragment could not be opened', e); toast(`That link could not be opened: ${e.message}`, 'error'); }
+  });
+
+  if (param('data') || param('zdata')) {
+    try {
+      await loadInlineWorkspace({
+        data: param('data'), zdata: param('zdata'), format: param('format'), name: param('name'), sum: param('sum'),
+      });
+      if (openFirst && state.mode) {
+        const link = rowLink(0);
+        if (link) { log('?open=1 → auto-opening first task'); openUrlFor(0); }
+        else warn('?open=1 requested but row 1 has no link (and no template composed one)');
+      }
+      /* `?build=1` opens the share-link builder — the entry point for anyone who came
+         here to make a link rather than to work a list. Opened *after* the load so the
+         panel starts from the list the link just delivered. */
+      if (param('build') === '1') showBuildLink();
+      return;
+    } catch (e) {
+      err('Workspace link could not be opened', e);
+      toast(`That link could not be opened: ${e.message}`, 'error');
+      /* Fall through rather than dead-end: the rest of the app still works, and the
+         paste path is right there if the link was mangled in transit. */
+    }
+  }
+
   if (fileParam) {
     log(`?file=/?url= param detected → loading remote file (takes precedence over restore): ${fileParam}`);
     await loadFromUrl(fileParam);
     if (openFirst && state.mode) {
-      const row = state.data[state.hasHeader ? 1 : 0] || [];
-      const url = String(row[state.urlCol] || '').trim();
-      if (url) { log('?open=1 → auto-opening first task'); openUrlFor(0); }
-      else warn('?open=1 requested but first row has no URL');
+      const link = rowLink(0);
+      if (link) { log('?open=1 → auto-opening first task'); openUrlFor(0); }
+      else warn('?open=1 requested but row 1 has no link (and no template composed one)');
     }
   } else {
     log('No ?file=/?url= param — waiting for user to pick or restore a file');
   }
+  if (param('build') === '1') showBuildLink();
 })();
 </script>
 </body>

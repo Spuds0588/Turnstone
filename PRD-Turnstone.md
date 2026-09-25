@@ -1,5 +1,13 @@
 # Project Turnstone: Master Document
 
+> **Status: the original V1 specification, kept as written.** It is the design this project started
+> from, and it is deliberately frozen rather than rewritten — the reasoning behind every change since
+> is in [`history.md`](history.md). Two things below are now historical and would mislead a reader who
+> took them as current: the application is **`app.html`** (`index.html` is the site's landing page),
+> and dependencies are **vendored under `vendor/`, never loaded from a CDN** — the app runs under
+> `default-src 'none'`. For what the product is today, read [`README.md`](README.md); for the rules an
+> agent is held to, [`agents.md`](agents.md); for what is built versus planned, [`todo.md`](todo.md).
+
 ## 1. Product Requirements Document (PRD)
 
 ### 1.1 Overview & Problem Statement
@@ -43,10 +51,11 @@ Data entry specialists, QA testers, content moderators, and list-processors who 
 ### 2.1 Architecture & Stack
 * **Frontend:** Vanilla HTML/CSS/JavaScript (YAGNI approach).
 * **Styling:** CSS Flexbox/Grid for the Split-Pane layout and Tabs.
-* **Dependencies (via CDN):**
-  * `PapaParse` (for robust CSV parsing).
-  * `SheetJS (xlsx)` (for parsing and writing XLSX binary files).
-  * `localforage` (Optional YAGNI fallback to easily manage IndexedDB for file handles/storage).
+* **Dependencies — superseded: vendored, never CDN.** PapaParse and SheetJS are the two that survived
+  and both live in [`vendor/`](vendor/README.md) with recorded hashes; `localforage` was dropped in
+  favour of IndexedDB and `localStorage` directly. The app declares `default-src 'none'`, so a CDN
+  reference is not a preference here, it is a policy violation. *(Original text: `PapaParse`,
+  `SheetJS (xlsx)` and an optional `localforage` loaded from a CDN.)*
 
 ### 2.2 Data Flow & Persistence Management
 1. **File Handle Storage:** The `FileSystemFileHandle` object *can* be stored in IndexedDB. On page reload, we retrieve the handle. The browser will require a user gesture (a click) to call `verifyPermission({mode: 'readwrite'})` to re-establish the connection without picking the file again.
@@ -83,21 +92,10 @@ Data entry specialists, QA testers, content moderators, and list-processors who 
 
 ---
 
-## 4. agents.md (AI Developer Context & Rules)
+## 4. AI Developer Context & Rules
 
-If you are an AI agent assisting with Project Turnstone, you must strictly adhere to the following rules:
-
-### Context
-Project Turnstone is a vanilla JS single-page application that acts as a split-pane task manager. It reads local/remote CSV/XLSX files, populates a sidebar of task cards, loads URLs into tabbed iframes, and automatically saves progress back to the user's filesystem or browser storage.
-
-### Development Rules
-1. **Strictly Vanilla:** Do not introduce bundlers (Webpack, Vite), frameworks (React, Vue), or TypeScript. Stick to pure HTML, CSS, and JS in a single `index.html` file (or linked `.js`/`.css` if file size exceeds reasonable limits).
-2. **YAGNI (You Aren't Gonna Need It):** Prefer simple one-liners and native JS methods over complex abstractions. 
-3. **No Backends:** This is a zero-server application. Everything lives in the browser and the user's local filesystem.
-4. **Iframe Awareness:** Always assume iframes might fail to load due to CORS/`X-Frame-Options`. Provide secondary `<a target="_blank">` escape hatches for all links.
-5. **Persistence Handling:** 
-   * Chromium: Store the `FileSystemFileHandle` in IndexedDB. Remember to request `verifyPermission()` on reload.
-   * Fallback: Track an `isDirty` boolean. If `isDirty` is true and File System Access API is not active, trigger `event.preventDefault()` on `beforeunload`.
-6. **Extensive Console Logging:** Every major action, state change, file read, file write, and caught error MUST have a descriptive `console.log()`. 
-7. **Code Output:** When outputting code, output the FULL file contents. Do not use snippets like `// ... rest of code`. The PM needs to copy-paste the entire file to test.
-8. **Pushback:** If the PM asks to bypass Iframe CORS headers in the web version, push back and remind them that this is impossible in standard browsers and is explicitly slated for the V2 Electron/Extension phase.
+These rules used to be duplicated here. They are **not** any more: the live version is
+[`agents.md`](agents.md), because two copies of a rule set is how a rule set goes stale — and this
+one did. Read that file; the PRD's contribution to it is the intent behind the original eight rules
+(vanilla, YAGNI, no backend, iframe awareness, persistence, logging, complete files, pushback),
+which still hold where they do not contradict the app as built.

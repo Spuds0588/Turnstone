@@ -1,0 +1,64 @@
+# Turnstone
+
+> Turnstone is a single-page, zero-backend workspace for *lists*: load a list of links (or a list with no links at all), work through it as task cards with statuses and notes, and save progress back to the file. It reads CSV, TSV, XLSX/XLS/ODS, DOCX tables, Markdown, JSON, HTML tables, XML feeds, `.eml`/`.mht` email, and a pasted clipboard table. It runs entirely in the browser — no upload, no account, no server — and every dependency is vendored.
+
+This file exists so an agent can use Turnstone without reading its source. The single most useful thing here is **workspace links**: a URL that carries a list, so an agent that has found or generated a list can hand over one link that opens it as a ready-to-work queue.
+
+## Workspace links — a whole list inside a URL
+
+Open `https://spuds0588.github.io/Turnstone/app.html` followed by `#` and a payload:
+
+- `#data=<percent-encoded list>` — plain text. Small, human-readable, easy to construct by hand or with a URL encoder. Best for a handful of rows.
+- `#zdata=<payload>` — the list deflated with **raw** deflate and base64url-encoded with no padding. Four to six times smaller; use this for anything real.
+- `&sum=<length>.<hash>` — optional integrity token: the byte length and an FNV-1a 32-bit hash of the list's UTF-8 bytes, each in base 36, joined by a dot. Verified when present (a truncated link is refused rather than opening a shorter queue), ignored when absent.
+- `&format=csv|tsv|json|md|xml|html` — force the reader instead of sniffing.
+- `&link=<portal template>` — compose each row's link from its own values, for lists with no links of their own: `&link=https://portal.example.com/incident/{Ticket}`. `{Column}` is percent-encoded into the URL, `{Column|raw}` is spliced verbatim, `{0}` addresses a column by position. Only an `http(s)` result is ever turned into a link.
+- `&name=<label>` — what to call the workspace in the sidebar.
+- `&open=1` — open the first task as soon as the link loads.
+
+To build one, in any language, with no service or key:
+
+```
+raw   = utf8_bytes(list)
+sum   = base36(len(raw)) + "." + base36(fnv1a32(raw))
+zdata = base64url(deflate_raw(raw), padding=none)
+url   = "https://spuds0588.github.io/Turnstone/app.html#zdata=" + zdata + "&sum=" + sum
+```
+
+The deflate stream must be **raw** (no zlib or gzip wrapper). In Node: `zlib.deflateRawSync(b).toString('base64url')`. In Python: `zlib.compressobj(9, zlib.DEFLATED, -15)` then `base64.urlsafe_b64encode(...).rstrip(b'=')`. In a browser: `CompressionStream('deflate-raw')`.
+
+A worked example, carrying four rows and no portal address:
+
+```
+https://spuds0588.github.io/Turnstone/app.html#data=Name%2CURL%0AApple%20Newsroom%2Chttps%3A%2F%2Fwww.apple.com%2Fnewsroom%2F%0AGitHub%20Trending%2Chttps%3A%2F%2Fgithub.com%2Ftrending
+```
+
+Notes that matter when generating these:
+
+- Put the payload in the **fragment**, not the query string. A fragment is never sent to a server, so the list stays private, and it escapes the ~8 KB request-line limit that would make a long `?data=` fail at the host. `?data=` is still read, for tooling that can only append a query.
+- Prefer `#data=` when the list is short enough that percent-encoding is smaller than base64 of a deflate stream — roughly under a kilobyte. It is also the only one a person can read.
+- A list is text. CSV with a header row works best, because the header names the columns, but a plain list of links (one per line), a Markdown task list, a JSON array of objects, or a TSV block all work.
+- There is no need to URL-encode the payload twice, and no escaping of the list's content is required beyond the encoding above.
+- Limits: Turnstone refuses more than 2 MB of list and warns past 100 KB, because a chat or mail client trims long links. Rows are not capped.
+
+## What Turnstone reads
+
+CSV, TSV, XLSX, XLS, XLSM, XLSB, ODS, DOCX (Word tables), Markdown (task lists and pipe tables), JSON (an array of objects, or an array nested one level down), HTML tables, XML feeds (RSS, Atom, sitemaps, OPML), `.eml`/`.mht` email (a table in the body, or a spreadsheet attached to one), and a table pasted from the clipboard. The link column is chosen from the **values** rather than the headers, so a URL, an email address or a phone number all work as the thing a row opens. CSV, TSV and XLSX can be written back to in place; the rest are read-only sources.
+
+## Which edition to hand it to
+
+A workspace link is opened by **anything with an address bar**: the web app (`app.html`), the standalone single-file build, or the bookmarklet. The **Chrome extension** is file-based and takes a list as a **data file** — CSV, TSV or XLSX — which the user drops on its side panel. Do not try to drive the extension: a side panel is worked by a person in a real Chrome window, and an agent in a sandbox, a headless browser or on another machine has no such panel. If the user wants the extension, produce the file; if they want a link, target `app.html`.
+
+## Files
+
+- [Overview](https://spuds0588.github.io/Turnstone/index.html.md): what Turnstone is, in Markdown — features, editions, and the questions people ask.
+- [Share a list as a link](https://spuds0588.github.io/Turnstone/workspace-link.html.md): the workspace-link format in full, with recipes in Node, Python and the browser, and the reasoning behind the fragment.
+- [All editions](https://spuds0588.github.io/Turnstone/versions.html): which build to use — web app, offline single file, bookmarklet, or Chrome extension.
+- [README](https://github.com/Spuds0588/Turnstone/blob/main/README.md): the repository's own overview, including every supported format and how detection works.
+- [Sample lists](https://github.com/Spuds0588/Turnstone/tree/main): `sample-links.csv`, `sample-links.xlsx`, `sample-links.md`, `sample-links.docx` and the workflow fixtures are all one ten-row queue in different containers, and are good material for a workspace link.
+
+## Optional
+
+- [history.md](https://github.com/Spuds0588/Turnstone/blob/main/history.md): the build log — why each decision was made, including the ones that were reversed.
+- [testing-notes.md](https://github.com/Spuds0588/Turnstone/blob/main/testing-notes.md): what is verified, on which editions, and how to check it yourself.
+- [agents.md](https://github.com/Spuds0588/Turnstone/blob/main/agents.md): the rules an agent editing this codebase is expected to follow.

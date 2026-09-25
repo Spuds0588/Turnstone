@@ -8,18 +8,31 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; font-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; manifest-src 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Turnstone — Turn any link spreadsheet into a streamlined workspace</title>
-<meta name="description" content="Load a list of links — CSV, TSV, XLSX, JSON, HTML or XML — and work through it in a modern split-pane workspace: task cards, statuses, notes, tabbed browsing, and auto-save — with zero backend, zero signup, and zero cost.">
+<meta name="description" content="Work the list you already keep as a real app — statuses, notes and pages beside the cards — and keep the spreadsheet you started with, updated. No backend, no signup, no roll-out.">
 <meta name="robots" content="index, follow">
 <meta name="keywords" content="link queue manager, CSV task tracker, XLSX link list, spreadsheet workflow, client-side spreadsheet app, tabbed browsing workspace, URL list processor, bulk link opener">
 <link rel="canonical" href="https://spuds0588.github.io/Turnstone/">
 <link rel="icon" type="image/png" href="assets/icon-192.png">
 <meta property="og:title" content="Turnstone — Turn any link spreadsheet into a streamlined workspace">
-<meta property="og:description" content="Your CSV of links, upgraded: task cards, statuses, notes, and tabbed browsing in a fast workspace that runs entirely in your browser. No backend, no signup.">
+<meta property="og:description" content="Your spreadsheet as a real workspace: cards, statuses, notes, pages beside them — and the file you started with, updated. Nothing uploaded, nothing to install.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://spuds0588.github.io/Turnstone/">
-<meta name="twitter:card" content="summary">
+<meta property="og:site_name" content="Turnstone">
+<meta property="og:image" content="https://spuds0588.github.io/Turnstone/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Turnstone — the stone logo on its dark brand background">
+<meta property="og:locale" content="en">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Turnstone — Turn any link spreadsheet into a streamlined workspace">
-<meta name="twitter:description" content="A modern workspace for link spreadsheets — statuses, notes, tabbed browsing, auto-save. No backend, no signup, no cost.">
+<meta name="twitter:description" content="A modern workspace for the list you already keep — statuses, notes, pages beside them, saved back into your own file.">
+<meta name="twitter:image" content="https://spuds0588.github.io/Turnstone/assets/og-image.png">
+<meta name="author" content="Spuds0588">
+<!-- Pointed at by llms.txt, and pointing back at it: the Markdown version of this
+     page is the one an agent should read, and `describedby` is how it finds the map
+     of the rest of the site. See https://llmstxt.org for the convention. -->
+<link rel="alternate" type="text/markdown" href="index.html.md" title="Markdown version of this page">
+<link rel="describedby" type="text/plain" href="llms.txt" title="llms.txt — this site for agents">
 <meta name="theme-color" content="#0f1115">
 <script type="application/ld+json">
 {
@@ -29,10 +42,59 @@
   "applicationCategory": "BrowserApplication",
   "operatingSystem": "Any (web browser)",
   "url": "https://spuds0588.github.io/Turnstone/",
-  "description": "Turnstone turns spreadsheet, CSV, JSON, HTML or XML link lists into a streamlined task-card workspace: track statuses, write notes, browse links in tabbed panes, and save progress back to your file. Runs entirely client-side with no backend or signup.",
+  "description": "Turnstone turns the list you already keep — spreadsheet, CSV, JSON, HTML, XML, Word table, Markdown, email or pasted — into a task-card workspace: statuses, notes, and the pages themselves beside the cards. Progress is saved back into your own file. Runs entirely in the browser, with no backend, no signup and no roll-out.",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "featureList": "CSV, TSV, XLSX, JSON, HTML and XML link-list loading, task cards, status tracking, notes, tabbed iframe browsing, open-in-tab/window modes, auto-save write-back, offline PWA install, sorting and presets, completed-queue filtering",
-  "author": { "@type": "Person", "name": "Spuds0588", "url": "https://github.com/Spuds0588" }
+  "featureList": "CSV, TSV, XLSX/XLS/ODS, DOCX, Markdown, JSON, HTML and XML link-list loading, email (.eml/.mht) import, pasted-clipboard import, workspace links that carry a list inside the URL, portal link templates that compose a URL from a row's values, link columns chosen from cell values (URL, email address or phone number), task cards, status tracking, notes, tabbed iframe browsing, open-in-tab/window modes, auto-save write-back, offline PWA install, sorting and presets, completed-queue filtering",
+  "softwareVersion": "0.13",
+  "license": "https://github.com/Spuds0588/Turnstone/blob/main/LICENSE",
+  "codeRepository": "https://github.com/Spuds0588/Turnstone",
+  "isAccessibleForFree": true,
+  "screenshot": "https://spuds0588.github.io/Turnstone/assets/og-image.png",
+  "author": { "@type": "Person", "name": "Spuds0588", "url": "https://github.com/Spuds0588" },
+  "publisher": { "@type": "Person", "name": "Spuds0588" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "url": "https://spuds0588.github.io/Turnstone/",
+  "name": "Turnstone — turn any link spreadsheet into a streamlined workspace",
+  "inLanguage": "en",
+  "isPartOf": { "@type": "WebSite", "name": "Turnstone", "url": "https://spuds0588.github.io/Turnstone/" },
+  "primaryImageOfPage": "https://spuds0588.github.io/Turnstone/assets/og-image.png",
+  "speakable": { "@type": "SpeakableSpecification", "cssSelector": ["h1", "h2.subtitle"] }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Turn a spreadsheet of links into a workspace",
+  "description": "Load a list of links and work it as task cards with statuses and notes, saving progress back to the file.",
+  "url": "https://spuds0588.github.io/Turnstone/",
+  "totalTime": "PT2M",
+  "tool": [{ "@type": "HowToTool", "name": "A web browser" }],
+  "step": [
+    {
+      "@type": "HowToStep",
+      "position": 1,
+      "name": "Bring the list",
+      "text": "Drop a CSV, XLSX, Word table, Markdown list, JSON or saved email anywhere on the app, paste a table, or open a link someone sent you. No template, no import wizard."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 2,
+      "name": "Work it like an app",
+      "text": "Cards down one side, pages across the other. Complete, note, auto-advance — and your file is already up to date."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 3,
+      "name": "Or let an agent hand you the list",
+      "text": "Have your assistant find or write it, and open the link it gives you. Nothing to set up, install or upload."
+    }
+  ]
 }
 </script>
 <script type="application/ld+json">
@@ -43,31 +105,37 @@
     {
       "@type": "Question",
       "name": "Does Turnstone upload my spreadsheet anywhere?",
-      "acceptedAnswer": { "@type": "Answer", "text": "No. Turnstone is a zero-backend application: parsing, tracking, and saving all happen in your browser, and your file is written back to your own disk. Nothing is uploaded to any server." }
+      "acceptedAnswer": { "@type": "Answer", "text": "No. Parsing, tracking and saving all happen in your browser, and your file is written back to your own disk. Nothing is uploaded — you can watch the network tab stay quiet." }
     },
     {
       "@type": "Question",
-      "name": "What file formats does Turnstone support?",        "acceptedAnswer": { "@type": "Answer", "text": "CSV, TSV and XLSX files, JSON arrays, HTML tables and XML feeds like RSS, Atom, sitemaps and OPML. Any column named URL or Link is treated as the link to open; other columns are carried onto each task card, and statuses or notes you enter are saved back to the file." }
+      "name": "What file formats does Turnstone support?",
+      "acceptedAnswer": { "@type": "Answer", "text": "CSV, TSV, XLSX (plus XLS/XLSM/XLSB/ODS), Word tables (.docx), Markdown task lists and pipe tables, JSON, HTML tables, XML feeds, saved email (.eml or .mht, list in the body or a spreadsheet attached) and a pasted clipboard table. The link column is picked from the values — a URL, an email address or a phone number — and you can set it yourself in ⚙ Columns. Statuses and notes are saved back into the file (or exported where the browser can't write)." }
     },
     {
       "@type": "Question",
       "name": "Can I pick up where I left off?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Yes. Reload the same file — or a list you exported from Turnstone — and its completed and notes columns are read back onto the task cards, so the queue continues exactly where it stopped. The completed column is recognised by name (Status, Completed, Done, Finished, Checked, …) as well as by its values (complete, done, yes, 1, a tick, or a completion date)." }
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. Reload the same file and its status and notes columns are read back onto the cards, so the queue continues where it stopped. The completed column is recognised by name (Status, Done, …) as well as by its values (done, yes, 1, a tick, a date)." }
     },
     {
       "@type": "Question",
-      "name": "Is Turnstone free?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Yes — Turnstone is free and open source, with no accounts, no signup, and no server costs to pass on." }
+      "name": "Do I need IT approval, a licence or an account?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. Nothing to install, no account, no server and no per-seat cost — one person can just start, with no rollout and no procurement conversation. Open source and MIT licensed if anyone asks." }
     },
     {
       "@type": "Question",
-      "name": "Can I install Turnstone as a desktop app?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Yes. Turnstone is a PWA: install it from your browser to get a standalone window, and it works offline with the service-worker-cached app shell." }
+      "name": "What do I have at the end?",
+      "acceptedAnswer": { "@type": "Answer", "text": "The same file you started with, updated with your ticks and notes. Nothing to copy back, nothing to reconcile, nothing done twice." }
     },
     {
       "@type": "Question",
-      "name": "How do I load my spreadsheet into Turnstone?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Drag the file onto the app, pick it with the file picker, or give Turnstone a URL to a link list on the web — deep links like ?file= load a spreadsheet automatically." }
+      "name": "Can my AI agent set it up for me?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes — it is the shortest path from “here's a list” to “here's a workspace”. Your assistant hands you a workspace link: the rows travel inside the URL, after the #, which a browser never sends to a server. Open it and the queue is ready, with nothing set up, installed or signed up for. Agents that produce files work too: point the app (or the extension) at the spreadsheet. llms.txt has the format." }
+    },
+    {
+      "@type": "Question",
+      "name": "Some sites refuse to load in the tabbed pane. Why?",
+      "acceptedAnswer": { "@type": "Answer", "text": "A few sites forbid being framed by any web app — a browser rule, not ours. Switch the open mode to a new tab or a popup in the ☰ menu, or use the Chrome extension, which never frames a page." }
     }
   ]
 }
@@ -111,7 +179,12 @@
   /* ---------- The bar at the very top ---------- */
   /* The same nav the guide pages carry, kept in this page's own stylesheet: the
      sales page runs under `default-src 'none'` and loads nothing at all, which is
-     part of what it demonstrates. */
+     part of what it demonstrates.
+
+     Three items, and deliberately three: the four editions are reached by the path
+     this page sets up (Home → All versions → the one that fits), and every page's
+     footer lists them for anyone who would rather not. A top bar that lists every
+     page of a site is not navigation, it is a table of contents. */
   nav.topnav { border-bottom: 1px solid rgba(255,255,255,.09); background: rgba(0,0,0,.32); }
   nav.topnav .inner {
     max-width: 1140px; margin: 0 auto; padding: 12px 2rem;
@@ -136,10 +209,15 @@
     padding: 5px 10px; border-radius: 8px; border: 1px solid transparent; white-space: nowrap;
   }
   nav.topnav a.go:hover { background: var(--accent-dim); border-color: var(--accent-border); }
+  /* Two rows instead of one crowded line: brand, then the links. Three items fit a phone
+     without the spacer, so the launch link is pushed to the right of its own row instead —
+     otherwise it sits shoulder to shoulder with "All versions" and reads like a fourth
+     menu item. (The same block, and the same reasoning, is in site.css for the guide pages.) */
   @media (max-width: 700px) {
     nav.topnav .inner { padding: 10px 1.1rem; gap: 4px; }
     nav.topnav .brand { flex: 1 1 100%; margin-right: 0; }
     nav.topnav .spacer { display: none; }
+    nav.topnav a.go { margin-left: auto; }
     nav.topnav a.link, nav.topnav a.go { padding: 5px 8px; font-size: 12.5px; }
   }
 
@@ -226,6 +304,21 @@
   .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; }
   @media (max-width: 1000px) { .grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
+  /* The value cards. There are five because there are five reasons people adopt this,
+     and five equal columns would squeeze each one into ~200px of prose. So the first
+     card — the one that states the whole point — spans the row and sets its icon
+     beside the text, and the remaining four pair off beneath it. */
+  .value-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.2rem; }
+  /* A grid item's automatic minimum size is its *min-content* width, so the one long
+     unbreakable token on this page — the portal template in the first card — sized its
+     column at 416px inside a 361px phone viewport, and `overflow-x: clip` on html/body
+     hid the result instead of laying it out. `min-width: 0` lets the column fit the
+     screen; `overflow-wrap` lets the token break rather than spill. */
+  .value-grid .box { min-width: 0; }
+  .value-grid .box code { overflow-wrap: anywhere; }
+  .value-grid .box.lead { grid-column: 1 / -1; display: flex; gap: 1.3rem; align-items: flex-start; border-color: rgba(122,162,255,.28); }
+  .value-grid .box.lead .feature-icon { margin: 0; }
+  @media (max-width: 700px) { .value-grid { grid-template-columns: 1fr; } .value-grid .box.lead { flex-direction: column; gap: 0; } }
   .box {
     background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.09); border-radius: 20px;
     padding: 2rem 1.7rem; transition: transform .25s ease, border-color .25s ease;
@@ -266,12 +359,8 @@
 <nav class="topnav" aria-label="Site">
   <div class="inner">
     <a class="brand" href="index.html"><img src="assets/logo-dark.svg" alt="">Turnstone</a>
-    <a class="link" href="index.html" aria-current="page">Overview</a>
+    <a class="link" href="index.html" aria-current="page">Home</a>
     <a class="link" href="versions.html">All versions</a>
-    <a class="link" href="web-app.html">Web app</a>
-    <a class="link" href="standalone.html">Standalone</a>
-    <a class="link" href="bookmarklet.html">Bookmarklet</a>
-    <a class="link" href="extension.html">Extension</a>
     <span class="spacer"></span>
     <a class="go" href="app.html">Launch app →</a>
   </div>
@@ -283,11 +372,8 @@
     <span class="eyebrow">Free &amp; open source · zero backend</span>
     <h1>Your spreadsheet,<br><span class="has-text-ts">now a modern workspace.</span></h1>
     <h2 class="subtitle">
-      Turnstone loads the link list you already keep — spreadsheet, CSV, JSON or HTML — prospects, listings, docs to review,
-      outreach to send — and turns it into a modern split-pane workspace: task cards with statuses
-      and notes on one side, the links themselves in a tabbed pane on the other. Progress saves
-      straight back to your file. It runs entirely in your browser, so there's no backend to buy,
-      no seat licenses, and nothing to sign up for.
+      Load the list you already keep and work it like an app: cards with statuses and notes on one side,
+      the pages on the other. Progress saves back into the file you started with.
     </h2>
 
     <div class="buttons">
@@ -295,13 +381,9 @@
       <a class="btn btn-ghost" href="app.html">▶ Try the web app</a>
     </div>
     <p class="deep-link">
-      Turnstone ships in four editions, and nine times out of ten you want the web app — it remembers your
-      progress and writes straight back to your file. The other three exist for the times it does not fit:
-      a machine where nothing may be installed or fetched, a browser that will not write to your file, a site
-      you cannot leave. <a href="versions.html">The versions page</a> sorts that out in one screen. Prefer to
-      see it working first? <a href="app.html?file=https%3A%2F%2Fspuds0588.github.io%2FTurnstone%2Fsample-links.csv">Open
-the app with a sample queue</a> — any spreadsheet on the web works the same way via
-      <a href="app.html?file=https%3A%2F%2Fspuds0588.github.io%2FTurnstone%2Fsample-links.csv"><code>app.html?file=…</code></a>
+      <a href="versions.html">Find your version</a> in a screen, or
+      <a href="app.html?file=https%3A%2F%2Fspuds0588.github.io%2FTurnstone%2Fsample-links.csv">open a sample queue</a>
+      and see it working first.
     </p>
 
     <div class="shot" role="img" aria-label="The Turnstone workspace: tabbed pages on the left, task cards with statuses and notes on the right">
@@ -345,36 +427,44 @@ the app with a sample queue</a> — any spreadsheet on the web works the same wa
 
 <section class="section">
   <div class="container has-text-centered">
-    <h2 class="section-title">Why teams switch to Turnstone</h2>
-    <p class="section-sub">You already did the hard part — the spreadsheet exists. Turnstone is the upgrade it never got.</p>
-    <div class="grid" style="margin-top:2.6rem;text-align:left">
-      <div class="box">
+    <h2 class="section-title">Why it works when the process doesn't</h2>
+    <p class="section-sub">Your list can be a mess upstream. Your side of it doesn't have to be.</p>
+    <div class="value-grid" style="margin-top:2.6rem;text-align:left">
+      <div class="box lead">
         <div class="feature-icon">🧩</div>
-        <h3>Keep the file, lose the grind</h3>
-        <p>No migration, no import wizard. Your columns become card fields, your tabs become a
-           queue, and every status flip or note you type is saved back into the same CSV or spreadsheet
-           you started with.</p>
+        <div>
+          <h3>A modern workspace, however the list was made</h3>
+          <p>Six systems, a chain of forwards, a sheet somebody keeps by hand — it doesn't matter. Your side
+             becomes cards with statuses and notes instead of a grid of cells. Rows with <em>no links at all</em>
+             work too: point Turnstone at your portal once
+             (<code>https://portal.example.com/ticket/{Ticket}</code>) and every card builds its own address.</p>
+        </div>
+      </div>
+      <div class="box">
+        <div class="feature-icon">✅</div>
+        <h3>Nothing to roll out, nobody to ask</h3>
+        <p>One person can start today. Nothing is shared, uploaded or stored anywhere but your own machine —
+           no server, no seat licence, no IT ticket and no manager sign-off.</p>
       </div>
       <div class="box">
         <div class="feature-icon">🪟</div>
-        <h3>The link and the task, together</h3>
-        <p>Open pages in tabbed panes inside the workspace, in browser tabs, or in popup windows —
-           whatever the site allows. Clicking a card opens its link and expands its details, so
-           you never lose your place in the queue.</p>
+        <h3>It fits the tools you already use</h3>
+        <p>A modern browser, your webmail, your VoIP web phone, the systems you already have open. Pages load
+           beside the list instead of in fifteen tabs, and an address or a number opens your webmail or
+           dialler — not a desktop app you don't have.</p>
       </div>
       <div class="box">
-        <div class="feature-icon">🔒</div>
-        <h3>Your data never leaves the room</h3>
-        <p>Everything — parsing, tracking, saving — happens in your browser. No account, no
-           upload, no per-seat pricing, and no vendor who can read your pipeline. Open source,
-           auditable, offline-capable.</p>
+        <div class="feature-icon">💾</div>
+        <h3>You keep the file, and it keeps your progress</h3>
+        <p>What you end with is the spreadsheet you started with, updated: ticks, notes and statuses written
+           back into it. Nothing to copy across, nothing to reconcile, nothing done twice.</p>
       </div>
       <div class="box">
-        <div class="feature-icon">⚙️</div>
-        <h3>Built for working the list</h3>
-        <p>One-click complete with undo, auto-open of the next card as you go, sorting by any
-           column, column layouts saved as reusable presets, and completed items tucked away
-           until you ask for them.</p>
+        <div class="feature-icon">🤖</div>
+        <h3>Let your agent hand you the list</h3>
+        <p>Your AI assistant finds or writes the list and gives you one link. It opens as a workspace ready to
+           work, with nothing to set up, install or sign up for, and the rows travel inside the link rather
+           than through a server. <a href="workspace-link.html">How workspace links work</a>.</p>
       </div>
     </div>
   </div>
@@ -382,27 +472,27 @@ the app with a sample queue</a> — any spreadsheet on the web works the same wa
 
 <section id="workflow" class="section">
   <div class="container has-text-centered">
-    <h2 class="section-title">From spreadsheet to workspace in one step</h2>
+    <h2 class="section-title">From list to workspace in one step</h2>
     <p class="section-sub">Three ways in — pick whichever your file is closest to.</p>
     <div class="steps">
       <div class="step">
         <span class="step-num">1</span>
-        <h3>Drop your file</h3>
-        <p>Drag a CSV, TSV, XLSX, JSON, HTML or XML list onto the app — anywhere on it — or click the drop area to pick the
-           file from disk. Across the whole app, Chromium browsers get silent auto-save write-back to the original file.</p>
+        <h3>Bring the list</h3>
+        <p>Drop a CSV, XLSX, Word table, Markdown list, JSON or saved email anywhere on the app,
+           paste a table, or open a link someone sent you. No template, no import wizard.</p>
       </div>
       <div class="step">
         <span class="step-num">2</span>
-        <h3>Or point at a URL</h3>
-        <p>Give Turnstone a web address to a spreadsheet and it loads it on arrival —
-           shareable as a link.</p>
-        <span class="mono">app.html?file=https://example.com/queue.csv</span>
+        <h3>Work it like an app</h3>
+        <p>Cards down one side, pages across the other. Complete, note, auto-advance — and your
+           file is already up to date.</p>
       </div>
       <div class="step">
         <span class="step-num">3</span>
-        <h3>Work the queue</h3>
-        <p>Cards down one side, pages across the other. Complete, note, auto-advance —
-           then export or auto-save when you're done.</p>
+        <h3>Or let an agent hand you the list</h3>
+        <p>Have your assistant find or write it, and open the link it gives you. Nothing to set
+           up, install or upload.</p>
+        <span class="mono">app.html#zdata=…</span>
       </div>
     </div>
   </div>
@@ -417,53 +507,49 @@ the app with a sample queue</a> — any spreadsheet on the web works the same wa
     <div style="margin-top:2.4rem">
       <details>
         <summary>Does Turnstone upload my spreadsheet anywhere?</summary>
-        <p>No. Turnstone is a zero-backend application: parsing, tracking, and saving all happen
-           in your browser, and your file is written back to your own disk. Nothing is uploaded
-           to any server — you can watch the network tab stay quiet.</p>
+        <p>No. Parsing, tracking and saving all happen in your browser, and your file is written
+           back to your own disk. Nothing is uploaded — you can watch the network tab stay quiet.</p>
       </details>
       <details>
-        <summary>What file formats does it support?</summary>
-        <p>CSV, TSV, XLSX, JSON, HTML tables and XML feeds. Any column named <code>URL</code> or <code>Link</code> is treated as the
-           link to open; every other column is carried onto the card. Statuses and notes you enter
-           are saved back into the file (or exported if your browser can't write back).</p>
+        <summary>What file formats does Turnstone support?</summary>
+        <p>CSV, TSV, XLSX (plus XLS/XLSM/XLSB/ODS), Word tables (<code>.docx</code>), Markdown task lists and pipe
+           tables, JSON, HTML tables, XML feeds, saved email (<code>.eml</code> or <code>.mht</code>, list in the body or
+           a spreadsheet attached) and a pasted clipboard table. The link column is picked from the <em>values</em> —
+           a URL, an email address or a phone number — and you can set it yourself in <strong>⚙ Columns</strong>.
+           Statuses and notes are saved back into the file (or exported where the browser can't write).</p>
       </details>
       <details>
         <summary>Can I pick up where I left off?</summary>
-        <p>Yes. Reload the same file — or a list you exported from Turnstone — and its completed
-           and notes columns are read back onto the task cards, so the queue continues exactly
-           where it stopped. The completed column is recognised by name
-           (<code>Status</code>, <code>Completed</code>, <code>Done</code>, <code>Finished</code>,
-           <code>Checked</code>, …) as well as by its values (<code>complete</code>,
-           <code>done</code>, <code>yes</code>, <code>1</code>, a tick, or a completion date).</p>
+        <p>Yes. Reload the same file and its status and notes columns are read back onto the cards,
+           so the queue continues where it stopped. The completed column is recognised by name
+           (<code>Status</code>, <code>Done</code>, …) as well as by its values (<code>done</code>,
+           <code>yes</code>, <code>1</code>, a tick, a date).</p>
       </details>
       <details>
-        <summary>Is it really free?</summary>
-        <p>Yes — open source, no accounts, no signup, no seat licenses. The whole product runs on
-           your machine; there are no server costs to recover.</p>
+        <summary>Do I need IT approval, a licence or an account?</summary>
+        <p>No. Nothing to install, no account, no server and no per-seat cost — one person can just
+           start, with no rollout and no procurement conversation. Open source and MIT licensed if
+           anyone asks.</p>
       </details>
       <details>
-        <summary>Can I install it as a desktop app?</summary>
-        <p>Yes. Turnstone is a PWA — install it from your browser to get a standalone window and
-           offline access to the app shell, with your queue reloadable from your last file.</p>
+        <summary>What do I have at the end?</summary>
+        <p>The same file you started with, updated with your ticks and notes. Nothing to copy back,
+           nothing to reconcile, nothing done twice.</p>
+      </details>
+      <details>
+        <summary>Can my AI agent set it up for me?</summary>
+        <p>Yes — it is the shortest path from “here's a list” to “here's a workspace”. Your assistant
+           hands you a <a href="workspace-link.html">workspace link</a>: the rows travel inside the URL,
+           after the <code>#</code>, which a browser never sends to a server. Open it and the queue is
+           ready, with nothing set up, installed or signed up for. Agents that produce files work too:
+           point the app (or the <a href="extension.html">extension</a>) at the spreadsheet.
+           <a href="llms.txt">llms.txt</a> has the format.</p>
       </details>
       <details>
         <summary>Some sites refuse to load in the tabbed pane. Why?</summary>
-        <p>A few sites send headers that forbid being framed by any web app — that's a browser
-           security rule, not a Turnstone limitation. For those, switch the open mode to
-           <em>new browser tab</em> or <em>popup window</em> in the ☰ menu, or use the
-           <a href="extension.html">Chrome extension</a>, which never frames a page at all: it opens
-           links as real tabs and switches between them as you pick cards. The native desktop version on
-           the roadmap removes the restriction entirely.</p>
-      </details>
-      <details>
-        <summary>What's on the roadmap?</summary>
-        <p>Four editions are already here: the <a href="web-app.html">web app</a> (start there), a
-           <a href="standalone.html">standalone single-file build</a> for machines where nothing may be
-           installed or fetched, a <a href="bookmarklet.html">bookmarklet</a> that runs the whole workspace
-           over any page with no libraries and no network, and a
-           <a href="extension.html">Chrome extension</a> whose side panel drives real browser tabs. A native
-           desktop edition and a Firefox sidebar are next. Each one, what it supports and what it does not,
-           is laid out on the <a href="versions.html">versions page</a>.</p>
+        <p>A few sites forbid being framed by any web app — a browser rule, not ours. Switch the open
+           mode to a new tab or a popup in the ☰ menu, or use the
+           <a href="extension.html">Chrome extension</a>, which never frames a page.</p>
       </details>
     </div>
   </div>

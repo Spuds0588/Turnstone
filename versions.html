@@ -15,18 +15,29 @@
 <link rel="icon" type="image/png" href="assets/icon-192.png">
 <meta name="theme-color" content="#0f1115">
 <link rel="stylesheet" href="site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "url": "https://spuds0588.github.io/Turnstone/versions.html",
+  "name": "Which version of Turnstone? — compare every edition",
+  "inLanguage": "en",
+  "isPartOf": { "@type": "WebSite", "name": "Turnstone", "url": "https://spuds0588.github.io/Turnstone/" },
+  "about": { "@type": "SoftwareApplication", "name": "Turnstone", "applicationCategory": "BrowserApplication" },
+  "breadcrumb": { "@type": "BreadcrumbList", "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Turnstone", "item": "https://spuds0588.github.io/Turnstone/" },
+    { "@type": "ListItem", "position": 2, "name": "All versions", "item": "https://spuds0588.github.io/Turnstone/versions.html" }
+  ] }
+}
+</script>
 </head>
 <body>
 
 <nav class="topnav" aria-label="Site">
   <div class="inner">
     <a class="brand" href="index.html"><img src="assets/logo-dark.svg" alt="">Turnstone</a>
-    <a class="link" href="index.html">Overview</a>
+    <a class="link" href="index.html">Home</a>
     <a class="link" href="versions.html" aria-current="page">All versions</a>
-    <a class="link" href="web-app.html">Web app</a>
-    <a class="link" href="standalone.html">Standalone</a>
-    <a class="link" href="bookmarklet.html">Bookmarklet</a>
-    <a class="link" href="extension.html">Extension</a>
     <span class="spacer"></span>
     <a class="go" href="app.html">Launch app →</a>
   </div>
@@ -113,15 +124,43 @@
           design.</td>
       </tr>
       <tr>
+        <td>An AI assistant found or generated your list</td>
+        <td data-label="Use"><a href="workspace-link.html">Workspace link</a> — any edition</td>
+        <td data-label="Why">The rows travel inside the URL, so one link opens a ready queue with nothing to download —
+          or your agent can produce a file instead, which every edition opens.</td>
+      </tr>
+      <tr>
         <td>Your list is a real spreadsheet (<code>.xlsx</code>, <code>.xls</code>, <code>.ods</code>)</td>
         <td data-label="Use"><a href="web-app.html">Web app</a>, the <a href="standalone.html">standalone build</a>, or
             bookmarklet <code>core</code>/<code>full</code></td>
         <td data-label="Why">Only the bookmarklet's <code>csv</code> variant cannot open a workbook — and it says so.</td>
       </tr>
       <tr>
+        <td>Your list is a Word table (<code>.docx</code>)</td>
+        <td data-label="Use">Any of them — <a href="web-app.html">web app</a>, <a href="standalone.html">standalone</a>, or any
+            bookmarklet variant</td>
+        <td data-label="Why">Word files are unpacked with the browser's own ZIP reader, so DOCX needs no library and works even
+          in the zero-library <code>csv</code> bookmarklet. Legacy <code>.doc</code> is refused with a reason.</td>
+      </tr>
+      <tr>
+        <td>Your queue lives in a README or a Markdown note (<code>.md</code>)</td>
+        <td data-label="Use">Any of them</td>
+        <td data-label="Why">Markdown is plain text, so it needs no library — GitHub-style task lists become cards
+          with their checkboxes as statuses, and pipe tables work too. Read-only by choice: Turnstone never rewrites
+          a document.</td>
+      </tr>
+      <tr>
+        <td>Your list is <em>people</em> — emails and phone numbers</td>
+        <td data-label="Use"><a href="web-app.html">Web app</a>, <a href="standalone.html">standalone build</a> or the
+            <a href="extension.html">extension</a></td>
+        <td data-label="Why">These three embed MailLayer and PhoneLayer, so an address opens a webmail composer and a number a
+          provider picker. The bookmarklet deliberately leaves them out — its modals would land in the host page's DOM — so there
+          an address opens your system mail app and a number your dialler. It says so on the welcome panel.</td>
+      </tr>
+      <tr>
         <td>The file is enormous, or you only need the links</td>
         <td data-label="Use"><a href="bookmarklet.html">Bookmarklet</a> <code>csv</code></td>
-        <td data-label="Why">About <span data-size-of="ports/bookmarklet/dist/turnstone-bookmarklet-csv.txt" data-size-fallback="141 KB">141 KB</span> with no libraries at all. Nothing gets parsed that you did not need.</td>
+        <td data-label="Why">About <span data-size-of="ports/bookmarklet/dist/turnstone-bookmarklet-csv.txt" data-size-fallback="252 KB">252 KB</span> with no libraries at all. Nothing gets parsed that you did not need.</td>
       </tr>
     </tbody>
   </table>
@@ -140,13 +179,13 @@
     <div class="card edition">
       <h3>Standalone <span class="pill ok">Available</span></h3>
       <p class="tight who">The same app as one HTML file — parsers and artwork inlined. Copy it anywhere and double-click; no server, no network, no install.</p>
-      <p class="meta">Needs: a browser, and permission to run a local file. <span data-size-of="turnstone-standalone.html" data-size-fallback="1.07 MB">1.07 MB</span>.</p>
+      <p class="meta">Needs: a browser, and permission to run a local file. <span data-size-of="turnstone-standalone.html" data-size-fallback="1.21 MB">1.21 MB</span>.</p>
       <p class="more"><a href="standalone.html">Details →</a></p>
     </div>
 
     <div class="card edition">
       <h3>Bookmarklet <span class="pill ok">Available</span></h3>
-      <p class="tight who">A bookmark that opens the whole app as an overlay on whatever page you are on. No install, no network, no libraries — three sizes from <span data-size-of="ports/bookmarklet/dist/turnstone-bookmarklet-csv.txt" data-size-fallback="141 KB">141 KB</span>.</p>
+      <p class="tight who">A bookmark that opens the whole app as an overlay on whatever page you are on. No install, no network, no libraries — three sizes from <span data-size-of="ports/bookmarklet/dist/turnstone-bookmarklet-csv.txt" data-size-fallback="252 KB">252 KB</span>.</p>
       <p class="meta">Needs: dragging a link to your bookmarks bar. Memory-only between tabs.</p>
       <p class="more"><a href="bookmarklet.html">Details →</a></p>
     </div>
@@ -184,7 +223,7 @@
       </tr>
       <tr>
         <td><a href="standalone.html">Standalone</a></td>
-        <td data-label="Size"><span data-size-of="turnstone-standalone.html" data-size-fallback="1.07 MB">1.07 MB</span></td>
+        <td data-label="Size"><span data-size-of="turnstone-standalone.html" data-size-fallback="1.21 MB">1.21 MB</span></td>
         <td data-label="Install">Copy a file</td>
         <td data-label="Network"><strong>Never</strong></td>
         <td data-label="Remembers">Yes</td>
@@ -193,7 +232,7 @@
       </tr>
       <tr>
         <td><a href="bookmarklet.html">Bookmarklet</a></td>
-        <td data-label="Size"><span data-size-of="ports/bookmarklet/dist/turnstone-bookmarklet-csv.txt" data-size-fallback="141 KB">141 KB</span>–<span data-size-of="ports/bookmarklet/dist/turnstone-bookmarklet-full.txt" data-size-fallback="1.06 MB">1.06 MB</span></td>
+        <td data-label="Size"><span data-size-of="ports/bookmarklet/dist/turnstone-bookmarklet-csv.txt" data-size-fallback="252 KB">252 KB</span>–<span data-size-of="ports/bookmarklet/dist/turnstone-bookmarklet-full.txt" data-size-fallback="1.17 MB">1.17 MB</span></td>
         <td data-label="Install">Drag a bookmark</td>
         <td data-label="Network"><strong>Never</strong></td>
         <td data-label="Remembers">No (session only)</td>
@@ -202,7 +241,7 @@
       </tr>
       <tr>
         <td><a href="extension.html">Extension</a></td>
-        <td data-label="Size"><span data-size-of="ports/extension/dist" data-size-fallback="1.08 MB">1.08 MB</span></td>
+        <td data-label="Size"><span data-size-of="ports/extension/dist" data-size-fallback="1.22 MB">1.22 MB</span></td>
         <td data-label="Install">Load unpacked</td>
         <td data-label="Network">Never</td>
         <td data-label="Remembers">Yes</td>
@@ -212,12 +251,60 @@
     </tbody>
   </table>
 
+  <!-- ------------------------------------------------ agents -->
+  <h2>Agents, and what each edition can be handed <span class="pill">Read this first</span></h2>
+  <p class="lede">
+    An agent can always produce the list — as a link, or as a data file. Whether it can drive the thing
+    that opened it is a separate question, and for the extension the answer is no.
+  </p>
+  <table class="situation stacked">
+    <colgroup><col class="w-ed"><col class="w-can"><col class="w-cant"></colgroup>
+    <thead><tr><th>Edition</th><th>An agent can hand it…</th><th>What it cannot do</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><a href="web-app.html">Web app</a></td>
+        <td data-label="An agent can hand it…">A <a href="workspace-link.html">workspace link</a>, or a spreadsheet to load.
+          Both open the same queue.</td>
+        <td data-label="What it cannot do">Nothing is in the way: a link is a URL, and you click it.</td>
+      </tr>
+      <tr>
+        <td><a href="standalone.html">Standalone</a></td>
+        <td data-label="An agent can hand it…">The same link, or the file — whatever reaches the offline machine.</td>
+        <td data-label="What it cannot do">Reach that machine itself, or install anything. You copy the file across and open it.</td>
+      </tr>
+      <tr>
+        <td><a href="bookmarklet.html">Bookmarklet</a></td>
+        <td data-label="An agent can hand it…">The list, as a link or a file.</td>
+        <td data-label="What it cannot do">Click your bookmark. An agent cannot act inside your browser, and a bookmark
+          lives in your bookmarks bar.</td>
+      </tr>
+      <tr>
+        <td><a href="extension.html">Chrome extension</a></td>
+        <td data-label="An agent can hand it…"><strong>A data or spreadsheet file</strong> — CSV, TSV or XLSX — which you open in
+          the side panel.</td>
+        <td data-label="What it cannot do">Drive the panel, and that is not going to change: it would take its own Chrome with
+          this extension loaded and a panel open, which a coding agent in a sandbox, a headless browser or on another
+          machine does not have. The panel has no address bar either — it takes a file, not a URL — so an agent-built
+          <em>workspace link</em> belongs in the <a href="web-app.html">web app</a>.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="tight">
+    This is a limit of browser side panels rather than of Turnstone, and it is worth knowing before wiring an
+    agent into a workflow: ask it for a <strong>file</strong> and every edition here opens it, the extension
+    included; ask it for a <a href="workspace-link.html">link</a> and you want the web app, the standalone build
+    or the bookmarklet. Either way the list arrives ready to work, and nothing is uploaded on the way.
+  </p>
+
   <!-- ------------------------------------------------ not for this list -->
   <h2>Not for any of them <span class="pill soon">Honest gaps</span></h2>
   <p class="tight">
     Some things none of the four will do, so that you do not go looking: there is no PDF table parser
-    (export to CSV/XLSX first), no Markdown or Word document reading, no Google Drive or OneDrive sync, no
-    crawling a page for links, and no server-side anything. Where a gap is a plan rather than a decision,
+    (export to CSV/XLSX first), no Google Drive or OneDrive sync, no crawling a page for links, and no
+    server-side anything. Word documents (<code>.docx</code>) and Markdown (<code>.md</code> — task lists and
+    pipe tables) <em>are</em> read, in every edition including the zero-library bookmarklet. Markdown is read
+    and never written, and that one is a choice: a <code>.md</code> file is a document, not a data file.
+    Where a gap is a plan rather than a decision,
     it is written down in
     <a href="https://github.com/Spuds0588/Turnstone/blob/main/todo.md" target="_blank" rel="noopener">todo.md</a>.
   </p>

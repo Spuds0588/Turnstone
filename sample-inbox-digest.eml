@@ -1,0 +1,64 @@
+From: Sam Okonjo <sam.okonjo@example.com>
+To: Priya Raman <priya.raman@example.com>
+Subject: This week's reading list
+Date: Mon, 22 Sep 2026 09:14:22 +0100
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="----=_NextPart_Turnstone_0001"
+
+------=_NextPart_Turnstone_0001
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+Name  URL  Status  Notes
+Apple Newsroom  https://www.apple.com/newsroom/  incomplete  Q3 earnings pa=
+ge
+BBC Homepage  https://www.bbc.com/  complete  
+Changelog Nightly  https://changelog.com/nightly  incomplete  Skip the arch=
+ive pages
+Comma, Inc. Blog  https://example.com/comma-blog  complete  Note with, comm=
+as, and "quotes"
+Demo Domain  https://example.com/  incomplete  
+GitHub Trending  https://github.com/trending  incomplete  Check weekly
+Hacker News  https://news.ycombinator.com/  complete  Blocked in iframes =
+=2014 use =2197
+Sheets Example  https://example.com/sheet-demo  incomplete  
+Turnstone Repo  https://github.com/  incomplete  
+Wikipedia Portal  https://www.wikipedia.org/  incomplete  
+------=_NextPart_Turnstone_0001
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+<html><head><meta http-equiv=3D"Content-Type" content=3D"text/html; charset=
+=3Dwindows-1252">
+<style>body{font-family:Calibri,sans-serif;font-size:11pt}table{border-coll=
+apse:collapse}
+td,th{border:1px solid #bfbfbf;padding:2pt 6pt}</style></head>
+<body lang=3D"EN-GB" style=3D"word-wrap:break-word">
+<p class=3D"MsoNormal">Hi,<o:p></o:p></p>
+<p class=3D"MsoNormal">Here is the reading list for this week. Please work =
+through it and reply when the list is clear.<o:p></o:p></p>
+<table><thead><tr><th>Name</th><th>URL</th><th>Status</th><th>Notes</th></t=
+r></thead>
+<tbody><tr><td>Apple Newsroom</td><td>https://www.apple.com/newsroom/</td><=
+td>incomplete</td><td>Q3 earnings page</td></tr>
+<tr><td>BBC Homepage</td><td>https://www.bbc.com/</td><td>complete</td><td>=
+</td></tr>
+<tr><td>Changelog Nightly</td><td>https://changelog.com/nightly</td><td>inc=
+omplete</td><td>Skip the archive pages</td></tr>
+<tr><td>Comma, Inc. Blog</td><td>https://example.com/comma-blog</td><td>com=
+plete</td><td>Note with, commas, and "quotes"</td></tr>
+<tr><td>Demo Domain</td><td>https://example.com/</td><td>incomplete</td><td=
+></td></tr>
+<tr><td>GitHub Trending</td><td>https://github.com/trending</td><td>incompl=
+ete</td><td>Check weekly</td></tr>
+<tr><td>Hacker News</td><td>https://news.ycombinator.com/</td><td>complete<=
+/td><td>Blocked in iframes =2014 use =2197</td></tr>
+<tr><td>Sheets Example</td><td>https://example.com/sheet-demo</td><td>incom=
+plete</td><td></td></tr>
+<tr><td>Turnstone Repo</td><td>https://github.com/</td><td>incomplete</td><=
+td></td></tr>
+<tr><td>Wikipedia Portal</td><td>https://www.wikipedia.org/</td><td>incompl=
+ete</td><td></td></tr></tbody></table>
+<p class=3D"MsoNormal">Thanks,<br>Sam<o:p></o:p></p>
+</body></html>
+------=_NextPart_Turnstone_0001--

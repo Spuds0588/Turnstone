@@ -58,6 +58,8 @@ let html = read('app.html');
 const before = Buffer.byteLength(html);
 const papaBytes = Buffer.byteLength(read('vendor/papaparse.min.js'));
 const xlsxBytes = Buffer.byteLength(read('vendor/xlsx.full.min.js'));
+const mailBytes = Buffer.byteLength(read('vendor/maillayer.js'));
+const phoneBytes = Buffer.byteLength(read('vendor/phonelayer.js'));
 
 const replacements = [
   ['vendor/papaparse.min.js script tag',
@@ -66,6 +68,15 @@ const replacements = [
   ['vendor/xlsx.full.min.js script tag',
     '<script src="vendor/xlsx.full.min.js"></script>',
     jsBlock('vendor/xlsx.full.min.js', 'SheetJS 0.20.3')],
+  /* The two embedded layers read their config from their own tag — which, inlined,
+     is still a <script> element, so `document.currentScript` finds it and both load
+     with their documented defaults. */
+  ['vendor/maillayer.js script tag',
+    '<script src="vendor/maillayer.js"></script>',
+    jsBlock('vendor/maillayer.js', 'MailLayer Embedded 2.1.0')],
+  ['vendor/phonelayer.js script tag',
+    '<script src="vendor/phonelayer.js"></script>',
+    jsBlock('vendor/phonelayer.js', 'PhoneLayer Embedded 1.9.1')],
   ['dark logo image',
     'src="assets/logo-dark.svg"',
     `src="${svgUri('assets/logo-dark.svg')}"`],
@@ -77,6 +88,14 @@ const replacements = [
   ['service worker gate', 'const STANDALONE_BUILD = false;', 'const STANDALONE_BUILD = true;'],
   ['title', '<title>Turnstone — URL List Processor</title>',
     '<title>Turnstone — standalone beta</title>'],
+  /* This document is its own page, so it must not inherit app.html's canonical —
+     two URLs claiming to be the same page is the one way a canonical tag does harm. */
+  ['canonical', '<link rel="canonical" href="https://spuds0588.github.io/Turnstone/app.html">',
+    '<link rel="canonical" href="https://spuds0588.github.io/Turnstone/turnstone-standalone.html">'],
+  /* …and the structured data has to agree with it, or the document claims to be a
+     second copy of a page it is not. */
+  ['structured-data url', '"url": "https://spuds0588.github.io/Turnstone/app.html"',
+    '"url": "https://spuds0588.github.io/Turnstone/turnstone-standalone.html"'],
   ['tagline', '<p class="tagline">Your list, worked through.</p>',
     '<p class="tagline">Your list, worked through. '
     + '<span class="ts-beta" title="Standalone single-file beta build: the app, its libraries and its artwork all live in this one document. Nothing is loaded from the network. Local files work fully; remote ?file= URLs need the hosted app.">beta · standalone</span></p>'],
@@ -109,9 +128,10 @@ const stamp = [
   '  Turnstone — standalone BETA build.',
   `  Generated ${new Date().toISOString()} from app.html @ ${sha}${dirty}.`,
   '',
-  '  Self-contained by construction: the app shell, PapaParse, SheetJS and the logo',
-  '  artwork are all inlined above, and the app makes no third-party requests, so this',
-  '  document needs no server, no network and no repository checkout.',
+  '  Self-contained by construction: the app shell, PapaParse, SheetJS, the MailLayer',
+  '  and PhoneLayer embeddings, and the logo artwork are all inlined above, and the app',
+  '  makes no third-party requests, so this document needs no server, no network and no',
+  '  repository checkout.',
   '',
   '  Regenerate with:  node assets/build-standalone.js',
   '-->',
@@ -122,7 +142,7 @@ html = mustReplace(html, '<!doctype html>', `<!doctype html>\n${stamp}`, 'doctyp
 
 const leftovers = html.match(/(?:src|href)="(?:assets|vendor)\/[^"]*"/g);
 if (leftovers) throw new Error(`standalone still references files on disk:\n  ${leftovers.join('\n  ')}`);
-for (const needle of ['Papa.parse', 'sheet_to_json', 'data:image/svg+xml;base64,']) {
+for (const needle of ['Papa.parse', 'sheet_to_json', 'window.PhoneLayer', 'data:image/svg+xml;base64,']) {
   if (!html.includes(needle)) throw new Error(`standalone is missing expected inlined content: ${needle}`);
 }
 if (!html.includes('const STANDALONE_BUILD = true;')) throw new Error('STANDALONE_BUILD flag was not flipped — the SW gate has drifted from app.html');
@@ -131,6 +151,8 @@ const report = [
   `app.html                ${size(read('app.html'))}`,
   `  papaparse.min.js      ${(papaBytes / 1024).toFixed(1)} KB → inlined`,
   `  xlsx.full.min.js      ${(xlsxBytes / 1024).toFixed(1)} KB → inlined`,
+  `  maillayer.js          ${(mailBytes / 1024).toFixed(1)} KB → inlined`,
+  `  phonelayer.js         ${(phoneBytes / 1024).toFixed(1)} KB → inlined`,
   `  logo-dark/light.svg   inlined as data URIs`,
   `app.html total          ${(before / 1024).toFixed(1)} KB`,
   `standalone              ${size(html)} (${((Buffer.byteLength(html) / before) * 100).toFixed(0)}% of the app shell alone)`,

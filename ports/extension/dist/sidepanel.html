@@ -14,7 +14,7 @@
 <body>
 
 
-<input type="file" id="file-input" accept=".csv,.tsv,.tab,.txt,.xlsx,.xls,.ods,.json,.jsonl,.ndjson,.html,.htm,.xml,.rss,.atom,.opml,text/csv,text/tab-separated-values,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.oasis.opendocument.spreadsheet,text/html,application/xml,text/xml" hidden>
+<input type="file" id="file-input" accept=".csv,.tsv,.tab,.txt,.xlsx,.xls,.ods,.docx,.md,.markdown,.mdown,.mkd,.json,.jsonl,.ndjson,.html,.htm,.mht,.mhtml,.xml,.rss,.atom,.opml,.eml,text/csv,text/tab-separated-values,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,application/vnd.ms-excel,application/vnd.oasis.opendocument.spreadsheet,text/html,message/rfc822,application/xml,text/xml" hidden>
 
 <main id="app">
   <!-- LEFT: tabbed iframe workspace (one of several open modes) -->
@@ -30,8 +30,10 @@
             <span class="dz-icon" aria-hidden="true">⤓</span>
             <span class="dz-main">Drop a file here, or click to choose</span>
             <span class="dz-sub">Read and parsed on this device — nothing is uploaded.</span>
-            <span class="dz-formats" id="dz-formats">CSV · TSV · XLSX / XLS / ODS · JSON · HTML · XML</span>
+            <span class="dz-formats" id="dz-formats">CSV · TSV · XLSX / XLS / ODS · DOCX · Email (.eml) · Markdown · JSON · HTML · XML</span>
           </div>
+          <p class="help" id="paste-hint">No file to hand? Copy a table anywhere — a portal, a mail client, a
+            spreadsheet — and press <kbd>Ctrl</kbd>+<kbd>V</kbd> (<kbd>⌘</kbd>+<kbd>V</kbd>) anywhere in Turnstone.</p>
           <p id="cap-notice" hidden></p>
           <div class="row">
             <input type="text" id="url-input" placeholder="…or paste a link-list URL" spellcheck="false">
@@ -65,10 +67,14 @@
       <button class="menu-item" id="mi-open"><span class="mi">📂</span> Open file…</button>
       <button class="menu-item" id="mi-restore" hidden><span class="mi">↺</span> Restore last file</button>
       <button class="menu-item" id="mi-close" disabled><span class="mi">✕</span> Close current file</button>
-      <button class="menu-item" id="mi-link" disabled><span class="mi">🔗</span> Copy share link (?file=)</button>
+      <button class="menu-item" id="mi-link" disabled><span class="mi">🔗</span> Copy share link</button>
+      <button class="menu-item" id="mi-build"><span class="mi">🧩</span> Build a share link…</button>
       <div class="menu-sep"></div>
       <div class="menu-label">Opening links</div>
       <button class="menu-item mode-item" data-mode="tabs"><span class="mi">🗂</span> Real browser tabs</button>
+      <div class="menu-sep"></div>
+      <button class="menu-item" id="mi-portal"><span class="mi">🏛</span> Portal link template…</button>
+      <button class="menu-item" id="mi-paste"><span class="mi">📋</span> Paste a list…</button>
       <div class="menu-sep"></div>
       <div class="menu-label">Automation</div>
       <button class="menu-item toggle-item" id="mi-auto-open"><span class="mi">⚡</span> Open link when card is selected</button>
@@ -103,8 +109,25 @@
       <h2>Task card columns</h2>
       <button class="icon" id="settings-x" title="Close">✕</button>
     </div>
-    <p class="hint">Drag to reorder · untick to hide. URL, name, status and notes are fixed card features. Changes apply live.</p>
+    <p class="hint">Drag to reorder · untick to hide. The dropdown flags what a column <em>is</em>: Turnstone picks the link column from the values themselves — a page, an <code>@address</code> or a phone number all count — so if it ever guesses wrong, or your links are bare <code>example.com</code>, set <b>URL</b> here and it sticks for this file. Addresses and numbers anywhere on a card are clickable on their own, through MailLayer and PhoneLayer. Changes apply live.</p>
     <div id="settings-cols"></div>
+
+    <h3 class="set-h">Portal link template <span class="set-opt">optional</span></h3>
+    <p class="hint">For lists where nothing in the file is a link because the work happens in one portal. Name the
+      portal address and every card gets a link built from its own row — <code>{Column name}</code> is replaced with that
+      cell's value. Remembered for this column layout, and shareable with <code>?link=</code>. Leave it empty and cards
+      link to the file's own URL column, as before.</p>
+    <div class="portal-editor">
+      <input type="text" id="portal-set-input" class="portal-input" spellcheck="false" autocomplete="off"
+             placeholder="https://portal.example.com/ticket/{Ticket ID}" value="">
+      <div class="pchips" id="portal-set-chips"></div>
+      <p class="portal-preview" id="portal-set-preview"></p>
+      <div class="srow">
+        <button class="btn primary" id="portal-set-apply">Apply template</button>
+        <button class="btn" id="portal-set-clear">Clear</button>
+      </div>
+    </div>
+
     <p class="hint">Save the layout as a preset — any link list whose header row matches this exact column order loads with it pre-applied.</p>
     <div class="srow">
       <input type="text" id="preset-name" placeholder="Preset name (e.g. Client audit)" maxlength="40">
@@ -117,16 +140,33 @@
   </div>
 </div>
 
+<div id="mobile-gate" hidden>
+  <div class="modal-box">
+    <div class="gate-icon" aria-hidden="true">🖥️</div>
+    <h2 class="modal-title">Turnstone is a desktop app</h2>
+    <p class="modal-sub">Mobile isn't supported. Open Turnstone on a desktop — or on a device and window sized like one.</p>
+    <p class="gate-note">This device reports a touch-first pointer at <span id="gate-w">0</span>×<span id="gate-h">0</span>px. On touch, file picking, drag-and-drop and save-back are unreliable — expect a broken workspace.</p>
+    <button class="btn" id="gate-dismiss">Continue anyway</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 
 
 
 
+<!-- The two embedded layers. Both read their config off their own tag and expose
+     no required global, so no inline wiring is needed here; per-link overrides
+     (theme, colour, provider) are stamped onto each anchor as it renders. -->
+
+
 
 
 <script src="vendor/papaparse.min.js"></script>
 <script src="vendor/xlsx.full.min.js"></script>
+<script src="vendor/maillayer.js"></script>
+<script src="vendor/phonelayer.js"></script>
 <script src="sidepanel.js"></script>
 </body>
 </html>

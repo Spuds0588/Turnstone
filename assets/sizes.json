@@ -1,7 +1,7 @@
 {
-  "ports/bookmarklet/dist/turnstone-bookmarklet-core.txt": 156682,
-  "ports/bookmarklet/dist/turnstone-bookmarklet-csv.txt": 146839,
-  "ports/bookmarklet/dist/turnstone-bookmarklet-full.txt": 1115728,
-  "ports/extension/dist": 1131468,
-  "turnstone-standalone.html": 1120106
+  "ports/bookmarklet/dist/turnstone-bookmarklet-core.txt": 267437,
+  "ports/bookmarklet/dist/turnstone-bookmarklet-csv.txt": 257594,
+  "ports/bookmarklet/dist/turnstone-bookmarklet-full.txt": 1226483,
+  "ports/extension/dist": 1276038,
+  "turnstone-standalone.html": 1266129
 }

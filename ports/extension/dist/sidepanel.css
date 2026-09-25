@@ -286,6 +286,10 @@
   .col-row .ck { flex: 0 0 auto; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .5px; }
   .col-row .cv { flex: 1 1 auto; color: var(--text); word-break: break-word; min-width: 0; }
   .col-row .emptyv { color: var(--muted); }
+  /* A cell that is an address or a number is a link: it reads as one, and the
+     vendored layers take the click. Dotted so it never shouts over the data. */
+  .col-row .cv a.cell-link { color: var(--accent); text-decoration: none; border-bottom: 1px dotted var(--accent-dark); }
+  .col-row .cv a.cell-link:hover { text-decoration: underline; border-bottom-color: transparent; }
   .col-more {
     align-self: flex-start; background: none; border: none; color: var(--accent);
     font-size: 11px; cursor: pointer; padding: 1px 0;
@@ -306,6 +310,11 @@
   #settings-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
   #settings-head h2 { margin: 0; font-size: 15px; }
   #settings-box .hint { font-size: 11px; color: var(--muted); margin: 6px 0; }
+  #settings-box .set-h { font-size: 12.5px; margin: 16px 0 2px; display: flex; align-items: center; gap: 7px; }
+  #settings-box .set-opt {
+    font-size: 10px; font-weight: 500; color: var(--muted); border: 1px solid var(--border);
+    border-radius: 999px; padding: 1px 7px; text-transform: uppercase; letter-spacing: .04em;
+  }
   #settings-cols { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
   .set-col {
     display: flex; align-items: center; gap: 8px; padding: 6px 8px;
@@ -317,13 +326,31 @@
   .set-col.fixed .drag { cursor: default; opacity: .5; }
   .set-col.dragging { opacity: .5; }
   .set-col label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-  .set-col .pos { margin-left: auto; color: var(--muted); font-size: 10.5px; }
+  .set-col input[type=checkbox] { flex: 0 0 auto; }
+  .set-col .pos { color: var(--muted); font-size: 10.5px; white-space: nowrap; }
+  .set-col .cname { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .set-col select {
+    flex: 0 0 auto; background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    border-radius: 5px; font-size: 11.5px; padding: 2px 4px; font-family: inherit; cursor: pointer;
+  }
+  .set-col.fixed select { border-color: var(--accent-dark); }
   #settings-presets { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
   .preset-row { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }
   .preset-row .pname { font-weight: 600; }
   .preset-row .pmeta { color: var(--muted); font-size: 10.5px; flex: 1; }
   .srow { display: flex; gap: 6px; margin-top: 8px; }
   .srow input[type=text] { flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; font-size: 12px; }
+
+  /* ---------- Desktop-only gate ---------- */
+  /* Turnstone is a desktop app; a phone gets an honest notice instead of a
+     broken layout. Same blocking-overlay shape as the mode picker. */
+  #mobile-gate {
+    position: fixed; inset: 0; background: rgba(0,0,0,.72); z-index: 400;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  #mobile-gate[hidden] { display: none; }
+  #mobile-gate .gate-icon { font-size: 30px; line-height: 1; margin-bottom: 8px; }
+  #mobile-gate .gate-note { font-size: 11.5px; color: var(--muted); margin: 0 0 12px; }
 
   /* ---------- Inline dialogs (open-mode picker, sheet picker) ---------- */
   /* None of this is an inline `style="…"` attribute. A strict CSP drops those
@@ -363,6 +390,51 @@
   .pick-opt:hover { border-color: var(--accent-dark); }
   .pick-opt .label { font-weight: 600; }
   .pick-opt .hint { font-size: 11px; color: var(--muted); }
+
+  /* Portal editor — the prompt for a list with no links, and the same control
+     in the settings panel. */
+  .portal-editor { margin: 6px 0 2px; }
+  .portal-input {
+    width: 100%; box-sizing: border-box; background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px; padding: 7px 9px;
+    font-size: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .portal-input:focus { outline: none; border-color: var(--accent-dark); }
+  .portal-input.bad { border-color: var(--danger); }
+  .pchips { display: flex; flex-wrap: wrap; gap: 5px; margin: 7px 0 2px; }
+  .pchip {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 999px; padding: 2px 9px; font-size: 11px; cursor: pointer;
+  }
+  .pchip:hover { color: var(--text); border-color: var(--accent-dark); }
+  .portal-preview {
+    font-size: 11px; color: var(--muted); margin: 6px 0 0; word-break: break-all;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .portal-preview.bad { color: var(--danger); }
+  .portal-preview b { color: var(--text); font-weight: 600; }
+
+  /* Share-link builder — paste a list, walk away with a URL that carries it. */
+  .bl-label {
+    display: block; font-size: 10.5px; color: var(--muted); margin: 12px 0 4px;
+    text-transform: uppercase; letter-spacing: .05em; font-weight: 600;
+  }
+  .bl-area { height: 128px; resize: vertical; line-height: 1.45; }
+  .bl-url { height: 64px; resize: vertical; font-size: 10.5px; line-height: 1.4; }
+  .bl-size { font-size: 11px; color: var(--muted); margin: 6px 0 0; }
+  .bl-size.bad { color: var(--danger); }
+  .bl-status { font-size: 11.5px; color: var(--muted); margin: 8px 0 0; }
+  .bl-status b { color: var(--text); }
+
+  /* Paste preview */
+  .paste-preview { max-height: 210px; overflow: auto; border: 1px solid var(--border); border-radius: 6px; margin: 8px 0; }
+  .paste-preview table { border-collapse: collapse; width: 100%; font-size: 11.5px; }
+  .paste-preview th, .paste-preview td {
+    border: 1px solid var(--border); padding: 3px 6px; text-align: left;
+    max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .paste-preview th { background: var(--panel-2); color: var(--muted); font-weight: 600; }
+  .paste-preview tr.more td { color: var(--muted); text-align: center; }
   .sheet-opt {
     display: block; width: 100%; text-align: left; margin: 4px 0; padding: 7px 12px;
     font-size: 13px; cursor: pointer; border-radius: 8px;
@@ -385,6 +457,7 @@
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #toast.error { border-color: var(--danger); color: var(--danger); }
   #toast.success { border-color: var(--green); }
+  #toast.warn { border-color: var(--amber); }
 
   @media (max-width: 760px) {
     #app { grid-template-columns: 1fr; grid-template-rows: 1fr 45vh; }

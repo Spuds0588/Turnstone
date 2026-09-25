@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; font-src 'none'; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; manifest-src 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Share a list as a link — Turnstone workspace links</title>
+<meta name="description" content="Put a whole list inside a URL: Turnstone workspace links carry ten or ten thousand rows in the fragment, so one link opens a ready-to-work queue. Nothing is uploaded, no account, no file to send — and it is documented precisely enough for an AI agent to build one for you.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://spuds0588.github.io/Turnstone/workspace-link.html">
+<link rel="icon" type="image/png" href="assets/icon-192.png">
+<link rel="alternate" type="text/markdown" href="workspace-link.html.md" title="Markdown version of this page">
+<link rel="describedby" type="text/plain" href="llms.txt" title="llms.txt — this site for agents">
+<meta name="theme-color" content="#0f1115">
+<meta property="og:title" content="Share a list as a link — Turnstone workspace links">
+<meta property="og:description" content="A URL that carries the whole list. One link opens a ready-to-work Turnstone queue — no file, no upload, no account.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://spuds0588.github.io/Turnstone/workspace-link.html">
+<meta property="og:site_name" content="Turnstone">
+<meta property="og:image" content="https://spuds0588.github.io/Turnstone/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Turnstone — the stone logo on its dark brand background">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Share a list as a link — Turnstone workspace links">
+<meta name="twitter:description" content="A URL that carries the whole list. One link opens a ready-to-work queue.">
+<meta name="twitter:image" content="https://spuds0588.github.io/Turnstone/assets/og-image.png">
+<link rel="stylesheet" href="site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Turn a list into a link that opens it as a workspace",
+  "description": "Encode a list — CSV, TSV, JSON, Markdown or a plain list of links — into a Turnstone URL and hand the URL over. Opening it loads the list as a task-card workspace with no file and no server involved.",
+  "url": "https://spuds0588.github.io/Turnstone/workspace-link.html",
+  "totalTime": "PT1M",
+  "tool": [
+    { "@type": "HowToTool", "name": "Turnstone (a web browser)" }
+  ],
+  "step": [
+    {
+      "@type": "HowToStep",
+      "position": 1,
+      "name": "Get the list as text",
+      "text": "Get the list as text. A CSV or TSV export, a JSON array, a Markdown task list, or a plain list of links, one per line."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 2,
+      "name": "Deflate it raw and base64url it",
+      "text": "Deflate it raw and base64url it. The stream must be raw deflate — no zlib or gzip wrapper — and base64url with no padding."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 3,
+      "name": "Put it in the fragment with a checksum",
+      "text": "Put it in the fragment with a checksum. app.html#zdata=<payload>&sum=<length>.<fnv1a>, with the length and hash in base 36."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 4,
+      "name": "Add a portal address if the rows have no links of their own",
+      "text": "Add a portal address if the rows have no links of their own. &link=https://portal.example.com/ticket/{Ticket} composes each card's URL from the row."
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does this upload my list?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. Everything after the # stays in the browser, which is why the payload lives there and not in the query string." }
+    },
+    {
+      "@type": "Question",
+      "name": "How big can a list be?",
+      "acceptedAnswer": { "@type": "Answer", "text": "A typical queue compresses to a few hundred characters. A 4,000-row export still lands around a fiftieth of its original size. Past 100 KB Turnstone warns that chat clients may trim the link; past 2 MB of list it refuses, because a URL is not a file." }
+    },
+    {
+      "@type": "Question",
+      "name": "What if the link arrives damaged?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Every link we build carries a checksum, so a link that lost its tail is refused with a reason instead of quietly opening a shorter queue." }
+    },
+    {
+      "@type": "Question",
+      "name": "Do the notes and ticks come along?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes — a link built from a workspace you have been working in carries the statuses and notes you have entered, not just the original rows." }
+    },
+    {
+      "@type": "Question",
+      "name": "Does it work offline?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes, once the app itself is cached. Opening a workspace link needs no network beyond loading the page." }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<nav class="topnav" aria-label="Site">
+  <div class="inner">
+    <a class="brand" href="index.html"><img src="assets/logo-dark.svg" alt="">Turnstone</a>
+    <a class="link" href="index.html">Home</a>
+    <a class="link" href="versions.html">All versions</a>
+    <span class="spacer"></span>
+    <a class="go" href="app.html">Launch app →</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="top">
+    <img src="assets/logo-dark.svg" alt="">
+    <h1>Share a list as a link</h1>
+  </header>
+
+  <p class="sub">
+    A Turnstone <strong>workspace link</strong> carries the whole list inside the URL. Open it and the
+    queue is already there — rows, columns, statuses, notes, and the portal address its rows are worked
+    at. No file to send, nothing uploaded, no account on either end. It works because a list is just
+    text, and a URL can hold text.
+  </p>
+
+  <div class="btns">
+    <a class="btn primary" href="app.html?build=1">Build a link →</a>
+    <a class="btn" href="app.html">Open the app</a>
+  </div>
+
+  <h2>Try it here</h2>
+  <p>
+    This is the real application, opened straight into its share-link builder. Paste a list, watch it
+    report what it read, and take the link. Nothing on this page is a screenshot.
+  </p>
+  <div class="frame">
+    <iframe src="app.html?build=1" title="Turnstone share-link builder" loading="lazy"
+            style="width:100%;height:520px;border:1px solid #262b36;border-radius:10px;background:#0f1115"></iframe>
+  </div>
+  <p class="note">
+    If the frame does not load, <a href="app.html?build=1">open the builder in its own tab</a>.
+  </p>
+
+  <h2>Why put the list in the fragment</h2>
+  <p>
+    The payload goes after the <code>#</code>, and that choice is doing real work. A fragment is
+    <strong>never sent to a server</strong> — so the host of the page, and everything between you and it,
+    sees a request for <code>app.html</code> and nothing else. Your client names, invoice numbers and
+    notes stay in the browser. It also means the link is not subject to the request-line limits servers
+    impose on query strings: nginx's default 8 KB header buffer answers anything longer with a
+    <code>414</code>, and a long list would be refused by the host before any of our code ran.
+  </p>
+  <p>
+    Query strings still work, for a tool that can only append one — <code>?data=</code> is read exactly
+    like <code>#data=</code>. It is just the second-best place to put a list of somebody's clients.
+  </p>
+
+  <h2>The format</h2>
+  <p>Two encodings, and the plain one exists because a person can write it by hand:</p>
+  <table>
+    <thead><tr><th>Parameter</th><th>What it carries</th></tr></thead>
+    <tbody>
+      <tr><td><code>data</code></td><td>The list as percent-encoded text. Readable, debuggable, and the one to use for a handful of rows.</td></tr>
+      <tr><td><code>zdata</code></td><td>The list deflated with <em>raw</em> deflate and base64url-encoded, no padding. Four to six times smaller, which is the difference between a link that survives a chat client and one that gets trimmed.</td></tr>
+      <tr><td><code>sum</code></td><td>Optional integrity token: the byte length and an FNV-1a 32-bit hash of the list, both in base 36, joined with a dot. Present on every link we build; ignored when absent, verified when present.</td></tr>
+      <tr><td><code>format</code></td><td>Forces the reader: <code>csv</code>, <code>tsv</code>, <code>json</code>, <code>md</code>, <code>xml</code>, <code>html</code>. Without it the format is sniffed from the text, which is right most of the time.</td></tr>
+      <tr><td><code>link</code></td><td>A portal address to compose each row's link from: <code>https://portal.example.com/ticket/{Ticket}</code>. <code>{Column}</code> is percent-encoded into the URL, <code>{Column|raw}</code> is spliced verbatim, <code>{0}</code> addresses a column by position.</td></tr>
+      <tr><td><code>name</code></td><td>What to call the workspace, so the sidebar says <em>Q3 approvals</em> rather than <em>Shared workspace</em>.</td></tr>
+      <tr><td><code>open</code></td><td><code>1</code> to open the first task as soon as the link loads.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Building one in three lines, in any language</h2>
+  <p>
+    There is no service, no API and no key: it is deflate, base64url, and a checksum. The only detail
+    that matters is that the deflate stream must be <strong>raw</strong> (no zlib or gzip wrapper).
+    Four steps, and the code below is all of them:
+  </p>
+  <ol>
+    <li><strong>Get the list as text.</strong> A CSV or TSV export, a JSON array, a Markdown task list, or
+      a plain list of links, one per line.</li>
+    <li><strong>Deflate it raw and base64url it.</strong> The stream must be raw deflate — no zlib or gzip
+      wrapper — and base64url with no padding.</li>
+    <li><strong>Put it in the fragment with a checksum.</strong>
+      <code>app.html#zdata=&lt;payload&gt;&amp;sum=&lt;length&gt;.&lt;fnv1a&gt;</code>, with the length and
+      hash in base 36.</li>
+    <li><strong>Add a portal address if the rows have no links of their own.</strong>
+      <code>&amp;link=https://portal.example.com/ticket/{Ticket}</code> composes each card's URL from the
+      row.</li>
+  </ol>
+  <pre class="code"><code>// Node — no dependencies
+const zlib = require('zlib');
+const b = Buffer.from(list, 'utf8');
+let h = 0x811c9dc5; for (const x of b) { h ^= x; h = Math.imul(h, 0x01000193) >>> 0; }
+const sum = `${b.length.toString(36)}.${(h >>> 0).toString(36)}`;
+const url = 'https://spuds0588.github.io/Turnstone/app.html'
+  + '#zdata=' + zlib.deflateRawSync(b).toString('base64url') + '&sum=' + sum;</code></pre>
+  <pre class="code"><code># Python — standard library only
+import base64, zlib
+raw = list_text.encode('utf-8')
+co = zlib.compressobj(9, zlib.DEFLATED, -15)          # -15 = raw deflate
+payload = base64.urlsafe_b64encode(co.compress(raw) + co.flush()).rstrip(b'=')
+url = f"https://spuds0588.github.io/Turnstone/app.html#zdata={payload.decode()}"</code></pre>
+  <pre class="code"><code>// In a page, with the platform's own streams
+const stream = new Blob([new TextEncoder().encode(list)])
+  .stream().pipeThrough(new CompressionStream('deflate-raw'));
+const bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+const b64 = btoa(String.fromCharCode(...bytes))
+  .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');</code></pre>
+
+  <h2>The list with no links in it</h2>
+  <p>
+    Half of the queues people actually work are rows of ticket numbers, invoice IDs or vendor names, all
+    of them living inside one system. There is no per-row URL to put in a column, so the link supplies
+    the address instead, and Turnstone composes each card's link from the row's own values:
+  </p>
+  <pre class="code"><code>#data=…&amp;link=https%3A%2F%2Fportal.example.com%2Fincident%2F%7BTicket%7D</code></pre>
+  <p>
+    Every card then opens the right page of that portal, and only an <code>http(s)</code> result is ever
+    turned into a link — a template cannot produce a <code>javascript:</code> URL.
+  </p>
+
+  <h2>For an AI agent, in one paragraph</h2>
+  <p>
+    Read the list, deflate it raw, base64url it without padding, compute the checksum, and assemble
+    <code>app.html#zdata=…&amp;sum=…</code>. Add <code>&amp;link=</code> if the rows are keys into a
+    portal rather than links of their own, and <code>&amp;name=</code> if you want the sidebar to say what
+    the list is. Then hand over the URL: opening it loads the workspace with no further setup, and a
+    truncated link refuses to open rather than loading half a queue. The same specification, written for
+    a machine to read, is in <a href="llms.txt">llms.txt</a> and
+    <a href="workspace-link.html.md">the Markdown version of this page</a>.
+  </p>
+
+  <h2>Questions this answers</h2>
+  <dl class="faq">
+    <dt>Does this upload my list?</dt>
+    <dd>No. Everything after the <code>#</code> stays in the browser, which is why the payload lives there and not in the query string.</dd>
+    <dt>How big can a list be?</dt>
+    <dd>A typical queue compresses to a few hundred characters. A 4,000-row export still lands around a fiftieth of its original size. Past 100 KB Turnstone warns that chat clients may trim the link; past 2 MB of list it refuses, because a URL is not a file.</dd>
+    <dt>What if the link arrives damaged?</dt>
+    <dd>Every link we build carries a checksum, so a link that lost its tail is refused with a reason instead of quietly opening a shorter queue.</dd>
+    <dt>Do the notes and ticks come along?</dt>
+    <dd>Yes — a link built from a workspace you have been working in carries the statuses and notes you have entered, not just the original rows.</dd>
+    <dt>Does it work offline?</dt>
+    <dd>Yes, once the app itself is cached. Opening a workspace link needs no network beyond loading the page.</dd>
+  </dl>
+
+  <footer class="foot">
+    <div class="row">
+      <a href="index.html">Overview</a>
+      <a href="versions.html">All versions</a>
+      <a href="web-app.html">Web app</a>
+      <a href="standalone.html">Standalone build</a>
+      <a href="bookmarklet.html">Bookmarklet</a>
+      <a href="extension.html">Chrome extension</a>
+    </div>
+    <div class="row">
+      <a href="app.html">Launch the app</a>
+      <a href="https://github.com/Spuds0588/Turnstone" target="_blank" rel="noopener">GitHub</a>
+      <a href="history.md">history.md</a>
+      <a href="llms.txt">llms.txt</a>
+    </div>
+    <p>MIT licensed · no telemetry · no backend · nothing uploaded · your list stays in the link.</p>
+  </footer>
+</div>
+<script src="site.js"></script>
+</body>
+</html>

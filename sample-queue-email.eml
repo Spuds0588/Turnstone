@@ -1,0 +1,38 @@
+From: Farah Adeyemi <farah.adeyemi@example.com>
+To: Accounts Payable <ap@example.com>
+Subject: Payment run — approvals needed before Friday
+Date: Tue, 23 Sep 2026 16:02:07 +0100
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="----=_NextPart_Turnstone_0002"
+
+------=_NextPart_Turnstone_0002
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Hi,
+
+The queue for this week's run is attached. Ten items, four of them
+already cleared. I need the rest signed off before Friday please.
+
+Thanks,
+Farah
+------=_NextPart_Turnstone_0002
+Content-Type: text/csv; name="approvals.csv"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="approvals.csv"
+
+SW52b2ljZSAjLFZlbmRvcixBbW91bnQsQXBwcm92ZXIsU3RhdHVzLER1ZQ0KSU5WLTg4MjMxLE5v
+cnRod2luZCBQYXBlciBDby4sMTI0MC41LEYuIEFkZXllbWksQXBwcm92ZWQsMjAyNi0xMC0wMg0K
+SU5WLTg4MjMyLENhbGRlciBPZmZpY2UgU3VwcGxpZXMsMzg4Ljk5LEYuIEFkZXllbWksQXBwcm92
+ZWQsMjAyNi0xMC0wMg0KSU5WLTg4MjQwLEhhcnJvdyBGcmVpZ2h0LDU3NjAsTS4gTGluZHF2aXN0
+LFBlbmRpbmcgYXBwcm92YWwsMjAyNi0xMC0wNQ0KSU5WLTg4MjQxLEJyaWdodHdlbGwgQ2F0ZXJp
+bmcsOTE4LjIsTS4gTGluZHF2aXN0LFBhaWQsMjAyNi0xMC0wNQ0KSU5WLTg4MjQ5LE9yZG5hbmNl
+IFRvb2xpbmcsMTI0ODAuNzUsUi4gSGFkZGFkLE9uIGhvbGQg4oCUIHF1ZXJ5IHJhaXNlZCwyMDI2
+LTEwLTA5DQpJTlYtODgyNTAsTm9ydGh3aW5kIFBhcGVyIENvLiwxMjQwLjUsRi4gQWRleWVtaSxQ
+ZW5kaW5nIGFwcHJvdmFsLDIwMjYtMTAtMDkNCklOVi04ODI2MSxTZWxieSBMZWdhbCBMTFAsMzQ1
+MCxSLiBIYWRkYWQsQXdhaXRpbmcgY29zdCBjZW50cmUsMjAyNi0xMC0xMg0KSU5WLTg4MjYyLEtl
+c3RyZWwgSVQgU2VydmljZXMsODkwMCxSLiBIYWRkYWQsUGVuZGluZyBhcHByb3ZhbCwyMDI2LTEw
+LTEyDQpJTlYtODgyNzAsSGFsZGVuIENsZWFuaW5nLDY0Mi40LE0uIExpbmRxdmlzdCxSZWplY3Rl
+ZCDigJQgZHVwbGljYXRlLDIwMjYtMTAtMTYNCklOVi04ODI3MSxPcmRuYW5jZSBUb29saW5nLDIz
+MTAsUi4gSGFkZGFkLFBlbmRpbmcgYXBwcm92YWwsMjAyNi0xMC0xNg0K
+------=_NextPart_Turnstone_0002--

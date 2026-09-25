@@ -12,18 +12,29 @@
 <link rel="icon" type="image/png" href="assets/icon-192.png">
 <meta name="theme-color" content="#0f1115">
 <link rel="stylesheet" href="site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "url": "https://spuds0588.github.io/Turnstone/extension.html",
+  "name": "Turnstone Chrome extension — the queue beside any page, driving real tabs",
+  "inLanguage": "en",
+  "isPartOf": { "@type": "WebSite", "name": "Turnstone", "url": "https://spuds0588.github.io/Turnstone/" },
+  "about": { "@type": "SoftwareApplication", "name": "Turnstone", "applicationCategory": "BrowserApplication" },
+  "breadcrumb": { "@type": "BreadcrumbList", "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Turnstone", "item": "https://spuds0588.github.io/Turnstone/" },
+    { "@type": "ListItem", "position": 2, "name": "Chrome extension", "item": "https://spuds0588.github.io/Turnstone/extension.html" }
+  ] }
+}
+</script>
 </head>
 <body>
 
 <nav class="topnav" aria-label="Site">
   <div class="inner">
     <a class="brand" href="index.html"><img src="assets/logo-dark.svg" alt="">Turnstone</a>
-    <a class="link" href="index.html">Overview</a>
+    <a class="link" href="index.html">Home</a>
     <a class="link" href="versions.html">All versions</a>
-    <a class="link" href="web-app.html">Web app</a>
-    <a class="link" href="standalone.html">Standalone</a>
-    <a class="link" href="bookmarklet.html">Bookmarklet</a>
-    <a class="link" href="extension.html" aria-current="page">Extension</a>
     <span class="spacer"></span>
     <a class="go" href="app.html">Launch app →</a>
   </div>
@@ -65,6 +76,9 @@
       queue, starts one if there is none, or waits for the panel to next open if it was shut.</li>
     <li><strong>The same sidebar the web app has:</strong> cards, ✓ Complete / ↺ Incomplete, notes, search,
       sorting, column presets, exports, and the file-round-trip resume.</li>
+    <li><strong>Takes a file from anywhere:</strong> drop a CSV, XLSX, DOCX, Markdown or JSON list on the
+      panel, or choose it with the file dialog. The panel is file-based rather than URL-based, which is the
+      shape you want when the list comes from a script, an export, or an AI assistant.</li>
     <li><strong>Real write-back when you pick a file</strong> (Chromium), same as the web app — and exports
       land in your Downloads folder through the browser's own download API.</li>
   </ul>
@@ -81,6 +95,14 @@
       extensions unpacked in Developer mode or from the store.</li>
     <li><strong>Bulk-import a whole site.</strong> It queues links one at a time, as you right-click them. It
       does not crawl a page looking for links — feed it a CSV/XLSX export instead.</li>
+    <li><strong>Be driven by an AI agent.</strong> An agent can hand you the list — a <code>.csv</code>,
+      <code>.tsv</code> or <code>.xlsx</code> file you drop on the panel — but it cannot work the panel for
+      you. Doing that would take its own Chrome with this extension loaded and a panel open, which a coding
+      agent in a sandbox, a headless browser or on another machine does not have; and this panel has no
+      address bar, so a <a href="workspace-link.html">workspace link</a> has nowhere to arrive. Agent-built
+      links belong in the <a href="web-app.html">web app</a>, the
+      <a href="standalone.html">standalone build</a> or the <a href="bookmarklet.html">bookmarklet</a> —
+      anything with an address bar. Agent-built <em>files</em> work here, as they do everywhere.</li>
   </ul>
 
   <h2>Install it — load unpacked</h2>
@@ -92,8 +114,8 @@
   <div class="card">
     <p class="tight">
       Build: <strong><span data-version-of="ports/extension/dist/build.json" data-version-fallback="v0.1.0">v0.1.0</span></strong>
-      · Manifest V3 · needs Chromium 114+ · <span data-count-of="ports/extension/dist/build.json" data-count-fallback="13">13</span> files of
-      its own, <span data-size-of="ports/extension/dist" data-size-fallback="1.08 MB">1.08 MB</span> installed.
+      · Manifest V3 · needs Chromium 114+ · <span data-count-of="ports/extension/dist/build.json" data-count-fallback="15">15</span> files of
+      its own, <span data-size-of="ports/extension/dist" data-size-fallback="1.22 MB">1.22 MB</span> installed.
     </p>
     <p class="lede">
       Regenerate the folder after any change to the app with <code>node ports/extension/build.js</code>. The

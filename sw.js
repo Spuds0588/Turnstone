@@ -2,7 +2,7 @@
    Version bump this constant to invalidate all caches on the next load. */
 'use strict';
 
-const VERSION = 'turnstone-v0.9.9';
+const VERSION = 'turnstone-v0.14.0';
 
 /* Same-origin paths are relative to this file (served from the app root). */
 const PRECACHE = [
@@ -15,6 +15,13 @@ const PRECACHE = [
   'standalone.html',
   'bookmarklet.html',
   'extension.html',
+  /* The workspace-link page, and the agent-facing files beside it: an offline user
+     should be able to read how to build a link, and an agent that is handed the
+     site URL should find llms.txt without a network. */
+  'workspace-link.html',
+  'llms.txt',
+  'index.html.md',
+  'workspace-link.html.md',
   'site.css',
   'site.js',
   'bookmarklet.js',
@@ -25,6 +32,23 @@ const PRECACHE = [
   'sample-links.html',
   'sample-links.xml',
   'sample-links.xlsx',
+  'sample-links.docx',
+  'sample-links.md',          /* the same queue as a task list… */
+  'sample-links-table.md',    /* …and as a pipe table */
+  'sample-links-email.csv',   /* …as an address list… */
+  'sample-links-phone.csv',   /* …and as a call list */
+  /* The workflow family: the lists this kind of work actually arrives as. Four of
+     them are queue exports with no link anywhere, which is what the portal template
+     exists for — an offline user should be able to open those too. */
+  'sample-portal-tickets.csv',
+  'sample-portal-triage.tsv',
+  'sample-invoice-approvals.xlsx',
+  'sample-vendor-onboarding.csv',
+  'sample-compliance-renewals.csv',
+  'sample-meeting-actions.md',
+  'sample-inbox-digest.eml',   /* the same list as a table in an email body… */
+  'sample-queue-email.eml',    /* …and as a sheet attached to one */
+  'sample-saved-queue.mht',    /* a page kept from a portal with no export */
   'icon-192.png',
   'icon-512.png',
   'assets/logo.svg',
@@ -33,6 +57,10 @@ const PRECACHE = [
   /* Vendored libraries — same-origin, no CDN dependency at boot. */
   'vendor/papaparse.min.js',
   'vendor/xlsx.full.min.js',
+  /* The two embedded layers: addresses and numbers open a composer or a provider
+     picker. Precached so that works offline, like everything else here. */
+  'vendor/maillayer.js',
+  'vendor/phonelayer.js',
 ];
 
 self.addEventListener('install', (event) => {

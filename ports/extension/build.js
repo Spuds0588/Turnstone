@@ -291,6 +291,8 @@ const page = `<!doctype html>
 ${markup}
 <script src="vendor/papaparse.min.js"></script>
 <script src="vendor/xlsx.full.min.js"></script>
+<script src="vendor/maillayer.js"></script>
+<script src="vendor/phonelayer.js"></script>
 <script src="sidepanel.js"></script>
 </body>
 </html>
@@ -349,6 +351,10 @@ const files = {
   'README.txt': README,
   'vendor/papaparse.min.js': read(path.join(ROOT, 'vendor/papaparse.min.js')),
   'vendor/xlsx.full.min.js': read(path.join(ROOT, 'vendor/xlsx.full.min.js')),
+  /* The embedded layers, so an address or a number in the panel opens a composer
+     or a provider picker rather than a system handler the panel cannot see. */
+  'vendor/maillayer.js': read(path.join(ROOT, 'vendor/maillayer.js')),
+  'vendor/phonelayer.js': read(path.join(ROOT, 'vendor/phonelayer.js')),
   'assets/logo-dark.svg': read(path.join(ROOT, 'assets/logo-dark.svg')),
   'assets/logo-light.svg': read(path.join(ROOT, 'assets/logo-light.svg')),
   'icons/icon-192.png': fs.readFileSync(path.join(ROOT, 'assets/icon-192.png')),

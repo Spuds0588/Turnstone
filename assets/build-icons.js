@@ -134,14 +134,16 @@ function chunk(type, data) {
   const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(td));
   return Buffer.concat([len, td, crc]);
 }
-function encodePNG(rgba, size) {
+/* `h` defaults to `w` — the icons are square, the social card is not, and both go
+   through this one encoder rather than a second copy of crc32 and IDAT. */
+function encodePNG(rgba, w, h = w) {
   const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(size, 0); ihdr.writeUInt32BE(size, 4);
+  ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4);
   ihdr[8] = 8; ihdr[9] = 6; /* 8-bit RGBA */
-  const raw = Buffer.alloc(size * (size * 4 + 1));
-  for (let y = 0; y < size; y++) {
-    raw[y * (size * 4 + 1)] = 0; /* filter: none */
-    Buffer.from(rgba.buffer, y * size * 4, size * 4).copy(raw, y * (size * 4 + 1) + 1);
+  const raw = Buffer.alloc(h * (w * 4 + 1));
+  for (let y = 0; y < h; y++) {
+    raw[y * (w * 4 + 1)] = 0; /* filter: none */
+    Buffer.from(rgba.buffer, y * w * 4, w * 4).copy(raw, y * (w * 4 + 1) + 1);
   }
   return Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
@@ -169,14 +171,21 @@ function maskable(img, size) {
   return out;
 }
 
-/* ---- build ---- */
-const dir = __dirname;
-for (const size of [192, 512]) {
-  const png = encodePNG(rasterize(size), size);
-  fs.writeFileSync(path.join(dir, `icon-${size}.png`), png);
-  fs.writeFileSync(path.join(dir, '..', `icon-${size}.png`), png); // PWA precache copies
-  console.log(`icon-${size}.png  ${(png.length / 1024).toFixed(1)} KB`);
+/* ---- build ----
+   The rasterizer and the encoder are exported so the social card can be built from
+   the same three functions rather than a second implementation of each. Guarded on
+   `require.main` so importing them does not rewrite every icon as a side effect. */
+if (require.main === module) {
+  const dir = __dirname;
+  for (const size of [192, 512]) {
+    const png = encodePNG(rasterize(size), size);
+    fs.writeFileSync(path.join(dir, `icon-${size}.png`), png);
+    fs.writeFileSync(path.join(dir, '..', `icon-${size}.png`), png); // PWA precache copies
+    console.log(`icon-${size}.png  ${(png.length / 1024).toFixed(1)} KB`);
+  }
+  const m = rasterize(512);
+  fs.writeFileSync(path.join(dir, 'icon-maskable-512.png'), encodePNG(maskable(m, 512), 512));
+  console.log('icon-maskable-512.png written (stone at 80% safe zone)');
 }
-const m = rasterize(512);
-fs.writeFileSync(path.join(dir, 'icon-maskable-512.png'), encodePNG(maskable(m, 512), 512));
-console.log('icon-maskable-512.png written (stone at 80% safe zone)');
+
+module.exports = { rasterize, encodePNG, maskable };

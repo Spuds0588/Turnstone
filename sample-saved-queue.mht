@@ -1,0 +1,39 @@
+MIME-Version: 1.0
+Content-Type: multipart/related; boundary="----=_NextPart_Turnstone_0003"; type="text/html"
+Subject: My queues
+X-MimeOLE: Produced By Turnstone fixtures
+
+------=_NextPart_Turnstone_0003
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+Content-Location: file:///C:/saved/queues.htm
+
+<!doctype html>
+<html><head><title>My queues =2014 Service Desk</title>
+<style>td{padding:4px 8px;border-bottom:1px solid #ddd}</style></head><body=
+>
+<h1>My queues</h1>
+<table><tr><th>Ticket</th><th>Summary</th><th>Priority</th><th>Assignee</th=
+><th>State</th></tr>
+<tr><td>INC0041821</td><td>Reset MFA for the two new Finance starters</td><=
+td>High</td><td>Priya Raman</td><td>Resolved</td></tr>
+<tr><td>INC0042117</td><td>Mercury laptop will not charge after dock swap</=
+td><td>Medium</td><td>Dan Okafor</td><td>Closed</td></tr>
+<tr><td>INC0042298</td><td>Shared mailbox not receiving external mail</td><=
+td>High</td><td>Priya Raman</td><td>In Progress</td></tr>
+<tr><td>REQ0009134</td><td>New starter kit for J. Alvarez</td><td>Low</td><=
+td>Marco Silvani</td><td>Open</td></tr>
+<tr><td>REQ0009201</td><td>Two monitors for the design pod</td><td>Low</td>=
+<td>Marco Silvani</td><td>Awaiting vendor</td></tr>
+<tr><td>INC0042352</td><td>Print queue stuck on the third floor</td><td>Med=
+ium</td><td>Dan Okafor</td><td>Resolved</td></tr>
+<tr><td>REQ0009244</td><td>Replace the failed badge reader at reception</td=
+><td>High</td><td>Ada Berger</td><td>Open</td></tr>
+<tr><td>INC0042401</td><td>VPN drops every hour for the Leeds team</td><td>=
+High</td><td>Ada Berger</td><td>New</td></tr>
+<tr><td>REQ0009302</td><td>Extra desk phone for the sales pod</td><td>Low</=
+td><td>Marco Silvani</td><td>Open</td></tr>
+<tr><td>INC0042477</td><td>Outlook profile corrupt after the mailbox move</=
+td><td>Medium</td><td>Dan Okafor</td><td>New</td></tr>
+</table></body></html>
+------=_NextPart_Turnstone_0003--
