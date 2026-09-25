@@ -63,6 +63,7 @@ What you cannot do is *drive* the extension: a side panel is worked by a person 
 
 ## Optional
 
+- [skill.md](https://spuds0588.github.io/Turnstone/skill.md): the hand-over instruction sheet — if your job is to give someone a Turnstone workspace from a list you found or generated, read this first.
 - [history.md](https://github.com/Spuds0588/Turnstone/blob/main/history.md): the build log — why each decision was made, including the ones that were reversed.
 - [testing-notes.md](https://github.com/Spuds0588/Turnstone/blob/main/testing-notes.md): what is verified, on which editions, and how to check it yourself.
 - [agents.md](https://github.com/Spuds0588/Turnstone/blob/main/agents.md): the rules an agent editing this codebase is expected to follow.
