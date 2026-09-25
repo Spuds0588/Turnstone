@@ -22,8 +22,11 @@ progress saved back into the file the user started with.
 - **`test/`** holds the three suites; `assets/` holds the generators (fixtures, icons, social card,
   site artifacts).
 
-**Approved deviation from the PRD (2026-09-22):** the sidebar sits on the **RIGHT** side of the
-screen; the tabbed iframe workspace is on the **LEFT**. All other PRD behaviour stands.
+**Approved deviation from the original specification (2026-09-22):** the sidebar sits on the
+**RIGHT** side of the screen; the tabbed iframe workspace is on the **LEFT**. Every other
+behaviour it describes stands. (That specification is a planning document kept off this
+repository on purpose — see [`.gitignore`](.gitignore) — so this file is the live copy of
+everything an agent needs.)
 
 ## Development Rules
 

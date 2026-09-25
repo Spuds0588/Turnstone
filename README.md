@@ -234,7 +234,7 @@ ports/              # other editions of Turnstone (see ports/README.md)
   extension/        #   built: Chrome MV3 side panel; no iframes — card selection switches real tabs
   tauri/            #   native desktop shell; full web experience incl. iframes, no CORS wall
 agents.md           # AI-developer rules — the live copy, deliberately not mirrored anywhere
-PRD-Turnstone.md    # master product document
+.gitignore          # planning documents (PRD-*.md) and tool scratch stay local, not published
 todo.md             # task tracker + future-state plans
 history.md          # build log
 testing-notes.md    # what each edition is verified against, and the manual production test plan
@@ -255,7 +255,7 @@ The web app is the canonical core; these ports (built under [`ports/`](ports/REA
 
 ## Docs
 
-- `PRD-Turnstone.md` — the **original V1 specification**, kept as written and marked as such; where it disagrees with reality (`index.html`, CDN dependencies) the header says so and points here
+- **Planning documents are deliberately not published.** The original V1 specification and any successor live on disk and are ignored by [`.gitignore`](.gitignore); what this repository publishes about itself is the four files below, which is where the reasoning actually lives
 - `todo.md` — task tracker + future-state plans
 - `history.md` — build log, newest first: every decision *and* every reversal, with the measurements
   that forced them

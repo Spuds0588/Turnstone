@@ -1,0 +1,33 @@
+# Turnstone — what stays out of the repository
+#
+# Short on purpose. The rule is not "ignore generated files" — those are committed here
+# deliberately (the standalone build, the port payloads, the fixtures, the crawl files),
+# because a single-file app and a drag-install bookmarklet only work if the bytes are in
+# the repo. This file is for two narrower things: **planning documents** that are kept
+# locally and deliberately not published, and **tool scratch** that no reader should ever
+# see in a diff.
+
+# ------------------------------------------------------------------ planning docs ---
+# The master/product documents are planning artefacts, not product. They are kept on the
+# author's disk and read by whoever is doing the planning; the published sources of truth
+# are README.md, agents.md, todo.md and history.md. Removing one from tracking is
+# `git rm --cached <file>` — it must already be tracked for this line to do anything.
+PRD-Turnstone.md
+PRD-*.md
+*-PRD.md
+planning/
+notes/
+
+# ----------------------------------------------------------------------- tooling ---
+# Agent/thread metadata (this directory records which workspace a session belonged to).
+.freebuff/
+.cursor/
+.vscode/
+.idea/
+
+# ------------------------------------------------------------------------ system ---
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
