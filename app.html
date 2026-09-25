@@ -517,9 +517,13 @@
      (style-src-attr), which cost the dialogs their whole layout on exactly the
      locked-down sites the bookmarklet exists for — so every rule that used to be
      written into the markup lives here, keyed by id or class. Nothing in the app
-     writes a style attribute or a runtime `style` property any more: the ☰ menu used
-     to be the one exception, because a dropdown anchored to a button needs a `left`
-     nobody can know ahead of time. Making it a modal retired that. */
+     writes a style attribute or a runtime `style` property any more: the ☰ menu was
+     the loud exception, because a dropdown anchored to a button needs a `left` nobody
+     can know ahead of time (making it a modal retired that), and the four dialogs
+     below quietly kept a `width` attribute each until someone checked the claim
+     rather than repeating it — those are the id-keyed rules underneath `.modal-box`.
+     (The vendored MailLayer/PhoneLayer write their own, inside their own markup; that
+     is their file, copied byte-for-byte, and `test/run.js` scopes the scan to this one.) */
   #mode-picker {
     position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 300;
     display: flex; align-items: center; justify-content: center; padding: 20px;
@@ -532,6 +536,14 @@
     background: var(--panel); color: var(--text); border: 1px solid var(--border);
     border-radius: 12px; padding: 22px; width: 380px; max-width: 94vw;
   }
+  /* A wider dialog than `.modal-box`'s 380px default, per dialog and as a rule.
+     These were `style="width:min(…)"` attributes in generated markup, which a host
+     page's `style-src-attr` drops — the bookmarklet's whole reason for existing is
+     the locked-down page, so the width has to come from here. */
+  #portal-modal .modal-box { width: min(560px, 92vw); }
+  #openlink-modal .modal-box { width: min(620px, 94vw); }
+  #build-modal .modal-box { width: min(760px, 94vw); }
+  #paste-modal .modal-box { width: min(720px, 94vw); }
   .modal-box.wide-options { width: auto; min-width: 280px; }
   .modal-title { margin: 0 0 4px; font-size: 15px; }
   .modal-sub { margin: 0 0 12px; font-size: 12px; color: var(--muted); }
@@ -766,7 +778,7 @@
       <h2>Columns</h2>
       <button class="icon" id="settings-x" title="Close">✕</button>
     </div>
-    <p class="hint"><b>Order, name and visibility.</b> Drag a row by ⋮⋮ to move a column, untick it to take it
+    <p class="hint"><b>Order, name, role and visibility.</b> Drag a row by ⋮⋮ to move a column, untick it to take it
       off the cards, and type over its name to rename it — the name <em>is</em> the file's header cell, so a
       rename is written back when you export. The role dropdown says what a column <b>is</b>: Turnstone picks
       the link column from the values themselves — a page, an <code>@address</code> or a phone number all
@@ -3280,7 +3292,7 @@ function showPortalSetup() {
   const overlay = document.createElement('div');
   overlay.id = 'portal-modal';
   overlay.innerHTML = `
-    <div class="modal-box" style="width:min(560px,92vw)">
+    <div class="modal-box">
       <h3 class="modal-title">This list has no links</h3>
       <p class="modal-sub">Not one cell in it is a page, an address or a number — which usually means the work
       happens in one portal and each row is a <em>key</em> into it. Give Turnstone the portal address and it will
@@ -3333,7 +3345,7 @@ function showOpenLink() {
   const overlay = document.createElement('div');
   overlay.id = 'openlink-modal';
   overlay.innerHTML = `
-    <div class="modal-box" style="width:min(620px,94vw)">
+    <div class="modal-box">
       <h3 class="modal-title">Open a workspace link</h3>
       <p class="modal-sub">A workspace link has the list <b>inside it</b> — nothing is fetched and nothing
         is uploaded. Paste the whole link, or just the part from the <code>#</code> onwards.</p>
@@ -3392,7 +3404,7 @@ function showBuildLink() {
   const overlay = document.createElement('div');
   overlay.id = 'build-modal';
   overlay.innerHTML = `
-    <div class="modal-box" style="width:min(760px,94vw)">
+    <div class="modal-box">
       <h3 class="modal-title">Build a share link</h3>
       <p class="modal-sub">The list goes <b>inside the link</b> — no upload, no account, nothing to host.
         Whoever opens it gets these rows as a workspace.</p>
@@ -3568,7 +3580,7 @@ function showPastePreview(rows, format, why) {
   overlay.id = 'paste-modal';
   const cell = (v) => `<td title="${esc(v)}">${esc(v)}</td>`;
   overlay.innerHTML = `
-    <div class="modal-box" style="width:min(720px,94vw)">
+    <div class="modal-box">
       <h3 class="modal-title">Load this pasted list?</h3>
       <p class="modal-sub">Read as <b>${formatLabel(format)}</b> — ${body} row${body === 1 ? '' : 's'} × ${width} column${width === 1 ? '' : 's'}.</p>
       <div class="paste-preview"><table>

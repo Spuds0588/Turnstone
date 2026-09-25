@@ -1,5 +1,63 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-25 — An audit of every document, and the four `style=` attributes it turned up
+
+**Request:** confirm everything is on production and working, then check the documentation for accuracy.
+
+### Production was already correct; the audit is what found something
+
+`main` was at `e3bc387` (the menu-and-columns release), GitHub Pages served it, every artifact on the
+live site was byte-identical to local, and the features worked there. Then every document the project
+publishes was walked against the code — `README.md`, `agents.md`, the four edition pages, the guide
+pages, `llms.txt`, `test/README.md`, `testing-notes.md`, `assets/README.md`, the port READMEs, and the
+frozen `PRD-Turnstone.md` — and four things were wrong.
+
+1. **`agents.md` told agents the app runs under `default-src 'none'`.** It does not. `app.html` declares
+   `default-src 'self' file:` and must, because it loads vendored scripts and frames other sites; the
+   `'none'` policy belongs to the guide pages, and `index.html` is the strictest of all. An agent
+   following that sentence would have taken a vendored `<script>` for a policy violation.
+2. **Four dialogs still carried `style="width:min(…)"` attributes** — the portal prompt, the workspace-
+   link prompt, the share-link builder and the paste confirmation — while the stylesheet at
+   `#mode-picker` claimed, in a comment, that *nothing* in the app writes a style attribute any more.
+   They are not the same thing as a layout nobody can avoid: those four dialogs are the ones a strict
+   page on the bookmarklet's own list sees, and there `style-src-attr` drops the attribute, leaving the
+   box at `.modal-box`'s 380px instead of 560/620/760/720. Now four id-keyed rules — and the comment is
+   true, which was the point. Verified by injecting each id and measuring: 560 · 620 · 760 · 720, with
+   no attribute on any of them.
+3. **The pages that enumerate the app's features never mentioned ⚙ Columns' new half.** The standalone,
+   bookmarklet and extension pages listed "column presets" and stopped; all three now name reordering,
+   hiding, renaming and the per-column editor, and `ports/extension/README.md` says the panel keeps them
+   too. The Columns panel's own one-line summary read "Order, name and visibility", which had stopped
+   summarising the panel two paragraphs below it.
+4. **A size in prose had drifted**: the `core` bookmarklet variant is 306 KB (306.0, not ~305) after the
+   rebuild, and the two places that quote it now say so. The `data-size-fallback` slots on the guide
+   pages were checked the same way and were still exact, so this time nothing needed rewriting.
+
+`agents.md` also gained the rule it was missing — **icons are characters, not pictures** — with the
+glyph set, the reason emoji and icon fonts both lose, the `✉ ☎ ↗` exception on card links, and the
+`test/run.js` scan that enforces it. `assets/README.md` was rewritten from a brand-assets note into the
+index of every generator in the directory, plus the rebuild chore (`data-size-fallback`) that the last
+release learned the hard way.
+
+### Verified
+
+| Suite | Before | After |
+| --- | --- | --- |
+| `node test/run.js` | 436 | **436, 0 failed** |
+| `test/fixtures.html` — `app.html`, standalone (bare directory), `panel-test`, `panel-csp` | 88 / 88 / 83 / 83 | **88 / 88 / 83 / 83** |
+| `test/bookmarklet.html` | 99 | **99** |
+
+All five `--check`s green after a rebuild that touched only CSS and two sentences of copy. Sizes:
+`app.html` 290.0 → **290.8 KB**, standalone **1280.0 KB**, extension dist **1289.5 KB**, bookmarklet
+**296.6 KB / 306.2 KB / 1242.7 KB**. The chore the last release learned the hard way fired for real
+this time: the `csv` variant crossed a rounding boundary, so `versions.html` had to move its three
+"296 KB" chips to **297 KB** — and `build-site.js` said so, in three lines, before anyone saw the page.
+
+**Left open, because the tool cannot reach the file:** `PRD-Turnstone.md` repeats the
+`default-src 'none'` claim in the very note that warns readers which parts of the frozen V1 spec would
+mislead them, and again in its superseded §2.1 bullet. The file is `.gitignore`d, so the editing tools
+decline the path; the two sentences want the same correction as `agents.md`.
+
 ## 2026-09-25 — Columns you can arrange, and cells you can edit
 
 **Request:** you cannot re-order columns, hide them or rename them — give the panel proper controls. And add options for editing other columns: dropdowns, arrays of buttons, editable text fields of a short and a long variety.

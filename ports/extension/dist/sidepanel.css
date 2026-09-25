@@ -472,9 +472,13 @@
      (style-src-attr), which cost the dialogs their whole layout on exactly the
      locked-down sites the bookmarklet exists for — so every rule that used to be
      written into the markup lives here, keyed by id or class. Nothing in the app
-     writes a style attribute or a runtime `style` property any more: the ☰ menu used
-     to be the one exception, because a dropdown anchored to a button needs a `left`
-     nobody can know ahead of time. Making it a modal retired that. */
+     writes a style attribute or a runtime `style` property any more: the ☰ menu was
+     the loud exception, because a dropdown anchored to a button needs a `left` nobody
+     can know ahead of time (making it a modal retired that), and the four dialogs
+     below quietly kept a `width` attribute each until someone checked the claim
+     rather than repeating it — those are the id-keyed rules underneath `.modal-box`.
+     (The vendored MailLayer/PhoneLayer write their own, inside their own markup; that
+     is their file, copied byte-for-byte, and `test/run.js` scopes the scan to this one.) */
   #mode-picker {
     position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 300;
     display: flex; align-items: center; justify-content: center; padding: 20px;
@@ -487,6 +491,14 @@
     background: var(--panel); color: var(--text); border: 1px solid var(--border);
     border-radius: 12px; padding: 22px; width: 380px; max-width: 94vw;
   }
+  /* A wider dialog than `.modal-box`'s 380px default, per dialog and as a rule.
+     These were `style="width:min(…)"` attributes in generated markup, which a host
+     page's `style-src-attr` drops — the bookmarklet's whole reason for existing is
+     the locked-down page, so the width has to come from here. */
+  #portal-modal .modal-box { width: min(560px, 92vw); }
+  #openlink-modal .modal-box { width: min(620px, 94vw); }
+  #build-modal .modal-box { width: min(760px, 94vw); }
+  #paste-modal .modal-box { width: min(720px, 94vw); }
   .modal-box.wide-options { width: auto; min-width: 280px; }
   .modal-title { margin: 0 0 4px; font-size: 15px; }
   .modal-sub { margin: 0 0 12px; font-size: 12px; color: var(--muted); }

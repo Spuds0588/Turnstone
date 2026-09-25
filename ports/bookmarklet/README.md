@@ -40,12 +40,12 @@ fails. Three of those four turned out to be wrong, and the evidence is in this r
 
 | Variant | Payload | Carries | Formats |
 | --- | --- | --- | --- |
-| `csv` | ~260 KB | app + a 2 KB RFC-4180 reader | CSV, TSV, JSON, HTML, XML |
-| `core` | ~270 KB | app + a read-only XLSX reader | the above **+ XLSX / XLS / ODS reading** |
-| `full` | ~1.18 MB | app + vendored PapaParse + SheetJS | every format, plus **XLSX export and write-back** |
+| `csv` | ~297 KB | app + a 2 KB RFC-4180 reader | CSV, TSV, JSON, HTML, XML |
+| `core` | ~306 KB | app + a read-only XLSX reader | the above **+ XLSX / XLS / ODS reading** |
+| `full` | ~1.21 MB | app + vendored PapaParse + SheetJS | every format, plus **XLSX export and write-back** |
 
 The old "< ~8 KB" target is not reachable while keeping the real app: the app shell alone is
-~255 KB, and the promise was always "the whole Turnstone app, not a cut-down clone". What is
+~291 KB, and the promise was always "the whole Turnstone app, not a cut-down clone". What is
 reachable — and what the variants now deliver — is *no libraries at all in two of three*, with
 the third available when someone wants workbook writing and can accept the size.
 
@@ -78,7 +78,7 @@ javascript: (function () {                       ← the bookmark's URL, %0A-enc
   to keep"*, and the bar carries **Copy state / Restore state** — a JSON snapshot (data +
   status + notes) that restores through the same `loadMatrix` round-trip the app uses for
   re-imported files. `localStorage` stays real, because that is what remembers theme, open
-  mode and column presets (small, namespaced keys).
+  mode, column roles, presets and per-column editors (small, namespaced keys).
 - **No host-page side effects that outlive the overlay.** The `beforeunload` guard and the PWA
   install/manifest machinery are removed in this build (they belong to a real origin, not to a
   page we were launched from), and the drag handlers are attached to the overlay instead of

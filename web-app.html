@@ -80,11 +80,18 @@
       a URL, an <code>@address</code> or a phone number — so a column called <code>Page</code> or nothing at all still lands
       correctly, and <strong>⚙ Columns</strong> can pin it per file. Addresses open MailLayer's webmail composer;
       numbers open PhoneLayer's provider picker (WhatsApp, Teams, Zoom Phone, Google Voice, Signal …).</li>
+    <li><strong>Columns you can arrange, and cells you can edit.</strong> <strong>⚙ Columns</strong> gives every
+      column a row: drag to reorder, untick to take it off the cards, type over its name to rename it (that is
+      the file's own header cell, so the rename is written back on export), and choose how it is edited —
+      read-only, a short or a long text field, a dropdown, or a row of buttons whose choices start from the
+      column's own values. An edit goes into the row, not into a side store, so it exports with the file and is
+      searchable immediately.</li>
     <li><strong>Silent write-back</strong> to CSV/TSV/XLSX in Chromium (File System Access API). Elsewhere:
       exports plus a browser-storage snapshot, so nothing is lost.</li>
     <li><strong>Installable as a PWA</strong>, and it works offline from the service-worker cache after the
       first visit.</li>
-    <li><strong>Remembers:</strong> recent files, statuses, notes, column presets, open mode and theme.</li>
+    <li><strong>Remembers:</strong> recent files, statuses, notes, column presets (order, hidden columns, roles
+      and editors), open mode and theme.</li>
     <li><strong>Round-trips an exported queue:</strong> re-import a file Turnstone wrote and the notes and
       completed states come back, so a queue can be worked in two sittings or handed to someone else.</li>
   </ul>

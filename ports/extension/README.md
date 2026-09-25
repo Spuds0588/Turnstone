@@ -24,8 +24,9 @@ browser.
 ## What mirrors the web version
 
 Everything the sidebar does, because it *is* the sidebar: cards, ✓ Complete / ↺ Incomplete, notes,
-search, sorting, column presets, exports, auto-open and auto-advance, and the file round-trip
-resume. Exports go through `chrome.downloads`. Picking a file keeps live write-back (Chromium),
+search, sorting, **⚙ Columns** (reorder, hide, rename, and a read-only / text / long text / dropdown /
+buttons editor per column, with an edit written into the row so it exports), column presets, exports,
+auto-open and auto-advance, and the file round-trip resume. Exports go through `chrome.downloads`. Picking a file keeps live write-back (Chromium),
 exactly as in the web app; queue, presets and the open file persist per browser in IndexedDB, so
 they survive closing the panel.
 

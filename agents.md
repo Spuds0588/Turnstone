@@ -33,8 +33,10 @@ everything an agent needs.)
 1. **Strictly vanilla, one file.** No bundlers, frameworks, TypeScript or new runtime dependencies
    in `app.html`. Anything that has to be a library is **vendored** under `vendor/`, hashed in
    [`vendor/README.md`](vendor/README.md), and copied byte-for-byte into each port. **Never a CDN**:
-   the app's CSP declares `default-src 'none'`, and an off-origin subresource is both a policy
-   violation and a broken promise. `test/run.js` asserts there is no remote `src` anywhere.
+   the app's own policy is `default-src 'self' file:` with no `https:` host anywhere, so an
+   off-origin subresource is both a policy violation and a broken promise. (The **guide pages** are
+   stricter still — `default-src 'none'` — and `index.html` is the strictest of all.)
+   `test/run.js` asserts there is no remote `src` anywhere.
 2. **YAGNI.** Prefer a native method and a plain function over an abstraction. The app is deliberately
    one long, commented file.
 3. **No backend, nothing uploaded.** Everything happens in the browser and in the user's own files.
@@ -49,6 +51,10 @@ everything an agent needs.)
    `turnstone-standalone.html`, `ports/*/dist/`, `sample-links.*`, `sitemap.xml`, `robots.txt`,
    `assets/sizes.json` or `assets/og-image.png`. Regenerate with the script named in
    [`README.md`](README.md) → *Repository layout*, and run its `--check`.
+   One chore a rebuild leaves behind: it changes an artifact's byte size, so the
+   **`data-size-fallback`** text on the guide pages — what a reader with JavaScript off, and most
+   crawlers, actually see — goes stale, and `build-site.js` fails with the two numbers side by side.
+   Rewrite those values on `versions.html`, `standalone.html` and `extension.html` after any build.
 7. **Structured data must say what the page says.** Nothing renders JSON-LD, so prose and markup
    drifting apart is invisible in a browser and total to a machine. `assets/build-site.js` compares
    every marked-up answer to the page and every `HowTo` step to its heading — keep them in step, and
@@ -73,3 +79,11 @@ everything an agent needs.)
     [`todo.md`](todo.md) — and that the paste path already handles those inputs exactly.
 13. **Output complete files.** When handing code back, give the whole file or the whole replacement
     block, never `// ... rest of code`.
+14. **Icons are characters, not pictures.** No emoji — each OS draws its own, in its own colours,
+    ignoring the theme — and no icon font or SVG sprite, because either one costs bytes in every
+    bookmarklet variant and the single-file claim is the point. Use monochrome text-presentation
+    characters, which inherit the theme's colour and weight and load nothing: `▤ ⇢ ↺ ✕ ⇲ ⧉ ⇱ ❐ ↗ ◱ ⚙ ↧
+    ⤓ ◐ ⌫` today. Card links keep `✉ ☎ ↗`, where they name the kind of link rather than decorate a
+    button. `test/run.js` scans the three artifacts for emoji ranges and fails; lines defining the
+    **completion vocabulary** (`✅`, `✔`, `yes`, `done`, …) are exempt, because those have to keep
+    parsing out of the *user's* file.

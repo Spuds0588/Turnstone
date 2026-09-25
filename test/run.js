@@ -971,6 +971,22 @@ const loadFixture = async (name) => {
       const found = [...new Set([...src.matchAll(EMOJI)].map((m) => m[0]))];
       ok(`${file} uses a character where a picture would do as well`, found.length === 0, found.slice(0, 6).join(' '));
     }
+
+    /* ---------- no layout in the markup ------------------------------------ */
+    /* A strict host page — the bookmarklet's whole reason for existing — drops inline
+       style attributes (`style-src-attr`) and keeps our stylesheet, so a dialog whose
+       width lives in `style="…"` opens at the wrong size exactly where that port is
+       used. Four of them quietly did, behind a comment claiming nothing did; they are
+       id-keyed rules now, and this is what makes the claim checkable. The stylesheet
+       itself is stripped first, since naming the attribute in a comment is not writing
+       one, and the scan stops at `app.html`: the standalone inlines MailLayer and
+       PhoneLayer, whose own vendored markup writes inline styles, and a rule about
+       somebody else's byte-identical file is not a rule about ours. */
+    {
+      const src = decode('app.html').replace(/<style[\s\S]*?<\/style>/gi, '');
+      const found = [...new Set((src.match(/\sstyle\s*=\s*["'][^"']*/g) || []))];
+      ok('app.html writes no style attribute outside its stylesheet', found.length === 0, found.slice(0, 4).join(' · '));
+    }
   }
 
   /* ------------------------------------------------------------------ report --- */

@@ -2426,7 +2426,7 @@ function showPortalSetup() {
   const overlay = document.createElement('div');
   overlay.id = 'portal-modal';
   overlay.innerHTML = `
-    <div class="modal-box" style="width:min(560px,92vw)">
+    <div class="modal-box">
       <h3 class="modal-title">This list has no links</h3>
       <p class="modal-sub">Not one cell in it is a page, an address or a number — which usually means the work
       happens in one portal and each row is a <em>key</em> into it. Give Turnstone the portal address and it will
@@ -2479,7 +2479,7 @@ function showOpenLink() {
   const overlay = document.createElement('div');
   overlay.id = 'openlink-modal';
   overlay.innerHTML = `
-    <div class="modal-box" style="width:min(620px,94vw)">
+    <div class="modal-box">
       <h3 class="modal-title">Open a workspace link</h3>
       <p class="modal-sub">A workspace link has the list <b>inside it</b> — nothing is fetched and nothing
         is uploaded. Paste the whole link, or just the part from the <code>#</code> onwards.</p>
@@ -2538,7 +2538,7 @@ function showBuildLink() {
   const overlay = document.createElement('div');
   overlay.id = 'build-modal';
   overlay.innerHTML = `
-    <div class="modal-box" style="width:min(760px,94vw)">
+    <div class="modal-box">
       <h3 class="modal-title">Build a share link</h3>
       <p class="modal-sub">The list goes <b>inside the link</b> — no upload, no account, nothing to host.
         Whoever opens it gets these rows as a workspace.</p>
@@ -2714,7 +2714,7 @@ function showPastePreview(rows, format, why) {
   overlay.id = 'paste-modal';
   const cell = (v) => `<td title="${esc(v)}">${esc(v)}</td>`;
   overlay.innerHTML = `
-    <div class="modal-box" style="width:min(720px,94vw)">
+    <div class="modal-box">
       <h3 class="modal-title">Load this pasted list?</h3>
       <p class="modal-sub">Read as <b>${formatLabel(format)}</b> — ${body} row${body === 1 ? '' : 's'} × ${width} column${width === 1 ? '' : 's'}.</p>
       <div class="paste-preview"><table>
