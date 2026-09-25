@@ -1,5 +1,23 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-25 — The landing page says three things, and only three
+
+**Request:** the hero and the sales pitch were too much; the message is a **“dumb” list in, a smart workspace out**, **no account**, and **all local**.
+
+### The homepage had five arguments competing with one sentence
+
+The hero's own statement of the product had drifted into a description of the *mechanism* — "cards with statuses and notes on one side, the pages on the other" — which is true, is in the screenshot directly below it, and is not the reason anyone reads on. The headline is now the transformation itself (`A “dumb” list in. / A smart workspace out.`), and the two facts that decide whether somebody tries it moved into the badge above it: **no account · nothing uploaded**. The subtitle carries only what is left — where the list comes from (a spreadsheet, a CSV, **or a link your agent hands you**), what it becomes, and where the ticks go — measured at two lines at 1280px rather than three.
+
+Two things were deleted rather than reworded. The paragraph under the buttons offered "**Find your version** in a screen" — the same link, one line after the button that says it — so the button stayed and the sentence became the one thing it added: *or open a sample queue and watch it work.* And the lead value card restated the headline word for word; it is now **Whatever the list looks like**, which is the part the headline does not say.
+
+The five cards were cut to one idea each, and the three the request named now lead: *No account, nobody to ask* (**🔒**), *All local — nothing is uploaded* (**💾**, and the card says the load-bearing sentence plainly: there is no server to upload to), and *Or let an agent hand you the list*. "It fits the tools you already use" survived as *The tools you already have* — it is a different claim from the rest (webmail and the web phone rather than a desktop app) and it is the one an admin actually notices in the first five minutes. Every card's body is now one or two sentences; the section went from ~190 words of card copy to ~120.
+
+**Result: 979 → 915 words of visible prose, against a budget of 1,000** that fails the build rather than offering a number to raise. The trimming is the point, not a side effect — three sessions of adding features to this page had each added a paragraph, and the budget is the only thing that notices.
+
+`index.html.md` — the twin an agent reads — was rewritten to match, because a Markdown file that describes a different homepage is worse than no Markdown file: `llms.txt` sends agents there for "what Turnstone is". The title tags were left as they are on purpose ("Turn any link spreadsheet into a streamlined workspace"): they are searched, not read as pitch, and "spreadsheet" and "link" are the terms people type.
+
+Verified: `build-site.js` (link graph, structured-data parity, prose budget), four `--check`s and **432 Node assertions** green; 1280px and 375px both measured for horizontal overflow, which is how the last phone-width defect on this page was found.
+
 ## 2026-09-25 — The panel gets a door for a link, and the field nobody had wired
 
 **Request, in two parts:** take the master/product document out of the repository and ignore it (it is planning material, not product); then keep going.

@@ -1,9 +1,9 @@
-# Turnstone — your spreadsheet, now a modern workspace
+# Turnstone — a dumb list in, a smart workspace out
 
-> Turnstone loads the list you already keep — a spreadsheet, CSV, JSON, HTML, a Word table or a saved
-> email — and turns it into a real workspace: task cards with statuses and notes on one side, the pages
-> themselves on the other. Progress saves back into the file you started with. It runs entirely in your
-> browser, so there is nothing to roll out, nobody to ask, and nothing to sign up for.
+> Load the list you already keep — a spreadsheet, a CSV, or a link your AI agent hands you — and work it
+> as cards with statuses and notes, with the pages themselves alongside. Everything happens in your
+> browser: no account, no server, nothing uploaded, and the file you started with is the one that gets
+> updated.
 
 Canonical page: <https://spuds0588.github.io/Turnstone/>
 Part of: <https://spuds0588.github.io/Turnstone/> — see also <https://spuds0588.github.io/Turnstone/llms.txt>
@@ -13,21 +13,17 @@ Licence: MIT · Free and open source · No telemetry · No account
 
 Your list can be a mess upstream. Your side of it doesn't have to be.
 
-- **A modern workspace, however the list was made.** Six systems, a chain of forwards, a sheet somebody
-  keeps by hand — it doesn't matter. Your side becomes cards with statuses and notes instead of a grid of
-  cells. Rows with *no links at all* work too: point Turnstone at your portal once
-  (`https://portal.example.com/ticket/{Ticket}`) and every card builds its own address.
-- **Nothing to roll out, nobody to ask.** One person can start today. Nothing is shared, uploaded or
-  stored anywhere but your own machine — no server, no seat licence, no IT ticket, no manager sign-off.
-- **It fits the tools you already use.** A modern browser, your webmail, your VoIP web phone, the systems
-  you already have open. Pages load beside the list instead of in fifteen tabs, and an address or a number
-  opens your webmail or dialler — not a desktop app you don't have.
-- **You keep the file, and it keeps your progress.** What you end with is the spreadsheet you started
-  with, updated: ticks, notes and statuses written back into it. Nothing to copy across, nothing to
-  reconcile, nothing done twice.
-- **Let your agent hand you the list.** Your AI assistant finds or writes the list and gives you one link.
-  It opens as a workspace ready to work, with nothing to set up, install or sign up for, and the rows
-  travel inside the link rather than through a server. See
+- **Whatever the list looks like.** Six systems, a chain of forwards, a sheet kept by hand — it doesn't
+  matter. Your side is cards with statuses and notes, not a grid of cells. Rows with *no links* work too:
+  point it at your portal once (`…/ticket/{Ticket}`) and every card builds its own address.
+- **No account, nobody to ask.** One person can start today: no sign-up, no seat licence, no IT ticket, no
+  manager sign-off.
+- **All local — nothing is uploaded.** There is no server to upload to. Your browser reads your file and
+  writes your ticks and notes back into that same file.
+- **The tools you already have.** Pages open beside the list instead of in fifteen tabs, and an address or
+  a number opens your webmail or web phone — not a desktop app you don't have.
+- **Or let an agent hand you the list.** Your assistant finds or writes it and gives you one link. It opens
+  ready to work, and the rows travel inside the link rather than through a server. See
   [Share a list as a link](https://spuds0588.github.io/Turnstone/workspace-link.html.md).
 
 ## From list to workspace in one step

@@ -8,13 +8,13 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; font-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; manifest-src 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Turnstone — Turn any link spreadsheet into a streamlined workspace</title>
-<meta name="description" content="Work the list you already keep as a real app — statuses, notes and pages beside the cards — and keep the spreadsheet you started with, updated. No backend, no signup, no roll-out.">
+<meta name="description" content="A dumb list in, a smart workspace out. Work a spreadsheet, CSV or the link an agent sends as cards with statuses and notes — no account, nothing uploaded.">
 <meta name="robots" content="index, follow">
 <meta name="keywords" content="link queue manager, CSV task tracker, XLSX link list, spreadsheet workflow, client-side spreadsheet app, tabbed browsing workspace, URL list processor, bulk link opener">
 <link rel="canonical" href="https://spuds0588.github.io/Turnstone/">
 <link rel="icon" type="image/png" href="assets/icon-192.png">
 <meta property="og:title" content="Turnstone — Turn any link spreadsheet into a streamlined workspace">
-<meta property="og:description" content="Your spreadsheet as a real workspace: cards, statuses, notes, pages beside them — and the file you started with, updated. Nothing uploaded, nothing to install.">
+<meta property="og:description" content="A dumb list in, a smart workspace out. Work the list you already keep as cards with statuses and notes — no account, nothing uploaded, and the file you started with gets updated.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://spuds0588.github.io/Turnstone/">
 <meta property="og:site_name" content="Turnstone">
@@ -25,7 +25,7 @@
 <meta property="og:locale" content="en">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Turnstone — Turn any link spreadsheet into a streamlined workspace">
-<meta name="twitter:description" content="A modern workspace for the list you already keep — statuses, notes, pages beside them, saved back into your own file.">
+<meta name="twitter:description" content="A dumb list in, a smart workspace out — statuses, notes and the pages themselves over the file you already keep, with nothing uploaded and nothing to install.">
 <meta name="twitter:image" content="https://spuds0588.github.io/Turnstone/assets/og-image.png">
 <meta name="author" content="Spuds0588">
 <!-- Pointed at by llms.txt, and pointing back at it: the Markdown version of this
@@ -369,11 +369,11 @@
 <section class="hero">
   <div class="container has-text-centered">
     <img src="assets/logo-dark.svg" alt="Turnstone logo — a grey stone with an engraved checkmark" style="width:64px;height:64px;margin-bottom:1.1rem">
-    <span class="eyebrow">Free &amp; open source · zero backend</span>
-    <h1>Your spreadsheet,<br><span class="has-text-ts">now a modern workspace.</span></h1>
+    <span class="eyebrow">Free &amp; open source · no account · nothing uploaded</span>
+    <h1>A “dumb” list in.<br><span class="has-text-ts">A smart workspace out.</span></h1>
     <h2 class="subtitle">
-      Load the list you already keep and work it like an app: cards with statuses and notes on one side,
-      the pages on the other. Progress saves back into the file you started with.
+      Load the list you already keep — a spreadsheet, a CSV, or a link your agent hands you. It becomes
+      cards with statuses and notes, and your ticks save straight back into that file.
     </h2>
 
     <div class="buttons">
@@ -381,9 +381,8 @@
       <a class="btn btn-ghost" href="app.html">▶ Try the web app</a>
     </div>
     <p class="deep-link">
-      <a href="versions.html">Find your version</a> in a screen, or
-      <a href="app.html?file=https%3A%2F%2Fspuds0588.github.io%2FTurnstone%2Fsample-links.csv">open a sample queue</a>
-      and see it working first.
+      or <a href="app.html?file=https%3A%2F%2Fspuds0588.github.io%2FTurnstone%2Fsample-links.csv">open a sample queue</a>
+      and watch it work.
     </p>
 
     <div class="shot" role="img" aria-label="The Turnstone workspace: tabbed pages on the left, task cards with statuses and notes on the right">
@@ -433,38 +432,34 @@
       <div class="box lead">
         <div class="feature-icon">🧩</div>
         <div>
-          <h3>A modern workspace, however the list was made</h3>
-          <p>Six systems, a chain of forwards, a sheet somebody keeps by hand — it doesn't matter. Your side
-             becomes cards with statuses and notes instead of a grid of cells. Rows with <em>no links at all</em>
-             work too: point Turnstone at your portal once
-             (<code>https://portal.example.com/ticket/{Ticket}</code>) and every card builds its own address.</p>
+          <h3>Whatever the list looks like</h3>
+          <p>Six systems, a chain of forwards, a sheet kept by hand — it doesn't matter. Your side is cards
+             with statuses and notes, not a grid of cells. Rows with <em>no links</em> work too: point it at
+             your portal once (<code>…/ticket/{Ticket}</code>) and every card builds its own address.</p>
         </div>
       </div>
       <div class="box">
-        <div class="feature-icon">✅</div>
-        <h3>Nothing to roll out, nobody to ask</h3>
-        <p>One person can start today. Nothing is shared, uploaded or stored anywhere but your own machine —
-           no server, no seat licence, no IT ticket and no manager sign-off.</p>
-      </div>
-      <div class="box">
-        <div class="feature-icon">🪟</div>
-        <h3>It fits the tools you already use</h3>
-        <p>A modern browser, your webmail, your VoIP web phone, the systems you already have open. Pages load
-           beside the list instead of in fifteen tabs, and an address or a number opens your webmail or
-           dialler — not a desktop app you don't have.</p>
+        <div class="feature-icon">🔒</div>
+        <h3>No account, nobody to ask</h3>
+        <p>One person can start today: no sign-up, no seat licence, no IT ticket, no manager sign-off.</p>
       </div>
       <div class="box">
         <div class="feature-icon">💾</div>
-        <h3>You keep the file, and it keeps your progress</h3>
-        <p>What you end with is the spreadsheet you started with, updated: ticks, notes and statuses written
-           back into it. Nothing to copy across, nothing to reconcile, nothing done twice.</p>
+        <h3>All local — nothing is uploaded</h3>
+        <p>There is no server to upload to. Your browser reads your file and writes your ticks and notes back
+           into that same file.</p>
+      </div>
+      <div class="box">
+        <div class="feature-icon">🪟</div>
+        <h3>The tools you already have</h3>
+        <p>Pages open beside the list instead of in fifteen tabs, and an address or a number opens your
+           webmail or web phone — not a desktop app you don't have.</p>
       </div>
       <div class="box">
         <div class="feature-icon">🤖</div>
-        <h3>Let your agent hand you the list</h3>
-        <p>Your AI assistant finds or writes the list and gives you one link. It opens as a workspace ready to
-           work, with nothing to set up, install or sign up for, and the rows travel inside the link rather
-           than through a server. <a href="workspace-link.html">How workspace links work</a>.</p>
+        <h3>Or let an agent hand you the list</h3>
+        <p>Your assistant finds or writes it and gives you one link. It opens ready to work, and the rows
+           travel inside the link rather than through a server. <a href="workspace-link.html">How that works</a>.</p>
       </div>
     </div>
   </div>
