@@ -24,7 +24,7 @@ Two documentation files were also describing a different project. `agents.md` st
 
 Everything below was run against the tree as committed: `node test/run.js` **411 passed, 0 failed**; `node assets/make-fixtures.js --check`; `assets/build-site.js --check` (crawl files, canonicals, structured data against the page, nav shape, size fallbacks, prose budget); and the three build `--check`s — standalone, bookmarklet, extension. The browser sweeps were re-run for the editions they cover, and the changed pages were checked at 1280px and 375px.
 
-This is the first push of the entire v0.13/v0.14 line — workspace links, the portal lists, the fixture generator, the four editions' rebuilds, the site — to `main`, which is what GitHub Pages serves. Every earlier session ended with the work uncommitted by design; this one does not.
+This is the first push of the entire v0.13/v0.14 line — workspace links, the portal lists, the fixture generator, the four editions' rebuilds, the site — to `main`, which is what GitHub Pages serves. Every earlier session ended with the work uncommitted by design; this one does not. The push is `d8f0dc9..017db44`, and production was checked afterwards rather than assumed: the live bar is the three-item one, `/versions.html` carries the agent table, the new pages and both agent files answer `200`, and the **no-JavaScript numbers the live page serves** read 1.21 MB / 252 KB / 1.17 MB / 1.22 MB — the same values the new check compares against the artifacts.
 
 ## 2026-09-25 — The sales page, cut to five reasons, and what an agent cannot be handed
 
