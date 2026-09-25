@@ -1,9 +1,9 @@
-# Turnstone — a messy workflow in, an organized workspace out
+# Turnstone — tracking your work on a spreadsheet is dumb
 
-> Load the list you already keep — a spreadsheet, a CSV, or a link your AI agent hands you — and work it
-> as cards with statuses and notes, with the pages themselves alongside. Everything happens in your
-> browser: no account, no server, nothing uploaded, and the file you started with is the one that gets
-> updated.
+> Tracking your work on a spreadsheet is dumb. Throw it at Turnstone instead: the CSV, XLSX, Word
+> table, Markdown list, JSON export, email thread or pasted table you already keep becomes task cards
+> with statuses and notes, with the pages themselves alongside. Everything happens in your browser: no
+> account, no server, nothing uploaded, and the file you started with is the one that gets updated.
 
 Canonical page: <https://spuds0588.github.io/Turnstone/>
 Part of: <https://spuds0588.github.io/Turnstone/> — see also <https://spuds0588.github.io/Turnstone/llms.txt>

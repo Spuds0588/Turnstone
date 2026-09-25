@@ -7,14 +7,14 @@
      Only the inline legacy-redirect script and same-origin images are permitted. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; font-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; manifest-src 'none'">
 <meta name="referrer" content="no-referrer">
-<title>Turnstone — Turn any link spreadsheet into a streamlined workspace</title>
-<meta name="description" content="A dumb list in, a smart workspace out. Work a spreadsheet, CSV or the link an agent sends as cards with statuses and notes — no account, nothing uploaded.">
+<title>Turnstone — Tracking your work on a spreadsheet is dumb</title>
+<meta name="description" content="Tracking your work on a spreadsheet is dumb. Drop the CSV, XLSX, Word table, Markdown list or email you already keep and it becomes task cards with statuses and notes — no account, nothing uploaded.">
 <meta name="robots" content="index, follow">
 <meta name="keywords" content="link queue manager, CSV task tracker, XLSX link list, spreadsheet workflow, client-side spreadsheet app, tabbed browsing workspace, URL list processor, bulk link opener">
 <link rel="canonical" href="https://spuds0588.github.io/Turnstone/">
 <link rel="icon" type="image/png" href="assets/icon-192.png">
-<meta property="og:title" content="Turnstone — Turn any link spreadsheet into a streamlined workspace">
-<meta property="og:description" content="A dumb list in, a smart workspace out. Work the list you already keep as cards with statuses and notes — no account, nothing uploaded, and the file you started with gets updated.">
+<meta property="og:title" content="Turnstone — Tracking your work on a spreadsheet is dumb">
+<meta property="og:description" content="Throw the spreadsheet, CSV, XLSX, Word table, Markdown list or email you already keep at Turnstone: task cards with statuses and notes come out, and your ticks save straight back into the file — no account, nothing uploaded.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://spuds0588.github.io/Turnstone/">
 <meta property="og:site_name" content="Turnstone">
@@ -24,8 +24,8 @@
 <meta property="og:image:alt" content="Turnstone — the stone logo on its dark brand background">
 <meta property="og:locale" content="en">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Turnstone — Turn any link spreadsheet into a streamlined workspace">
-<meta name="twitter:description" content="A dumb list in, a smart workspace out — statuses, notes and the pages themselves over the file you already keep, with nothing uploaded and nothing to install.">
+<meta name="twitter:title" content="Turnstone — Tracking your work on a spreadsheet is dumb">
+<meta name="twitter:description" content="Throw the file you already keep at Turnstone — spreadsheet, CSV, Word, Markdown, email — and get a task-based workspace out, with nothing uploaded and nothing to install.">
 <meta name="twitter:image" content="https://spuds0588.github.io/Turnstone/assets/og-image.png">
 <meta name="author" content="Spuds0588">
 <!-- Pointed at by llms.txt, and pointing back at it: the Markdown version of this
@@ -42,7 +42,7 @@
   "applicationCategory": "BrowserApplication",
   "operatingSystem": "Any (web browser)",
   "url": "https://spuds0588.github.io/Turnstone/",
-  "description": "Turnstone turns the list you already keep — spreadsheet, CSV, JSON, HTML, XML, Word table, Markdown, email or pasted — into a task-card workspace: statuses, notes, and the pages themselves beside the cards. Progress is saved back into your own file. Runs entirely in the browser, with no backend, no signup and no roll-out.",
+  "description": "Tracking your work on a spreadsheet is dumb. Turnstone turns the file you already keep — spreadsheet, CSV, JSON, HTML, XML, Word table, Markdown, email or pasted — into a task-card workspace: statuses, notes, and the pages themselves beside the cards. Progress is saved back into your own file. Runs entirely in the browser, with no backend, no signup and no roll-out.",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "featureList": "CSV, TSV, XLSX/XLS/ODS, DOCX, Markdown, JSON, HTML and XML link-list loading, email (.eml/.mht) import, pasted-clipboard import, workspace links that carry a list inside the URL, portal link templates that compose a URL from a row's values, link columns chosen from cell values (URL, email address or phone number), task cards, status tracking, notes, tabbed iframe browsing, open-in-tab/window modes, auto-save write-back, offline PWA install, sorting and presets, completed-queue filtering",
   "softwareVersion": "0.13",
@@ -59,7 +59,7 @@
   "@context": "https://schema.org",
   "@type": "WebPage",
   "url": "https://spuds0588.github.io/Turnstone/",
-  "name": "Turnstone — turn any link spreadsheet into a streamlined workspace",
+  "name": "Turnstone — tracking your work on a spreadsheet is dumb, so throw it at Turnstone instead",
   "inLanguage": "en",
   "isPartOf": { "@type": "WebSite", "name": "Turnstone", "url": "https://spuds0588.github.io/Turnstone/" },
   "primaryImageOfPage": "https://spuds0588.github.io/Turnstone/assets/og-image.png",
@@ -243,6 +243,18 @@
   }
   .has-text-ts { color: var(--accent); }
   .eyebrow { display: inline-block; padding: .35rem 1rem; border-radius: 999px; background: var(--accent-dim); border: 1px solid var(--accent-border); color: #aac4ff; font-size: .78rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+  /* The hero's rotating word. The swap is two spans crossing-fading in place — no
+     layout thrash, no library — and the static text inside .rotator-word is what a
+     crawler, a screen reader via aria-label, or a JS-off visitor gets. The widest
+     word ("Markdown list") is measured offscreen once to set min-width, so the
+     headline never reflows as the words change. */
+  .rotator { display: inline-block; text-align: left; color: var(--accent); position: relative; vertical-align: baseline; }
+  .rotator-word { display: inline-block; white-space: nowrap; transition: opacity .28s ease, transform .28s ease; }
+  .rotator-word.out { opacity: 0; transform: translateY(-0.35em); }
+  @media (prefers-reduced-motion: reduce) {
+    .rotator-word { transition: none; }
+    .rotator-word.out { opacity: 0; transform: none; }
+  }
 
   .section-title { color: #fff; font-weight: 800; letter-spacing: -.02em; font-size: 2rem; margin: 0; }
   .section-sub { color: var(--text-dim); max-width: 760px; margin: .6rem auto 0; }
@@ -391,10 +403,11 @@
 <section class="hero">
   <div class="container has-text-centered">
     <span class="eyebrow">Free &amp; open source · no account · nothing uploaded</span>
-    <h1>A “dumb” list in.<br><span class="has-text-ts">A smart workspace out.</span></h1>
+    <h1>Tracking your work on a <span class="rotator" data-words='["spreadsheet","CSV","XLSX sheet","Word table","Markdown list","JSON export","email thread","pasted table"]' aria-label="spreadsheet"><span class="rotator-word">spreadsheet</span></span> is dumb.<br><span class="has-text-ts">Throw it at Turnstone instead.</span></h1>
     <h2 class="subtitle">
-      Load the list you already keep — a spreadsheet, a CSV, or a link your agent hands you. It becomes
-      cards with statuses and notes, and your ticks save straight back into that file.
+      Drop the file you already keep — CSV, XLSX, Word, Markdown, JSON, saved email, a table you copied —
+      and it becomes task cards with statuses, notes and the pages themselves beside them. Your ticks save
+      straight back into that file.
     </h2>
 
     <div class="buttons">
@@ -625,6 +638,40 @@
     var rest = params.toString();
     if (rest) target += '&' + rest;
     location.replace(target);
+  })();
+</script>
+<script>
+  /* The hero's rotating word — the formats the app takes in. Deliberately minimal:
+     the first word is server-rendered (crawlers and JS-off visitors see a complete
+     headline), the word list lives in a data attribute beside the markup it
+     belongs to, and the swap is a crossfade in place, with the container's
+     min-width set from the widest word so the line never reflows. */
+  (function () {
+    var el = document.querySelector('.rotator');
+    if (!el) return;
+    var words;
+    try { words = JSON.parse(el.getAttribute('data-words')); } catch (e) { return; }
+    if (!Array.isArray(words) || words.length < 2) return;
+    var word = el.querySelector('.rotator-word');
+    if (!word) return;
+    /* Hold the widest word's width so the headline never shifts while rotating. */
+    var measurer = document.createElement('span');
+    measurer.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;';
+    measurer.className = word.className;
+    measurer.textContent = words.reduce(function (a, b) { return a.length >= b.length ? a : b; });
+    el.appendChild(measurer);
+    el.style.minWidth = measurer.getBoundingClientRect().width + 'px';
+    el.removeChild(measurer);
+    var i = 0;
+    setInterval(function () {
+      word.classList.add('out');
+      setTimeout(function () {
+        i = (i + 1) % words.length;
+        word.textContent = words[i];
+        el.setAttribute('aria-label', words[i]);
+        word.classList.remove('out');
+      }, 290);
+    }, 2600);
   })();
 </script>
 </body>
