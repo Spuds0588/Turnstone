@@ -130,6 +130,9 @@
 </p>
 <ul id="columns"></ul>
 
+<h2>Multi-file merge — the pile becomes one list, with the keep-policies in the open</h2>
+<ul id="merge"></ul>
+
 <h2>The embedded layers — the click has to land somewhere useful</h2>
 <ul id="layers"></ul>
 
@@ -682,6 +685,102 @@ async function run() {
     extraNote(inboxList, !typedModal, 'pasting into the search box is typing, not a load — the paste path stays out of the way');
   } catch (e) {
     extraNote(inboxList, false, `paste section threw: ${e.message}`, e.stack);
+  }
+
+  /* --------------------------------------------------- multi-file merge ----
+     A second file used to cost a warning in the log and then nothing: the drop
+     loaded the first file and discarded the rest. The merge dialog is where that
+     question belongs, and every policy on it is a decision the user gets to see
+     — so this section drops a real multi-file DataTransfer, drives the dialog
+     under each policy, and checks the list it lands on, not the dialog's own
+     report. Files are fetched in the app's realm and built as File objects
+     there, because an ArrayBuffer built in this page reads as text across the
+     frame boundary (the same trap the loadInApp comment warns about). */
+  const mergeList = el('merge');
+  try {
+    const mkFile = async (name, text) => {
+      /* Build the File inside the app's realm (see the loadInApp comment on the
+         ArrayBuffer frame-boundary trap). The app page ships a strict CSP, so
+         `eval` is out: a same-document inline <script> is allowed by that CSP,
+         and stashing the File on the frame's window is the hand-off back here.
+         The CSP *test* edition refuses even that, so a harness-realm File is the
+         fallback — safe here because the pile is delimited text and the trap
+         only bites workbook parsing, which this section never drops. */
+      const tag = w.document.createElement('script');
+      tag.textContent = `window.__mergeFile = new File([${JSON.stringify(text)}], ${JSON.stringify(name)}, { type: 'text/csv' });`;
+      let made = false;
+      try { w.document.body.appendChild(tag); made = typeof w.__mergeFile !== 'undefined'; } catch (e) { /* CSP refused */ }
+      tag.remove();
+      if (made) return w.__mergeFile;
+      return new File([text], name, { type: 'text/csv' });
+    };
+    /* Two files of the same canonical list: the CSV baseline and an updated
+       export whose Alpha and Beta rows carry new statuses — one real
+       disagreement (Beta keeps complete on the base side), one gap-fill (Alpha),
+       and one row only the update has (Delta). */
+    const csvText = 'Task,URL,Status,Notes\n'
+      + 'Alpha,https://a.example/1,,\n'
+      + 'Beta,https://a.example/2,complete,from the base file\n'
+      + 'Gamma,https://a.example/3,,\n'
+      + 'Delta,https://a.example/4,,\n';
+    const updText = 'task,url,status,notes\n'
+      + 'alpha,https://a.example/1,in progress,from the incoming file\n'
+      + 'Beta,https://a.example/2,in progress,from the incoming file\n';
+    w = await freshPortalApp();
+    const f1 = await mkFile('merge-base.csv', csvText);
+    const f2 = await mkFile('merge-update.csv', updText);
+    const dt = new w.DataTransfer();
+    dt.items.add(f1); dt.items.add(f2);
+    w.document.body.dispatchEvent(new w.DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    /* `until` answers yes/no, not the element itself — the dialog is fetched
+       separately, so a pass here is about the element the user sees. */
+    const dlgOk = await until(() => !!w.document.getElementById('merge-modal'));
+    const dlg = dlgOk ? w.document.getElementById('merge-modal') : null;
+    extraNote(mergeList, !!dlg, `a two-file drop opens the merge dialog rather than loading the first file and warning about the second ${dlg ? '' : '<b>— no dialog appeared</b>'}`);
+    if (dlg) {
+      extraNote(mergeList, /merge-base\.csv/.test(dlg.textContent) && /merge-update\.csv/.test(dlg.textContent),
+        `…listing every file in the pile, name and format (<code>${[...dlg.querySelectorAll('#merge-files tbody tr')].map((tr) => tr.cells[0].textContent).join('</code>, <code>')}</code>)`);
+      extraNote(mergeList, /matched/i.test(dlg.querySelector('#merge-conflicts').textContent),
+        `…with a live report of what combining them will do — <code>${dlg.querySelector('#merge-conflicts').textContent.trim()}</code>`);
+      extraNote(mergeList, dlg.querySelector('input[name=merge-winner][value=base]:checked')
+        && !!dlg.querySelector('input[name=merge-winner][value=newest]'),
+        '…with the keep-on-conflict policy as a choice (open list by default, newest-file as an option)');
+      extraNote(mergeList, dlg.querySelector('input[name=merge-format][value=csv]:checked'),
+        '…and the kept-as format as a choice too (CSV default; XLSX when the build can write it)');
+      /* Base wins by default: Beta keeps the base's own status, Delta arrives.
+         Completed cards are hidden by default, so the row is read back through
+         the app's own export matrix rather than off the hidden DOM. */
+      dlg.querySelector('#merge-apply').click();
+      await until(() => !w.document.getElementById('merge-modal'));
+      const shown = rendered(w);
+      extraNote(mergeList, shown.total === 4 && shown.done === 1,
+        `…and applying with the default policy loads <b>${shown.total}</b> tasks, <b>${shown.done}</b> complete (Beta kept its own <i>complete</i>)`, JSON.stringify(shown));
+      const betaRow = (w.buildExportMatrix().find((r) => r[0] === 'Beta') || [])[2];
+      extraNote(mergeList, betaRow === 'complete',
+        `…Beta still carries the base file's status under the default policy (<code>${String(betaRow ?? 'missing')}</code>)`);
+      /* Flip the policy: same two files, the incoming status wins instead. */
+      w = await freshPortalApp();
+      const g1 = await mkFile('merge-base.csv', csvText);
+      const g2 = await mkFile('merge-update.csv', updText);
+      const dt2 = new w.DataTransfer();
+      dt2.items.add(g1); dt2.items.add(g2);
+      w.document.body.dispatchEvent(new w.DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt2 }));
+      await until(() => !!w.document.getElementById('merge-modal'));
+      const dlg2 = w.document.getElementById('merge-modal');
+      dlg2.querySelector('input[name=merge-winner][value=incoming]').click();
+      const report = dlg2.querySelector('#merge-conflicts').textContent;
+      extraNote(mergeList, /new file/.test(report), `…flipping the policy is reflected where the user is looking — the report says the new file now wins (<code>${report.trim()}</code>)`);
+      dlg2.querySelector('#merge-apply').click();
+      await until(() => !w.document.getElementById('merge-modal'));
+      /* The export matrix speaks the app's own status vocabulary, not the raw
+         cell: the incoming <i>in progress</i> is read as not-done, so Beta's
+         card is incomplete where the base-wins policy left it complete. */
+      const beta2Row = (w.buildExportMatrix().find((r) => r[0] === 'Beta') || [])[2];
+      extraNote(mergeList, beta2Row === 'incomplete',
+        `…and Beta flips to the incoming status under it (<code>${String(beta2Row ?? 'missing')}</code> — the incoming cell said <i>in progress</i>, which the app reads as not-done)`);
+    }
+  } catch (e) {
+    extraNote(mergeList, false, `merge section threw: ${e.message}`, e.stack);
   }
 
   /* ------------------------------------------ workspace links (#data= / #zdata) --

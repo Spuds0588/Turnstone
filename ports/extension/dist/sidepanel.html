@@ -14,7 +14,7 @@
 <body>
 
 
-<input type="file" id="file-input" accept=".csv,.tsv,.tab,.txt,.xlsx,.xls,.ods,.docx,.md,.markdown,.mdown,.mkd,.json,.jsonl,.ndjson,.html,.htm,.mht,.mhtml,.xml,.rss,.atom,.opml,.eml,text/csv,text/tab-separated-values,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,application/vnd.ms-excel,application/vnd.oasis.opendocument.spreadsheet,text/html,message/rfc822,application/xml,text/xml" hidden>
+<input type="file" id="file-input" multiple accept=".csv,.tsv,.tab,.txt,.xlsx,.xls,.ods,.docx,.md,.markdown,.mdown,.mkd,.json,.jsonl,.ndjson,.html,.htm,.mht,.mhtml,.xml,.rss,.atom,.opml,.eml,text/csv,text/tab-separated-values,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,application/vnd.ms-excel,application/vnd.oasis.opendocument.spreadsheet,text/html,message/rfc822,application/xml,text/xml" hidden>
 
 <main id="app">
   <!-- LEFT: tabbed iframe workspace (one of several open modes) -->
@@ -80,6 +80,7 @@
             <button class="menu-item" id="mi-restore" hidden><span class="mi">↺</span> Restore last file</button>
             <button class="menu-item" id="mi-close" disabled><span class="mi">✕</span> Close current file</button>
             <button class="menu-item" id="mi-paste"><span class="mi">⇲</span> Paste a list…</button>
+            <button class="menu-item" id="mi-merge"><span class="mi">⧉</span> Merge files…</button>
           </div>
           <div class="menu-group">
             <div class="menu-label">Share it</div>

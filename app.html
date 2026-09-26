@@ -599,6 +599,30 @@
   .bl-status { font-size: 11.5px; color: var(--muted); margin: 8px 0 0; }
   .bl-status b { color: var(--text); }
 
+  /* ---------- Bulk merge (multi-file) ---------- */
+  #merge-modal .modal-box { width: min(720px, 94vw); }
+  #merge-files {
+    max-height: 190px; overflow: auto; border: 1px solid var(--border);
+    border-radius: 8px; margin: 10px 0;
+  }
+  #merge-files table { border-collapse: collapse; width: 100%; font-size: 11.5px; }
+  #merge-files th, #merge-files td { border-bottom: 1px solid var(--border); padding: 4px 8px; text-align: left; }
+  #merge-files th { background: var(--panel-2); color: var(--muted); font-weight: 600; position: sticky; top: 0; }
+  #merge-files td.num, #merge-files th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  #merge-files tr.bad td { color: var(--muted); }
+  #merge-files .bad-reason { color: var(--danger); font-size: 11px; }
+  .merge-note { font-size: 11px; color: var(--muted); }
+  .merge-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; margin: 10px 0 2px; }
+  .merge-opts fieldset { border: none; margin: 0; padding: 0; min-width: 0; }
+  .merge-opts legend {
+    font-size: 10px; letter-spacing: .8px; text-transform: uppercase;
+    color: var(--muted); padding: 0 0 4px;
+  }
+  .merge-opts label { display: flex; align-items: baseline; gap: 6px; font-size: 12.5px; padding: 2.5px 0; cursor: pointer; }
+  .merge-opts .why { color: var(--muted); font-size: 11px; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .modal-actions .spacer { flex: 1; }
+
   /* Paste preview */
   .paste-preview { max-height: 210px; overflow: auto; border: 1px solid var(--border); border-radius: 6px; margin: 8px 0; }
   .paste-preview table { border-collapse: collapse; width: 100%; font-size: 11.5px; }
@@ -640,7 +664,7 @@
 </head>
 <body>
 
-<input type="file" id="file-input" accept=".csv,.tsv,.tab,.txt,.xlsx,.xls,.ods,.docx,.md,.markdown,.mdown,.mkd,.json,.jsonl,.ndjson,.html,.htm,.mht,.mhtml,.xml,.rss,.atom,.opml,.eml,text/csv,text/tab-separated-values,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,application/vnd.ms-excel,application/vnd.oasis.opendocument.spreadsheet,text/html,message/rfc822,application/xml,text/xml" hidden>
+<input type="file" id="file-input" multiple accept=".csv,.tsv,.tab,.txt,.xlsx,.xls,.ods,.docx,.md,.markdown,.mdown,.mkd,.json,.jsonl,.ndjson,.html,.htm,.mht,.mhtml,.xml,.rss,.atom,.opml,.eml,text/csv,text/tab-separated-values,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,application/vnd.ms-excel,application/vnd.oasis.opendocument.spreadsheet,text/html,message/rfc822,application/xml,text/xml" hidden>
 
 <main id="app">
   <!-- LEFT: tabbed iframe workspace (one of several open modes) -->
@@ -709,6 +733,7 @@
             <button class="menu-item" id="mi-restore" hidden><span class="mi">↺</span> Restore last file</button>
             <button class="menu-item" id="mi-close" disabled><span class="mi">✕</span> Close current file</button>
             <button class="menu-item" id="mi-paste"><span class="mi">⇲</span> Paste a list…</button>
+            <button class="menu-item" id="mi-merge"><span class="mi">⧉</span> Merge files…</button>
           </div>
           <div class="menu-group">
             <div class="menu-label">Share it</div>
@@ -981,6 +1006,7 @@ const els = {
   miAutoOpen: $('#mi-auto-open'), miAutoAdvance: $('#mi-auto-advance'), miAutoClose: $('#mi-auto-close'),
   menuFile: $('#menu-file'), menuClose: $('#menu-close'),
   miPortal: $('#mi-portal'), miPaste: $('#mi-paste'), pasteHint: $('#paste-hint'),
+  miMerge: $('#mi-merge'),
   settingsOverlay: $('#settings-overlay'), settingsCols: $('#settings-cols'), settingsPresets: $('#settings-presets'),
   settingsX: $('#settings-x'), presetName: $('#preset-name'), btnPresetSave: $('#btn-preset-save'), btnColsReset: $('#btn-cols-reset'),
   editionsHint: $('#editions-hint'),
@@ -2605,7 +2631,139 @@ function analyzeMatrix(data) {
   return { hasHeader, urlCol, nameCol, statusCol, notesCol, width, linkless: bestCount === 0 };
 }
 
-/** Load a normalized 2D matrix into app state. */
+/* ------------------------ Multi-file merge (pure) ------------------------- */
+/* Drop several files at once — or pick them with Open → Merge files… — and the
+   app reads every one, lines the columns up, matches the rows and offers one
+   combined list. The engine below is pure: it takes two matrices and a policy
+   and returns the merged matrix plus a report, touching no state, which is what
+   lets test/run.js call it directly. The dialog that drives it is showMergeReview,
+   further down, because nothing here may merge silently. */
+
+/** A match key that survives formatting: trimmed, lowercased, runs of
+    whitespace collapsed — so "  INC-0042 " still meets "inc-0042". */
+function normalizeMatchKey(v) {
+  return String(v ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/** Merge `incoming` into `base`.
+ *
+ * Columns: the union. A base column keeps its slot; an incoming column binds to
+ * the base column answering to the same (case/whitespace-insensitive) header
+ * name, and otherwise joins at the end. A side with no header row binds by
+ * position, because there is nothing else to go on.
+ * Rows: matched by link-shaped URL column when both sides have one, else by the
+ * name column. A file with neither (a portal export of bare rows) never matches:
+ * its rows are appended, because a positional "match" would be a guess about
+ * rows that may have nothing to do with each other.
+ * Conflicts: a cell the two sides disagree on for a matched row. An empty base
+ * cell is filled rather than fought over — that is not a conflict, it is a gap.
+ * policy.winner decides the rest: 'base' (default) | 'incoming' | 'newest', the
+ * last taking the incoming side only when policy.newerFirst says its file is the
+ * younger one.
+ *
+ * Returns { rows (header included), matched, appended, deduped, conflicts
+ * (per-column counts), width, matchedBy } — rows carry the header row at the
+ * front, named by the union, so the ordinary loader's own header detection
+ * receives a list that reads like any other file. */
+function mergeMatrices(base, incoming, policy) {
+  policy = policy || {};
+  const winner = policy.winner === 'incoming' ? 'incoming'
+    : policy.winner === 'newest' ? 'newest' : 'base';
+  const dedupe = policy.dedupe !== false;
+  /* Copies on purpose: analyzeMatrix pops trailing empty rows off what it is
+     handed, and the caller's matrices are not this function's to trim. */
+  const bA = analyzeMatrix(base.slice());
+  const iA = analyzeMatrix(incoming.slice());
+  const bHasHeader = bA.hasHeader, iHasHeader = iA.hasHeader;
+  const width = Math.max(bA.width, iA.width, 1);
+
+  /* Column union. Base names are its header when it has one, generated labels
+     when it does not — and generated only so an *unnamed* column can still be
+     named by an incoming header that binds to it positionally. */
+  const names = [];
+  for (let c = 0; c < width; c++) names[c] = bHasHeader ? String((base[0] || [])[c] ?? '') : `Column ${c + 1}`;
+  const bind = [];                       // incoming column index → output column index
+  for (let c = 0; c < iA.width; c++) {
+    const nm = iHasHeader ? String((incoming[0] || [])[c] ?? '') : '';
+    let hit = -1;
+    if (nm) hit = names.findIndex(n => normalizeHeader(n) === normalizeHeader(nm));
+    if (hit >= 0) { bind[c] = hit; continue; }              // the same column, both sides
+    if (!iHasHeader && c < width) { bind[c] = c; continue; } // headerless: position decides
+    names.push(nm || `Column ${names.length + 1}`);
+    bind[c] = names.length - 1;
+  }
+  const outWidth = names.length;
+
+  const bBody = base.slice(bHasHeader ? 1 : 0);
+  const iBody = incoming.slice(iHasHeader ? 1 : 0);
+  /* Either side having no URL and no name column makes the whole merge positional:
+     rows append, nothing matches, and the report says so. */
+  const useMatch = !(bA.urlCol < 0 && bA.nameCol < 0) && !(iA.urlCol < 0 && iA.nameCol < 0);
+  const keyOf = (row, a) => {
+    if (a.urlCol >= 0 && linkKindOf(row[a.urlCol])) return 'u:' + normalizeMatchKey(linkHrefOf(row[a.urlCol]) ?? row[a.urlCol]);
+    if (a.nameCol >= 0 && String(row[a.nameCol] ?? '').trim()) return 'n:' + normalizeMatchKey(row[a.nameCol]);
+    return '';
+  };
+
+  const out = [];
+  const byKey = new Map();               // match key → output row index
+  /* Inverted binding: for each output column, the incoming column that fills it
+     (-1 when the output column belongs to the base alone). Appended rows need
+     this too — the raw incoming order would put a new file's URL under the
+     base's Task header the moment the two files disagree about column order. */
+  const bindIdx = new Array(outWidth).fill(-1);
+  for (let c = 0; c < iA.width; c++) if (bind[c] !== undefined) bindIdx[bind[c]] = c;
+  for (const row of bBody) {
+    out.push(Array.from({ length: outWidth }, (_, c) => String(row?.[c] ?? '')));
+    if (useMatch) { const k = keyOf(row, bA); if (k) byKey.set(k, out.length - 1); }
+  }
+  const conflicts = new Map();           // output column index → conflicting cells
+  const seen = new Set();                // incoming signatures, for dedupe
+  let matched = 0, appended = 0, deduped = 0;
+  for (const row of iBody) {
+    const k = useMatch ? keyOf(row, iA) : '';
+    const hit = k ? byKey.get(k) : undefined;
+    if (hit === undefined) {
+      const cells = Array.from({ length: outWidth }, (_, oc) => {
+        const c = bindIdx[oc];
+        return c >= 0 ? String(row?.[c] ?? '') : '';
+      });
+      if (dedupe) {
+        const sig = JSON.stringify(cells.map(normalizeMatchKey));
+        if (seen.has(sig)) { deduped++; continue; }      // the same row twice in the incoming pile
+        seen.add(sig);
+      }
+      out.push(cells);
+      appended++;
+      continue;
+    }
+    matched++;
+    for (let c = 0; c < iA.width; c++) {
+      const oc = bind[c];
+      if (oc === undefined || oc < 0) continue;
+      const incVal = String(row?.[c] ?? '').trim();
+      if (!incVal) continue;                             // an empty incoming cell keeps the base value
+      const baseVal = String(out[hit][oc] ?? '').trim();
+      if (baseVal === incVal) continue;
+      if (!baseVal) { out[hit][oc] = incVal; continue; } // filling a blank is a gap, not a fight
+      conflicts.set(oc, (conflicts.get(oc) || 0) + 1);
+      if (winner === 'incoming' || (winner === 'newest' && policy.newerFirst)) out[hit][oc] = incVal;
+    }
+  }
+  const conflictsOut = [...conflicts.entries()]
+    .map(([column, cells]) => ({ column, name: names[column] || `Column ${column + 1}`, cells }))
+    .sort((a, b) => b.cells - a.cells);
+  log(`mergeMatrices: ${out.length} rows × ${outWidth} cols — ${matched} matched, ${appended} appended`
+    + `${deduped ? `, ${deduped} duplicate(s) dropped` : ''}${conflictsOut.length ? `, conflicts in ${conflictsOut.map(cf => cf.name).join(', ')}` : ', no conflicts'}`);
+  return {
+    rows: [names.slice(), ...out],
+    matched, appended, deduped, width: outWidth,
+    conflicts: conflictsOut,
+    matchedBy: useMatch ? 'key' : 'position',
+  };
+}
+
+/** Load a normalized 2D matrix into app state (after a multi-file merge or not). */
 function loadMatrix(data, meta) {
   log(`loadMatrix: ${data.length} rows from "${meta.name}" (mode=${meta.mode}, ext=${meta.ext})`);
   const a = analyzeMatrix(data);
@@ -3616,7 +3774,7 @@ function showPastePreview(rows, format, why) {
 /** Handle a paste anywhere in the app that is not a text field. */
 async function onPaste(e) {
   if (isEditableTarget(e.target)) return;                      // typing, not loading
-  if (modalOpen('#mode-picker, #portal-modal, #paste-modal, #sheet-picker, #menu')) return;
+  if (modalOpen('#mode-picker, #portal-modal, #paste-modal, #sheet-picker, #merge-modal, #menu')) return;
   const dt = e.clipboardData;
   if (!dt) return;
   const files = [...(dt.files || [])];
@@ -3724,15 +3882,205 @@ async function handleFromDrop(dt) {
   }
 }
 
-/** Load the file(s) of a drop. Extra files are reported rather than silently ignored. */
+/** Load the file(s) of a drop. One file loads as always; several offer the bulk
+    merge instead of the old warning, which reported the extra files and then
+    threw them away. */
 async function handleDroppedFiles(dt) {
   const files = [...(dt.files || [])];
   if (!files.length) return;
-  if (files.length > 1) warn(`Drop carried ${files.length} files — loading the first one ("${files[0].name}")`);
+  if (files.length > 1) {
+    log(`Drop carried ${files.length} files — offering a bulk merge`);
+    toast(`Reading ${files.length} files…`);
+    showMergeDialog(await parseManyFiles(files));
+    return;
+  }
   const file = files[0];
   log(`Dropped file "${file.name}" (${file.size} bytes, type="${file.type || 'unknown'}")`);
   toast(`Reading ${file.name}…`);
   await loadFromFileObject(file, await handleFromDrop(dt));
+}
+
+/* ----------------------- Bulk parse (merge source) ------------------------ */
+/* One file per drop used to be the app's whole vocabulary, and a second file got
+   a warning instead of a plan. These two take a *pile*: every file is read and
+   parsed, the failures are reported rather than swallowed, and the survivors go
+   to the merge dialog. parseDetected's own sheet-picker dialog is bypassed here —
+   a bulk merge asks one question, not one per workbook, so a multi-sheet file
+   contributes its first sheet and says so in the dialog. */
+
+/** Parse one File object for the bulk path. Returns null and reports why not.
+    Non-list files (a PDF, a stray screenshot) are expected in a pile of mixed
+    files, so they cost a note in the dialog rather than a thrown error. */
+async function parseOneForMerge(file) {
+  const det = { format: '?', rows: null, from: null, sheets: 0 };
+  try {
+    const buf = await file.arrayBuffer();
+    const fmt = detectFormat(buf, file.name, file.type);
+    if (isWorkbookFormat(fmt.format) && !HAS_XLSX) {
+      det.format = fmt.format;
+      det.skip = `${formatLabel(fmt.format)} needs workbook support, which this build does not include`;
+      return det;
+    }
+    det.format = fmt.format;
+    /* A multi-sheet workbook is asked nothing in a bulk merge — one question per
+       file would turn a pile of ten into ten dialogs — so its first sheet is the
+       one that comes, and the dialog says "first of N". */
+    if (isWorkbookFormat(fmt.format)) det.sheets = Math.max(1, (await sheetNamesOf(buf)).length);
+    const parsed = await parseDetected(buf, fmt, null, { allowLinkFallback: true });
+    det.rows = parsed.rows;
+    det.sheetName = parsed.sheetName || null;
+  } catch (e) {
+    det.skip = e.message;
+    warn(`Bulk parse refused "${file.name}": ${e.message}`);
+  }
+  if (det.rows && !analyzeMatrix(det.rows).width) det.skip = 'no columns in it';
+  return det;
+}
+
+/** Read every file in the drop/pick. Fails nothing that can be salvaged; the
+    dialog is where the user sees what each file became. */
+async function parseManyFiles(files) {
+  const out = [];
+  for (const file of files) {
+    const det = await parseOneForMerge(file);
+    out.push({ name: file.name, size: file.size, mtime: file.lastModified || 0, det });
+  }
+  const ok = out.filter(f => f.det.rows);
+  log(`Bulk parse: ${ok.length}/${out.length} file(s) parsed (${out.filter(f => f.det.skip).map(f => f.name).join(', ') || 'none skipped'})`);
+  return out;
+}
+
+/* --------------------------- Merge review dialog -------------------------- */
+/* The one place the merge is decided: what the pile contained, what matched,
+   who wins a disagreement, and what the combined list is kept as. Nothing in
+   the bulk path loads or writes a thing before this dialog says so. */
+
+/** Preview table body: one row per file, its format, its row count and — when
+    it could not be read — why, as a note rather than a thrown error. */
+function mergeFilesTable(items) {
+  const bad = (it) => it.det.skip
+    ? `<td colspan="2"><span class="bad-reason">${esc(it.det.skip)}</span></td>`
+    : `<td class="num">${Math.max(0, it.det.rows.length - 1)}</td><td class="num">${it.det.rows[0] ? it.det.rows[0].length : 0}</td>`;
+  return items.map(it => `<tr${it.det.skip ? ' class="bad"' : ''}>
+    <td>${esc(it.name)}</td><td>${esc(formatLabel(it.det.format))}</td>${bad(it)}
+  </tr>`).join('');
+}
+
+/** The match column each side will be keyed on, spelled out in the dialog. */
+function mergeMatchLabel(rows) {
+  const a = analyzeMatrix(rows);
+  if (a.urlCol >= 0) return `URL column (${String((rows[0] || [])[a.urlCol] || '').trim() || 'column ' + (a.urlCol + 1)})`;
+  if (a.nameCol >= 0) return `name column (${String((rows[0] || [])[a.nameCol] || '').trim() || 'column ' + (a.nameCol + 1)})`;
+  return 'no matchable column — rows will be appended';
+}
+
+/** Open the review dialog for a parsed pile.
+ *
+ * A list already open is offered as the base; the pile becomes the incoming
+ * side and the open list's own status ticks and notes ride along through
+ * buildExportMatrix. Otherwise the first readable file is the base and the
+ * rest arrive one after another, each report folding into the next.
+ */
+function showMergeDialog(items) {
+  if (modalOpen('#merge-modal, #mode-picker, #portal-modal, #paste-modal, #sheet-picker, #menu')) { toast('Finish or close the open dialog first', 'error'); return; }
+  const pile = items.filter(it => it.det.rows);
+  const skipped = items.filter(it => it.det.skip);
+  if (!pile.length) {
+    toast(skipped.length ? `None of the ${items.length} file(s) could be read as a list` : 'Nothing to merge', 'error');
+    return;
+  }
+  const hasOpen = !!state.mode && !!state.data.length;
+  const base = hasOpen
+    ? { name: state.name, rows: buildExportMatrix(), fromOpen: true }
+    : { name: pile[0].name, rows: pile[0].det.rows, fromOpen: false };
+  const incoming = hasOpen ? pile : pile.slice(1);
+
+  const openList = document.createElement('div');
+  openList.id = 'merge-modal';
+  const baseLabel = esc(base.name || 'the open list');
+  const newestFirst = incoming.length
+    ? incoming.reduce((m, it) => Math.max(m, it.mtime || 0), 0) >= (items.find(it => it.name === base.name) || {}).mtime || false
+    : false;
+  const incomingCount = incoming.length;
+  const sheetNotes = incoming.filter(it => it.det.sheets > 1).map(it => `<b>${esc(it.name)}</b> (first of ${it.det.sheets} sheets)`).join(', ');
+  const skipNotes = skipped.map(it => `<b>${esc(it.name)}</b> — ${esc(it.det.skip)}`).join(' · ');
+
+  openList.innerHTML = `
+    <div class="modal-box">
+      <h3 class="modal-title">Combine lists</h3>
+      <p class="modal-sub">${incomingCount || 0} more file${incomingCount === 1 ? '' : 's'} into
+        <b>${baseLabel}</b>${base.fromOpen ? ' — the list you have open' : ''}.</p>
+      <div id="merge-files"><table>
+        <thead><tr><th>File</th><th>Format</th><th class="num">Rows</th><th class="num">Cols</th></tr></thead>
+        <tbody>${mergeFilesTable(base.fromOpen ? incoming : items)}</tbody>
+      </table></div>
+      <p class="merge-note">Matching is ${esc(mergeMatchLabel(base.rows))} ·
+        ${hasOpen ? 'status ticks and notes you have entered are kept' : 'the first readable file is the base'}.
+        ${sheetNotes ? `Multi-sheet workbooks contribute their first sheet: ${sheetNotes}.` : ''}
+        ${skipNotes ? `Skipped: ${skipNotes}.` : ''}</p>
+      <div class="merge-opts">
+        <fieldset>
+          <legend>Keep, when both sides disagree</legend>
+          <label><input type="radio" name="merge-winner" value="base" checked> The open list</label>
+          <label><input type="radio" name="merge-winner" value="incoming"> The new file${incomingCount === 1 ? '' : 's'}</label>
+          <label><input type="radio" name="merge-winner" value="newest"> Whichever file is newer</label>
+        </fieldset>
+        <fieldset>
+          <legend>Keep the combined list as</legend>
+          <label><input type="radio" name="merge-format" value="csv" checked> CSV — every edition writes it</label>
+          ${HAS_XLSX_WRITE ? '<label><input type="radio" name="merge-format" value="xlsx"> XLSX workbook</label>' : ''}
+          <label><input type="radio" name="merge-format" value="tsv"> TSV</label>
+        </fieldset>
+      </div>
+      <p class="merge-note" id="merge-conflicts"></p>
+      <div class="modal-actions">
+        <button class="btn primary" id="merge-apply" disabled>Combine</button>
+        <span class="spacer"></span>
+        <button class="modal-cancel" id="merge-cancel">Cancel</button>
+      </div>
+    </div>`;
+  mountPoint().appendChild(openList);
+
+  const winner = () => openList.querySelector('input[name=merge-winner]:checked').value;
+  const keepAs = () => openList.querySelector('input[name=merge-format]:checked').value;
+  let lastRows = null;
+  const recompute = () => {
+    if (!incoming.length) {
+      lastRows = { rows: base.rows.slice(), matched: 0, appended: 0, deduped: 0, width: (base.rows[0] || []).length, conflicts: [], matchedBy: 'key' };
+      openList.querySelector('#merge-apply').disabled = false;
+      openList.querySelector('#merge-conflicts').textContent = 'Nothing to combine — the dialog will just re-open the current list.';
+      return;
+    }
+    let acc = base.rows;
+    let rep = null;
+    for (const it of incoming) {
+      rep = mergeMatrices(acc, it.det.rows, { winner: winner(), newestFirst: newestFirst });
+      acc = rep.rows;
+    }
+    lastRows = { ...rep, rows: acc };
+    openList.querySelector('#merge-apply').disabled = false;
+    openList.querySelector('#merge-conflicts').innerHTML =
+      `<b>${lastRows.matched}</b> matched · <b>${lastRows.appended}</b> added` +
+      (lastRows.deduped ? ` · ${lastRows.deduped} duplicate${lastRows.deduped === 1 ? '' : 's'} dropped` : '') +
+      (lastRows.conflicts.length
+        ? ` — disagreements kept from the ${winner() === 'base' ? 'open list' : winner() === 'incoming' ? 'new file' : 'newer file'} in: ` +
+          lastRows.conflicts.map(cf => `${esc(cf.name)} (${cf.cells})`).join(', ')
+        : ' — no disagreements');
+  };
+  openList.querySelectorAll('input[name=merge-winner]').forEach(r => r.addEventListener('change', recompute));
+  recompute();
+
+  openList.querySelector('#merge-cancel').onclick = () => { log('Merge cancelled — nothing was changed'); openList.remove(); };
+  openList.querySelector('#merge-apply').onclick = () => {
+    if (!lastRows || !lastRows.rows.length) return;
+    openList.remove();
+    const ext = keepAs();
+    const name = base.fromOpen ? state.name
+      : base.name.replace(/\.[a-z0-9]+$/i, '') + '-merged.' + (ext === 'csv' ? 'csv' : ext);
+    loadMatrix(lastRows.rows, { name, ext, mode: 'fallback', sheetName: ext === 'xlsx' ? (state.sheetName || 'Merged') : null });
+    scheduleSave(0);
+    toast(`Combined list: ${lastRows.matched} matched, ${lastRows.appended} added, kept as ${formatLabel(ext)}`, 'success');
+  };
 }
 
 /** If this exact file was previously worked on in fallback mode, reuse its statuses/notes. */
@@ -3745,6 +4093,7 @@ async function readSessionMetaFor(name) {
 }
 
 /* --------------------------- File acquisition ---------------------------- */
+let miMergePicking = false;               // the ☰ Merge files… item asks for several
 const FS_PICK_OPTS = {
   types: [{
     description: 'Link list (CSV, TSV, XLSX, XLS, ODS, DOCX, EML, JSON, HTML, XML)',
@@ -3769,7 +4118,13 @@ async function openLocalFile() {
   log(`Open file requested. showOpenFilePicker available: ${!!window.showOpenFilePicker}`);
   if (window.showOpenFilePicker) {
     try {
-      const [handle] = await window.showOpenFilePicker(FS_PICK_OPTS);
+      const picks = await window.showOpenFilePicker(miMergePicking ? { ...FS_PICK_OPTS, multiple: true } : FS_PICK_OPTS);
+      miMergePicking = false;
+      if (picks.length > 1) {
+        showMergeDialog(await parseManyFiles(await Promise.all(picks.map(h => h.getFile()))));
+        return;
+      }
+      const [handle] = picks;
       log('File handle acquired:', handle.name);
       const file = await handle.getFile();
       await loadFromFileObject(file, handle);
@@ -4862,6 +5217,12 @@ els.miPortal.addEventListener('click', () => {
   showPortalSetup();
 });
 els.miPaste.addEventListener('click', () => { closeMenu(); pasteFromClipboard(); });
+els.miMerge.addEventListener('click', () => {
+  closeMenu();
+  if (!window.showOpenFilePicker) { miMergePicking = true; els.fileInput.click(); return; }
+  miMergePicking = true;
+  openLocalFile().finally(() => { miMergePicking = false; });
+});
 document.addEventListener('paste', onPaste, true);
 els.miExportCsv.addEventListener('click', () => { closeMenu(); exportFile('csv'); });
 els.miExportXlsx.addEventListener('click', () => { closeMenu(); exportFile('xlsx'); });
@@ -4875,9 +5236,13 @@ function toggleThemeFromMenu() {
 }
 
 els.fileInput.addEventListener('change', async () => {
-  const f = els.fileInput.files[0];
+  const files = [...els.fileInput.files];
   els.fileInput.value = '';
-  if (f) await loadFromFileObject(f, null);
+  if (!files.length) return;
+  /* The hidden input is shared by the ordinary picker and the bulk one, so the
+     count decides: one file is the old single-file load, several are a merge. */
+  if (files.length > 1) { showMergeDialog(await parseManyFiles(files)); return; }
+  await loadFromFileObject(files[0], null);
 });
 /* The welcome panel's field, which had **no handler at all** — the button and the Enter
    key were both dead, and nothing tested either (the sweeps drive files and pastes, not

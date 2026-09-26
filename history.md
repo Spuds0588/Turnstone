@@ -1,5 +1,61 @@
 # history.md — Project Turnstone Build Log
 
+## 2026-09-26 — Multi-file merge: the pile becomes one list, with the keep-policies in the open
+
+**Request:** let people add several files of different types at once — emails, Word docs,
+spreadsheets — combine them into one list or update an open one, and make the app do the
+binding, matching and combining, with override logic and UI for what gets kept on conflict
+and what format the combined list is kept in.
+
+### What a second file used to cost
+
+A drop carrying more than one file loaded the first and *warned* about the rest — the files
+the user explicitly handed over were reported and then thrown away. The menu had no way to
+ask for several files at all.
+
+### The merge
+
+- **Entry points:** a multi-file drop (anywhere, as before) and a new ☰ item, **⧉ Merge
+  files…**, which opens the picker with `multiple`. The hidden `<input type=file>` is shared
+  by both paths and now carries `multiple`, so one file loads exactly as before and several
+  open the merge dialog.
+- **Bulk parse (`parseOneForMerge` / `parseManyFiles`):** every file is read and parsed;
+  a file that cannot be read becomes a *note in the dialog* rather than a thrown error, and
+  a multi-sheet workbook contributes its first sheet and says so (one question per workbook
+  would turn a pile of ten into ten dialogs).
+- **The engine (`mergeMatrices`)** is pure — matrices and a policy in, merged matrix and a
+  report out, no DOM, no state — so it lives in the Node-testable slice and `test/run.js`
+  drives it directly. Columns unify by header name (case/whitespace-insensitive; a
+  headerless side binds by position, a new column joins at the end named by its own
+  header). Rows match by link-shaped URL when both sides have one, else by name; a blank
+  cell is *filled*, not fought over; an exact duplicate row in the incoming pile is dropped
+  once. The winner policies — `base` | `incoming` | `newest` (by file mtime) — decide a real
+  disagreement, and the report names the columns it happened in.
+- **The dialog (`#merge-modal`)** lists the pile (name, format, rows, columns, and why any
+  file was skipped), reports matched/added/dropped counts *live as the policy flips*, and
+  asks the two questions a merge cannot answer silently: who wins a disagreement, and what
+  the combined list is kept as (CSV default; XLSX when the build can write it). Nothing
+  loads until **Combine**.
+- **Merge into the open list:** an open list becomes the base via `buildExportMatrix()`, so
+  the ticks and notes entered so far ride along; the base's name and columns win the union.
+
+### Verification
+
+- `node test/run.js` grew an 18-check **multi-file merge** section (match-key normalization,
+  both winner policies, gap-fill vs conflict, dedupe, headerless binding, new columns,
+  keyless appending, empty incoming) — **455 passed, 0 failed** overall.
+- `test/fixtures.html` grew a browser section that drops a real two-file `DataTransfer`,
+  drives the dialog under both policies, and reads the *result* through the app's own
+  export matrix (Beta stays `complete` under base-wins; flips to not-done under
+  incoming-wins, because the incoming cell said *in progress*). All editions sweep green:
+  **app.html 99/99, panel-test 94/94, panel-csp 94/94, standalone 99/99, bookmarklet 99/99**.
+- Files for the sweep are built inside the app's realm via a same-document inline script
+  (the CSP *test* edition falls back to a harness-realm File, safe for delimited text).
+- All five `--check`s green after rebuilds; size fallbacks re-synced from
+  `assets/sizes.json` (standalone 1.27 MB, bookmarklet 318 KB–1.23 MB, extension 1.28 MB).
+
+---
+
 ## 2026-09-25 — An audit of every document, and the four `style=` attributes it turned up
 
 **Request:** confirm everything is on production and working, then check the documentation for accuracy.

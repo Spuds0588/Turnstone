@@ -51,14 +51,14 @@ const runs = (name) => !only || name.toLowerCase().includes(only.toLowerCase());
 function loadApp() {
   const src = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
   const start = src.indexOf('const HEADER_URL_RE =');
-  const endMark = 'return { hasHeader, urlCol, nameCol, statusCol, notesCol, width, linkless: bestCount === 0 };';
+  const endMark = '/** Load a normalized 2D matrix into app state (after a multi-file merge or not). */';
   const end = src.indexOf(endMark, start) + endMark.length;
   if (start < 0 || end < endMark.length) {
     throw new Error('could not find the format layer in app.html — the anchor moved, so this suite would test nothing');
   }
-  const body = src.slice(start, end) + '\n}\nreturn {\n'
+  const body = src.slice(start, end) + '\nreturn {\n'
     + '  FORMAT_INFO, EXT_FORMAT, CT_FORMAT, canWrite, isWritable, isWorkbookFormat,\n'
-    + '  detectFormat, parseDetected, analyzeMatrix, isCompleteValue,\n'
+    + '  detectFormat, parseDetected, analyzeMatrix, isCompleteValue, mergeMatrices, normalizeMatchKey,\n'
     + '  isUrlValue, isEmailValue, isPhoneValue, linkKindOf, linkHrefOf,\n'
     + '  looksLikeMarkdown, parseMarkdownText, zipEntries, zipEntryText,\n'
     + '  layerAnchorAttrs, currentTheme, LAYER_ACCENT,\n'
@@ -987,6 +987,95 @@ const loadFixture = async (name) => {
       const found = [...new Set((src.match(/\sstyle\s*=\s*["'][^"']*/g) || []))];
       ok('app.html writes no style attribute outside its stylesheet', found.length === 0, found.slice(0, 4).join(' · '));
     }
+  }
+
+  /* ------------------------------------------------- multi-file merge (pure) --- */
+  /* mergeMatrices is where several files become one list, and it is pure on
+     purpose: no DOM, no state, no dialogs — so the whole question of "what wins
+     when two files disagree" is decided here, in Node, before any browser has
+     to agree to it. Everything downstream (the dialog, the writers) only ever
+     consumes what these tests pin down. */
+  if (runs('merge')) {
+    head('Multi-file merge — matching, columns, conflicts');
+
+    ok('the merge engine is reachable from the Node slice', typeof api.mergeMatrices === 'function'
+      && typeof api.normalizeMatchKey === 'function');
+
+    eq('a match key survives case, padding and runs of whitespace',
+      [api.normalizeMatchKey('  INC-0042 '), api.normalizeMatchKey('inc-0042'), api.normalizeMatchKey('INC  0042')],
+      ['inc-0042', 'inc-0042', 'inc 0042']);
+
+    /* Beta is the row that actually disagrees (its base cells are filled), so the
+       winner policies are pinned on it; Alpha only has gaps, and gaps are filled
+       by either policy — asserted separately, so the two rules cannot blur. */
+    const BASE = [
+      ['Task', 'URL', 'Status', 'Notes'],
+      ['Alpha', 'https://a.example/1', '', ''],
+      ['Beta', 'https://a.example/2', 'complete', 'from the base file'],
+      ['Gamma', 'https://a.example/3', '', ''],
+    ];
+    const INC = [
+      ['task', 'url', 'status', 'notes'],
+      ['alpha', 'https://a.example/1', 'approved', 'from the incoming file'],
+      ['Beta', 'https://a.example/2', 'approved', 'from the incoming file'],
+      ['Delta', 'https://a.example/4', '', ''],
+    ];
+
+    const keepBase = api.mergeMatrices(BASE, INC, { winner: 'base' });
+    eq('…base wins a real disagreement', keepBase.rows[2].slice(2), ['complete', 'from the base file']);
+    ok('…a blank on the base side is filled, not fought over',
+      keepBase.rows[1][2] === 'approved' && keepBase.rows[1][3] === 'from the incoming file');
+    eq('…the matched, appended and deduped counts add up',
+      [keepBase.matched, keepBase.appended, keepBase.deduped], [2, 1, 0]);
+    ok('…the disagreements are reported against the columns they happened in',
+      keepBase.conflicts.length === 3 && keepBase.conflicts.every((c) => c.cells === 1)
+      && keepBase.conflicts.some((c) => c.name === 'Task')
+      && keepBase.conflicts.some((c) => c.name === 'Status')
+      && keepBase.conflicts.some((c) => c.name === 'Notes'));
+    eq('…the union header carries the merged width', keepBase.rows[0].length, 4);
+
+    const keepIncoming = api.mergeMatrices(BASE, INC, { winner: 'incoming' });
+    ok('…incoming wins a real disagreement',
+      keepIncoming.rows[2][2] === 'approved' && keepIncoming.rows[2][3] === 'from the incoming file'
+      && keepIncoming.rows[2][0] === 'Beta');
+
+    const again = api.mergeMatrices(BASE, INC.slice(0, 2), { winner: 'base' });
+    eq('…re-merging the same row matches it instead of appending it',
+      [again.matched, again.appended, again.deduped], [1, 0, 0]);
+
+    const dupes = api.mergeMatrices(BASE, [
+      ['Task', 'URL'], ['Zed', 'https://z.example/9'], ['Zed', 'https://z.example/9'],
+    ], { winner: 'base' });
+    eq('…an exact duplicate inside the incoming pile is dropped once',
+      [dupes.appended, dupes.deduped], [1, 1]);
+
+    const headerless = api.mergeMatrices(BASE, [
+      ['Name', 'Color'], ['Zed', 'red'], ['Alpha', 'blue'],
+    ], { winner: 'base' });
+    eq('…a headerless incoming side binds by position and appends',
+      [headerless.appended, headerless.width], [2, 6]);
+    ok('…its headerless columns are named, so the union still reads like a list',
+      headerless.rows[0][4] === 'Name' && headerless.rows[0][5] === 'Color');
+
+    const extra = api.mergeMatrices(BASE, [
+      ['id', 'url'], ['9', 'https://a.example/9'],
+    ], { winner: 'base' });
+    ok('…a new column joins at the end, named by its own header, and fills per row',
+      extra.width === 5 && extra.rows[0][4] === 'id' && extra.rows[1][4] === '' && extra.rows[4][4] === '9');
+
+    const bare = api.mergeMatrices(BASE, [['just', 'cells'], ['nowhere', 'to match']], { winner: 'base' });
+    eq('…two lists with no key in common append instead of guessing',
+      [bare.matched, bare.appended], [0, 2]);
+    ok('…and the report names the match column it tried', bare.matchedBy === 'key');
+
+    const blank = api.mergeMatrices(BASE, [], { winner: 'incoming' });
+    eq('…nothing incoming changes nothing', [blank.rows.length, blank.appended], [BASE.length, 0]);
+
+    const newest = api.mergeMatrices(BASE, INC, { winner: 'newest', newerFirst: true });
+    ok('…newest-wins takes the incoming side when its file is the younger one',
+      newest.rows[2][2] === 'approved');
+    const oldest = api.mergeMatrices(BASE, INC, { winner: 'newest', newerFirst: false });
+    ok('…and the base side when it is not', oldest.rows[2][2] === 'complete');
   }
 
   /* ------------------------------------------------------------------ report --- */
